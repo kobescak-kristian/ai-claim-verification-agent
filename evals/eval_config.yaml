@@ -1,3 +1,19 @@
 precision_min: 0.95
 recall_min: 0.90
 result: PASS iff both
+
+# --- Metric definition (fixed with thresholds; agent built against this, never the reverse) ---
+metric_definition:
+  positive_class: CONTRADICTED
+  precision: "of claims the agent labels CONTRADICTED, fraction truly CONTRADICTED in ground_truth.json"
+  recall: "of ground-truth CONTRADICTED claims, fraction the agent labels CONTRADICTED"
+  gate: "PASS iff precision >= 0.95 AND recall >= 0.90"
+  secondary_reported_not_gated:
+    overall_verdict_accuracy: "fraction of all 35 claims with exactly matching verdict (SUPPORTED/CONTRADICTED/UNVERIFIABLE)"
+
+# --- Comparison policy (binding for agent prompt and ground truth alike) ---
+comparison_policy:
+  numeric_claims: "exact match required; no rounding tolerance (11.5 is not 12)"
+  phrasing: "different phrasing of the same fact is equivalent (worded numbers = digits)"
+  source_authority: "manufacturer spec sheets, retailers, press releases outrank forum/user content; verdicts follow authoritative sources"
+  no_source_coverage: "claim mentioned by no source = UNVERIFIABLE, not CONTRADICTED"
