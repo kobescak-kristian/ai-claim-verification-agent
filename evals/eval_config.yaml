@@ -1,0 +1,3 @@
+precision_min: 0.95
+recall_min: 0.90
+result: PASS iff both

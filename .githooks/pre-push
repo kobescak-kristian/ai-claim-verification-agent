@@ -1,0 +1,2 @@
+#!/bin/sh
+python .githooks/validate_artifacts.py .
