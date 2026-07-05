@@ -1,0 +1,405 @@
+{
+  "dataset_version": "1.0",
+  "created": "2026-07-06",
+  "description": "Synthetic seeded pages with known-truth claim sets for ai-claim-verification-agent eval. Fixed target \u2014 the agent is built against this file, never the reverse.",
+  "case_count": 12,
+  "total_claims": 35,
+  "verdict_distribution": {
+    "SUPPORTED": 24,
+    "CONTRADICTED": 8,
+    "UNVERIFIABLE": 3
+  },
+  "cases": [
+    {
+      "case_id": "case_01_supported_wireless_earbuds",
+      "category": "supported",
+      "target": "dataset/case_01_supported_wireless_earbuds/target.html",
+      "sources": [
+        "dataset/case_01_supported_wireless_earbuds/source_1_spec_sheet.html",
+        "dataset/case_01_supported_wireless_earbuds/source_2_retailer.html",
+        "dataset/case_01_supported_wireless_earbuds/source_3_press_release.html"
+      ],
+      "claims": [
+        {
+          "id": "case_01_supported_wireless_earbuds_c1",
+          "text": "The SoundWave Pro X2 is priced at $129.99.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_2_retailer.html",
+          "evidence_note": "Retailer lists price as $129.99, exact match."
+        },
+        {
+          "id": "case_01_supported_wireless_earbuds_c2",
+          "text": "It features 30 hours of total battery life with the charging case.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet and press release both confirm 30 hours total with case."
+        },
+        {
+          "id": "case_01_supported_wireless_earbuds_c3",
+          "text": "Released on March 1, 2024.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet and press release both confirm March 1, 2024 release date."
+        }
+      ]
+    },
+    {
+      "case_id": "case_02_contradicted_price_laptop",
+      "category": "contradicted",
+      "target": "dataset/case_02_contradicted_price_laptop/target.html",
+      "sources": [
+        "dataset/case_02_contradicted_price_laptop/source_1_manufacturer_spec.html",
+        "dataset/case_02_contradicted_price_laptop/source_2_retailer.html",
+        "dataset/case_02_contradicted_price_laptop/source_3_press_release.html"
+      ],
+      "claims": [
+        {
+          "id": "case_02_contradicted_price_laptop_c1",
+          "text": "Priced at $899.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "source_1_manufacturer_spec.html",
+          "evidence_note": "Manufacturer and retailer both list $999, not $899."
+        },
+        {
+          "id": "case_02_contradicted_price_laptop_c2",
+          "text": "Comes with 16GB RAM.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_manufacturer_spec.html",
+          "evidence_note": "16GB RAM confirmed by manufacturer, retailer, and press release."
+        },
+        {
+          "id": "case_02_contradicted_price_laptop_c3",
+          "text": "Ships with Windows 11 Home.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_manufacturer_spec.html",
+          "evidence_note": "Windows 11 Home confirmed by manufacturer and press release."
+        }
+      ]
+    },
+    {
+      "case_id": "case_03_contradicted_storage_phone",
+      "category": "contradicted",
+      "target": "dataset/case_03_contradicted_storage_phone/target.html",
+      "sources": [
+        "dataset/case_03_contradicted_storage_phone/source_1_spec_sheet.html",
+        "dataset/case_03_contradicted_storage_phone/source_2_retailer.html",
+        "dataset/case_03_contradicted_storage_phone/source_3_press_release.html"
+      ],
+      "claims": [
+        {
+          "id": "case_03_contradicted_storage_phone_c1",
+          "text": "Comes with 256GB of storage.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet and retailer list 128GB, not 256GB."
+        },
+        {
+          "id": "case_03_contradicted_storage_phone_c2",
+          "text": "Has a 6.5-inch display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "6.5-inch display confirmed across all three sources."
+        },
+        {
+          "id": "case_03_contradicted_storage_phone_c3",
+          "text": "Weighs 189 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "189 grams confirmed by spec sheet and press release."
+        }
+      ]
+    },
+    {
+      "case_id": "case_04_contradicted_release_date_camera",
+      "category": "contradicted",
+      "target": "dataset/case_04_contradicted_release_date_camera/target.html",
+      "sources": [
+        "dataset/case_04_contradicted_release_date_camera/source_1_press_release.html",
+        "dataset/case_04_contradicted_release_date_camera/source_2_spec_sheet.html",
+        "dataset/case_04_contradicted_release_date_camera/source_3_retailer.html"
+      ],
+      "claims": [
+        {
+          "id": "case_04_contradicted_release_date_camera_c1",
+          "text": "Released on September 10, 2023.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "source_1_press_release.html",
+          "evidence_note": "All three sources agree the release date is September 24, 2023, not September 10."
+        },
+        {
+          "id": "case_04_contradicted_release_date_camera_c2",
+          "text": "Features a 24MP sensor.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_press_release.html",
+          "evidence_note": "24MP sensor confirmed by all three sources."
+        },
+        {
+          "id": "case_04_contradicted_release_date_camera_c3",
+          "text": "Supports 4K video recording at 60fps.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_press_release.html",
+          "evidence_note": "4K60fps confirmed by all three sources."
+        }
+      ]
+    },
+    {
+      "case_id": "case_05_unverifiable_warranty_monitor",
+      "category": "unverifiable",
+      "target": "dataset/case_05_unverifiable_warranty_monitor/target.html",
+      "sources": [
+        "dataset/case_05_unverifiable_warranty_monitor/source_1_spec_sheet.html",
+        "dataset/case_05_unverifiable_warranty_monitor/source_2_retailer.html",
+        "dataset/case_05_unverifiable_warranty_monitor/source_3_press_release.html"
+      ],
+      "claims": [
+        {
+          "id": "case_05_unverifiable_warranty_monitor_c1",
+          "text": "Comes with a 3-year manufacturer warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": null,
+          "evidence_note": "No source mentions warranty length or terms at all."
+        },
+        {
+          "id": "case_05_unverifiable_warranty_monitor_c2",
+          "text": "Has a 27-inch 4K display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "27-inch 4K (3840x2160) confirmed by spec sheet, retailer, and press release."
+        },
+        {
+          "id": "case_05_unverifiable_warranty_monitor_c3",
+          "text": "Supports HDR10.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "HDR10 confirmed by spec sheet and press release."
+        }
+      ]
+    },
+    {
+      "case_id": "case_06_unverifiable_availability_speaker",
+      "category": "unverifiable",
+      "target": "dataset/case_06_unverifiable_availability_speaker/target.html",
+      "sources": [
+        "dataset/case_06_unverifiable_availability_speaker/source_1_spec_sheet.html",
+        "dataset/case_06_unverifiable_availability_speaker/source_2_press_release.html",
+        "dataset/case_06_unverifiable_availability_speaker/source_3_retailer.html"
+      ],
+      "claims": [
+        {
+          "id": "case_06_unverifiable_availability_speaker_c1",
+          "text": "Currently in stock at all major retailers.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": null,
+          "evidence_note": "No source discusses retailer stock or availability status."
+        },
+        {
+          "id": "case_06_unverifiable_availability_speaker_c2",
+          "text": "Weighs 540 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "540 grams confirmed by spec sheet and retailer listing."
+        },
+        {
+          "id": "case_06_unverifiable_availability_speaker_c3",
+          "text": "Waterproof rating of IPX7.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "IPX7 confirmed by spec sheet and press release."
+        }
+      ]
+    },
+    {
+      "case_id": "case_07_adversarial_near_match_battery_earbuds",
+      "category": "adversarial",
+      "target": "dataset/case_07_adversarial_near_match_battery_earbuds/target.html",
+      "sources": [
+        "dataset/case_07_adversarial_near_match_battery_earbuds/source_1_spec_sheet.html",
+        "dataset/case_07_adversarial_near_match_battery_earbuds/source_2_retailer.html",
+        "dataset/case_07_adversarial_near_match_battery_earbuds/source_3_press_release.html"
+      ],
+      "claims": [
+        {
+          "id": "case_07_adversarial_near_match_battery_earbuds_c1",
+          "text": "Battery life of 12 hours per charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "Adversarial near-match: manufacturer spec and retailer both state 11.5 hours, not 12. Close but not equal \u2014 a numeric mismatch is still a mismatch, not a rounding match."
+        },
+        {
+          "id": "case_07_adversarial_near_match_battery_earbuds_c2",
+          "text": "Bluetooth 5.3 connectivity.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "Bluetooth 5.3 confirmed by all three sources."
+        }
+      ]
+    },
+    {
+      "case_id": "case_08_adversarial_rephrased_price_tablet",
+      "category": "adversarial",
+      "target": "dataset/case_08_adversarial_rephrased_price_tablet/target.html",
+      "sources": [
+        "dataset/case_08_adversarial_rephrased_price_tablet/source_1_retailer.html",
+        "dataset/case_08_adversarial_rephrased_price_tablet/source_2_spec_sheet.html",
+        "dataset/case_08_adversarial_rephrased_price_tablet/source_3_press_release.html"
+      ],
+      "claims": [
+        {
+          "id": "case_08_adversarial_rephrased_price_tablet_c1",
+          "text": "Starts at $499 for the base model.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_retailer.html",
+          "evidence_note": "Adversarial rephrasing: retailer spells the price out in words ('four hundred and ninety-nine dollars') rather than digits; spec sheet confirms $499 numerically. Same fact, different phrasing \u2014 still SUPPORTED."
+        },
+        {
+          "id": "case_08_adversarial_rephrased_price_tablet_c2",
+          "text": "Has a 10.9-inch display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_retailer.html",
+          "evidence_note": "10.9-inch display confirmed by retailer, spec sheet, and press release."
+        }
+      ]
+    },
+    {
+      "case_id": "case_09_mixed_multi_claim_router",
+      "category": "mixed",
+      "target": "dataset/case_09_mixed_multi_claim_router/target.html",
+      "sources": [
+        "dataset/case_09_mixed_multi_claim_router/source_1_spec_sheet.html",
+        "dataset/case_09_mixed_multi_claim_router/source_2_manufacturer_price_page.html",
+        "dataset/case_09_mixed_multi_claim_router/source_3_retailer.html",
+        "dataset/case_09_mixed_multi_claim_router/source_4_press_release.html"
+      ],
+      "claims": [
+        {
+          "id": "case_09_mixed_multi_claim_router_c1",
+          "text": "Supports Wi-Fi 6 (802.11ax).",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "Wi-Fi 6 confirmed by spec sheet and retailer."
+        },
+        {
+          "id": "case_09_mixed_multi_claim_router_c2",
+          "text": "Priced at $249.99.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "source_2_manufacturer_price_page.html",
+          "evidence_note": "Manufacturer pricing page and retailer both list $279.99, not $249.99."
+        },
+        {
+          "id": "case_09_mixed_multi_claim_router_c3",
+          "text": "Includes a 2-year warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": null,
+          "evidence_note": "No source mentions warranty terms at all."
+        },
+        {
+          "id": "case_09_mixed_multi_claim_router_c4",
+          "text": "Has 8 LAN ports.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet and press release both state 4 Gigabit LAN ports, not 8."
+        }
+      ]
+    },
+    {
+      "case_id": "case_10_supported_specs_bundle_keyboard",
+      "category": "supported",
+      "target": "dataset/case_10_supported_specs_bundle_keyboard/target.html",
+      "sources": [
+        "dataset/case_10_supported_specs_bundle_keyboard/source_1_spec_sheet.html",
+        "dataset/case_10_supported_specs_bundle_keyboard/source_2_retailer.html",
+        "dataset/case_10_supported_specs_bundle_keyboard/source_3_press_release.html",
+        "dataset/case_10_supported_specs_bundle_keyboard/source_4_manufacturer_faq.html"
+      ],
+      "claims": [
+        {
+          "id": "case_10_supported_specs_bundle_keyboard_c1",
+          "text": "Uses hot-swappable mechanical switches.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "Hot-swappable switches confirmed by spec sheet, retailer, and press release."
+        },
+        {
+          "id": "case_10_supported_specs_bundle_keyboard_c2",
+          "text": "Connects via USB-C and Bluetooth 5.0.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "USB-C and Bluetooth 5.0 confirmed by spec sheet and press release."
+        },
+        {
+          "id": "case_10_supported_specs_bundle_keyboard_c3",
+          "text": "Priced at $89.99.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_2_retailer.html",
+          "evidence_note": "$89.99 confirmed by retailer and manufacturer FAQ."
+        },
+        {
+          "id": "case_10_supported_specs_bundle_keyboard_c4",
+          "text": "Weighs approximately 950 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "950 grams confirmed by spec sheet and manufacturer FAQ."
+        }
+      ]
+    },
+    {
+      "case_id": "case_11_contradicted_availability_gpu",
+      "category": "contradicted",
+      "target": "dataset/case_11_contradicted_availability_gpu/target.html",
+      "sources": [
+        "dataset/case_11_contradicted_availability_gpu/source_1_manufacturer_notice.html",
+        "dataset/case_11_contradicted_availability_gpu/source_2_spec_sheet.html",
+        "dataset/case_11_contradicted_availability_gpu/source_3_retailer.html"
+      ],
+      "claims": [
+        {
+          "id": "case_11_contradicted_availability_gpu_c1",
+          "text": "Currently in stock and shipping immediately.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "source_1_manufacturer_notice.html",
+          "evidence_note": "Manufacturer notice and retailer both state the card is discontinued and out of stock."
+        },
+        {
+          "id": "case_11_contradicted_availability_gpu_c2",
+          "text": "Has 12GB of GDDR6X memory.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_2_spec_sheet.html",
+          "evidence_note": "12GB GDDR6X confirmed by spec sheet and retailer."
+        },
+        {
+          "id": "case_11_contradicted_availability_gpu_c3",
+          "text": "TDP rated at 200 watts.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_2_spec_sheet.html",
+          "evidence_note": "200W TDP confirmed by spec sheet and retailer."
+        }
+      ]
+    },
+    {
+      "case_id": "case_12_adversarial_authoritative_conflict_smartwatch",
+      "category": "adversarial",
+      "target": "dataset/case_12_adversarial_authoritative_conflict_smartwatch/target.html",
+      "sources": [
+        "dataset/case_12_adversarial_authoritative_conflict_smartwatch/source_1_spec_sheet.html",
+        "dataset/case_12_adversarial_authoritative_conflict_smartwatch/source_2_retailer.html",
+        "dataset/case_12_adversarial_authoritative_conflict_smartwatch/source_3_forum_post.html"
+      ],
+      "claims": [
+        {
+          "id": "case_12_adversarial_authoritative_conflict_smartwatch_c1",
+          "text": "Battery lasts up to 7 days on a single charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "Adversarial: the official spec sheet and retailer (authoritative sources) both state 5 days, not 7. An unverified forum post repeats the '7 days' figure secondhand, but hearsay from a non-authoritative source does not override the manufacturer spec \u2014 verdict follows the spec sheet."
+        },
+        {
+          "id": "case_12_adversarial_authoritative_conflict_smartwatch_c2",
+          "text": "Water resistant up to 50 meters (5 ATM).",
+          "verdict": "SUPPORTED",
+          "evidence_source": "source_1_spec_sheet.html",
+          "evidence_note": "5 ATM / 50 meters confirmed by spec sheet and retailer."
+        }
+      ]
+    }
+  ]
+}
