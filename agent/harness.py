@@ -22,18 +22,20 @@ from .config import (
 from .prompts import build_system_prompt
 
 
-def build_options() -> ClaudeAgentOptions:
+def build_options(
+    model: str = MODEL, max_budget_usd: float = MAX_BUDGET_USD
+) -> ClaudeAgentOptions:
     server = create_sdk_mcp_server(
         name=MCP_SERVER_NAME, version="1.0.0", tools=tools.ALL_TOOLS
     )
     return ClaudeAgentOptions(
-        model=MODEL,
+        model=model,
         system_prompt=build_system_prompt(),
         tools=[],  # disable all built-in tools (no Write, Bash, Edit, Read, ...)
         mcp_servers={MCP_SERVER_NAME: server},
         allowed_tools=list(QUALIFIED_TOOL_NAMES),  # exactly the 4 custom tools
         max_turns=MAX_TURNS,
-        max_budget_usd=MAX_BUDGET_USD,  # SDK-level per-run cost ceiling
+        max_budget_usd=max_budget_usd,  # SDK-level per-run cost ceiling
         hooks={
             "PreToolUse": [HookMatcher(hooks=[audit_hook])],
             "PostToolUse": [HookMatcher(hooks=[audit_hook])],
@@ -90,7 +92,9 @@ def format_report(case_id: str, result: ResultMessage, findings: list[dict]) -> 
     return "\n".join(lines)
 
 
-async def run_case_result(case_id: str, run_id: str) -> tuple[ResultMessage, list[dict]]:
+async def run_case_result(
+    case_id: str, run_id: str, model: str = MODEL, max_budget_usd: float = MAX_BUDGET_USD
+) -> tuple[ResultMessage, list[dict]]:
     """Fresh agent invocation scoped to one case: own ClaudeAgentOptions (own
     max_turns/max_budget_usd allowance, own circuit-breaker counter), own
     findings list. Returns (ResultMessage, findings) without formatting —
@@ -98,7 +102,7 @@ async def run_case_result(case_id: str, run_id: str) -> tuple[ResultMessage, lis
     init_audit_db()
     set_run_context(run_id, case_id)
     tools.reset_run_state()
-    options = build_options()
+    options = build_options(model=model, max_budget_usd=max_budget_usd)
     prompt = build_user_prompt(case_id)
 
     final_result = None

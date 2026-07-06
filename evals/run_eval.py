@@ -26,7 +26,7 @@ load_dotenv()
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from agent.config import MAX_BUDGET_USD, MAX_TURNS, MODEL  # noqa: E402
+from agent.config import EVAL_MAX_BUDGET_USD, EVAL_MODEL, MAX_TURNS  # noqa: E402
 from agent.harness import run_case_result  # noqa: E402
 
 GROUND_TRUTH_PATH = REPO_ROOT / "evals" / "ground_truth.json"
@@ -67,7 +67,7 @@ def match_predicted_verdict(claim_text: str, findings: list[dict]) -> tuple[str,
     return match["verdict"], match["evidence_source"]
 
 
-def detect_cap_hit(result) -> str | None:
+def detect_cap_hit(result, max_budget_usd: float) -> str | None:
     """Best-effort reporting only — which cases likely hit max_turns or the
     budget ceiling. Scoring never depends on this: any unresolved claim is
     wrong regardless of why it's unresolved."""
@@ -75,15 +75,27 @@ def detect_cap_hit(result) -> str | None:
     if result.subtype == "error_max_turns" or result.num_turns >= MAX_TURNS:
         reasons.append("max_turns")
     if result.subtype == "error_max_budget_usd" or (
-        MAX_BUDGET_USD is not None
+        max_budget_usd is not None
         and result.total_cost_usd is not None
-        and result.total_cost_usd >= MAX_BUDGET_USD
+        and result.total_cost_usd >= max_budget_usd
     ):
         reasons.append("budget_ceiling")
     return "+".join(reasons) if reasons else None
 
 
-async def run_eval() -> dict:
+def classify_hard_failure(error_text: str) -> str:
+    """Classify a hard exception raised by the SDK (rather than a graceful
+    ResultMessage) — e.g. the CLI exits non-zero when the budget ceiling is
+    exceeded mid-turn instead of returning error_max_budget_usd cleanly."""
+    text = error_text.lower()
+    if "budget" in text:
+        return "budget_ceiling (exception)"
+    if "max_turns" in text or "maximum turn" in text or "turn limit" in text:
+        return "max_turns (exception)"
+    return f"run_error (exception): {error_text[:120]}"
+
+
+async def run_eval(model: str = EVAL_MODEL, max_budget_usd: float = EVAL_MAX_BUDGET_USD) -> dict:
     ground_truth = load_ground_truth()
     run_id = f"eval-{uuid.uuid4().hex[:8]}"
 
@@ -94,9 +106,40 @@ async def run_eval() -> dict:
     for case in ground_truth["cases"]:
         case_id = case["case_id"]
         print(f"Running {case_id} ...", file=sys.stderr)
-        result, findings = await run_case_result(case_id, run_id=run_id)
 
-        cap_reason = detect_cap_hit(result)
+        try:
+            result, findings = await run_case_result(
+                case_id, run_id=run_id, model=model, max_budget_usd=max_budget_usd
+            )
+        except Exception as e:
+            # Hard failure — the SDK raised instead of returning a graceful
+            # ResultMessage (observed: exceeding max_budget_usd mid-turn).
+            # Per the eval rule: no reruns, no cap raise — every claim in
+            # this case is UNRESOLVED and the run moves on.
+            cap_reason = classify_hard_failure(str(e))
+            capped_cases.append({"case_id": case_id, "reason": cap_reason})
+            case_reports.append({
+                "case_id": case_id,
+                "num_turns": None,
+                "total_cost_usd": None,
+                "subtype": "exception",
+                "is_error": True,
+                "capped": cap_reason,
+                "error": str(e),
+            })
+            for claim in case["claims"]:
+                per_claim_rows.append({
+                    "case_id": case_id,
+                    "claim_id": claim["id"],
+                    "claim_text": claim["text"],
+                    "true_verdict": claim["verdict"],
+                    "predicted_verdict": UNRESOLVED,
+                    "predicted_source": None,
+                    "match": False,
+                })
+            continue
+
+        cap_reason = detect_cap_hit(result, max_budget_usd)
         if cap_reason:
             capped_cases.append({"case_id": case_id, "reason": cap_reason})
 
@@ -124,7 +167,7 @@ async def run_eval() -> dict:
     metrics = compute_metrics(per_claim_rows)
     return {
         "run_id": run_id,
-        "model": MODEL,
+        "model": model,
         "rows": per_claim_rows,
         "case_reports": case_reports,
         "capped_cases": capped_cases,
