@@ -34,9 +34,10 @@ documented in README + eval doc). Gate: precision >= 0.95 AND recall >= 0.90,
 hard PASS/FAIL in eval config. Repo goes public only when the gate is green.
 
 ## Models & cost
-Haiku 4.5 dev iterations; Sonnet 4.6 eval + demo runs. Agent SDK credit
-($100/mo pool) expected to cover; no plan change without one week of
-dev-limit evidence.
+Haiku 4.5 dev iterations; Sonnet 4.6 eval + demo runs. Runs on Claude
+subscription auth (Max plan limits) — the previously assumed Agent SDK
+credit pool was paused by Anthropic before activation (2026-06-15); no plan
+change without one week of dev-limit evidence.
 
 ## Stop conditions (done means all four)
 Demo run works + README up + one eval result + one recording.
