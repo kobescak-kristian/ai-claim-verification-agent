@@ -10,7 +10,7 @@ from claude_agent_sdk import (
 )
 
 from . import tools
-from .audit import audit_hook, init_audit_db
+from .audit import audit_hook, init_audit_db, set_run_context
 from .config import (
     DATASET_ROOT,
     MAX_BUDGET_USD,
@@ -67,8 +67,7 @@ def build_user_prompt(case_id: str) -> str:
     )
 
 
-def format_report(case_id: str, result: ResultMessage) -> str:
-    findings = tools.findings
+def format_report(case_id: str, result: ResultMessage, findings: list[dict]) -> str:
     lines = [f"Claim Verification Report — {case_id}", "=" * 64]
     for i, f in enumerate(findings, start=1):
         claim = f["claim_text"]
@@ -91,8 +90,13 @@ def format_report(case_id: str, result: ResultMessage) -> str:
     return "\n".join(lines)
 
 
-async def run_case(case_id: str) -> str:
+async def run_case_result(case_id: str, run_id: str) -> tuple[ResultMessage, list[dict]]:
+    """Fresh agent invocation scoped to one case: own ClaudeAgentOptions (own
+    max_turns/max_budget_usd allowance, own circuit-breaker counter), own
+    findings list. Returns (ResultMessage, findings) without formatting —
+    callers (run_case.py, run_eval.py) build their own report from this."""
     init_audit_db()
+    set_run_context(run_id, case_id)
     tools.reset_run_state()
     options = build_options()
     prompt = build_user_prompt(case_id)
@@ -104,4 +108,9 @@ async def run_case(case_id: str) -> str:
 
     if final_result is None:
         raise RuntimeError("No ResultMessage received from the query.")
-    return format_report(case_id, final_result)
+    return final_result, list(tools.findings)
+
+
+async def run_case(case_id: str) -> str:
+    result, findings = await run_case_result(case_id, run_id=f"single-{case_id}")
+    return format_report(case_id, result, findings)
