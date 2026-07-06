@@ -10,7 +10,7 @@ Affiliate reviews, comparisons, and product pages make factual claims — prices
 
 ## Solution
 
-This agent takes one target page and a set of source pages, extracts the target's factual claims, investigates each one against the sources, and logs a verdict — SUPPORTED, CONTRADICTED, or UNVERIFIABLE — with the evidence that produced it. It can provably do nothing else: no writing, no editing, no shell, no network beyond the four tools it's given.
+This agent takes one target page and a set of source pages, extracts the target's factual claims, investigates each one against the sources, and logs a verdict — SUPPORTED, CONTRADICTED, or UNVERIFIABLE — with the evidence that produced it. It can provably do nothing else: no writing, no editing, no shell, no network — only four read-only tools over local HTML.
 
 ![architecture](ai-claim-verification-agent_architecture.png)
 
