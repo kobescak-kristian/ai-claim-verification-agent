@@ -1,7 +1,6 @@
 # DEMO_SCRIPT — ai-claim-verification-agent
 
-Budget: 3–5 min (runs alongside the Reliability demo, not instead of it).
-Register: concrete evidence. Default = replay local mp4;
+Budget: 3–5 min. Default = replay local mp4;
 live run = optional flourish ONLY if offline-rehearsed.
 
 ---
@@ -22,10 +21,9 @@ live run = optional flourish ONLY if offline-rehearsed.
 ## Core demo (4 min)
 
 ### Step 1 — Frame (30 sec)
-SAY: "The engines you saw are pipelines — fixed steps. This one is an
-agent: the model chooses its own next step. That's exactly why it's the
-most dangerous kind of AI system, so the point of this project is the cage
-around it."
+SAY: "Pipelines run fixed steps. This is an agent: the model chooses its
+own next step. That's exactly why it's the most dangerous kind of AI
+system — so the point of this project is the cage around it."
 
 ### Step 2 — The cage (1 min)
 DO: open README, show the architecture diagram.

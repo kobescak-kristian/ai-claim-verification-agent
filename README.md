@@ -2,7 +2,7 @@
 
 Bounded claim-verification agent — verifies factual claims on content pages against source pages; read-only by harness enforcement.
 
-**Status:** eval gate is green. Sonnet 4.6, 12 cases / 35 claims, precision 1.00, recall 1.00 — see Outcome below. Repo visibility unchanged pending a separate decision (see ADR-001 on the public-prompts exception this repo takes once that decision is made).
+**Status:** v1.0 — eval gate green (Sonnet 4.6, 12 cases / 35 claims, precision 1.00, recall 1.00 — see Outcome).
 
 ## Problem
 

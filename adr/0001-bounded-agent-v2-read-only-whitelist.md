@@ -1,7 +1,7 @@
 # ADR 0001: Bounded Agent v2 — Read-Only Whitelist, and Why This Repo Is Fully Public
 
 ## Status
-Proposed (accepted on first agent commit)
+Accepted (2026-07-06, on first agent commit `a420efb`)
 
 ## Date: 2026-07-05
 
