@@ -10,6 +10,8 @@ Content pages — affiliate reviews, comparisons, product pages — make factual
 
 This agent takes one target page and a set of source pages, extracts the target's factual claims, investigates each one against the sources, and logs a verdict — SUPPORTED, CONTRADICTED, or UNVERIFIABLE — with the evidence that produced it. It can provably do nothing else: no writing, no editing, no shell, no network beyond the four tools below.
 
+![architecture](ai-claim-verification-agent_architecture.png)
+
 ## Input
 
 - One **target page** (the content being checked) and a set of **source pages** (what it's checked against). v1 scope: local, seeded HTML files under `evals/dataset/` — see [Known Limitations](evals/EVAL_RESULTS.md#known-limitations) for what that does and doesn't prove about live web content.
