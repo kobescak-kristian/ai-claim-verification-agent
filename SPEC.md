@@ -1,7 +1,8 @@
 # SPEC — ai-claim-verification-agent
 
 Classification: PROJECT. Named reader: recruiters/hiring managers from active
-applications. Trigger: P4 agent slot (locked 2026-07-05). Timebox: ~1 week.
+applications. Trigger: agent addition to the portfolio — decision locked
+2026-07-05. Timebox: ~1 week.
 
 ## Problem
 Content pages (affiliate reviews, comparisons, product pages) make factual
