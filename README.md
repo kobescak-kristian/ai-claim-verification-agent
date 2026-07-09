@@ -2,7 +2,7 @@
 
 Bounded claim-verification agent — verifies factual claims on content pages against source pages; read-only by harness enforcement.
 
-**Status:** v1.0 — eval gate green (Sonnet 4.6, 12 cases / 35 claims, precision 1.00, recall 1.00 — see Outcome).
+**Status:** v1.0.1 — eval gate green (Sonnet 4.6, 12 cases / 35 claims, precision 1.00, recall 1.00 — see Outcome).
 
 ## Problem
 
@@ -58,7 +58,7 @@ See [`docs/architecture_detailed.png`](docs/architecture_detailed.png) for the f
 2. For each claim, the model calls `compare_source` (and `fetch_page` as needed) against the relevant source page(s).
 3. **The model decides the verdict — no tool computes it.** `extract_claims` does no semantic judgment and `compare_source` does no matching or scoring; both are deterministic fetch-and-frame operations. The model reads the returned page content, applies the comparison policy from its system prompt (numeric claims need exact matches, rephrasing of the same fact is equivalent, authoritative sources outrank forum chatter, no source coverage means UNVERIFIABLE not CONTRADICTED), and reasons to a verdict itself.
 4. The model calls `log_finding` once per claim with that verdict, its evidence source, and a note.
-5. This is Bounded-AI v2 (ADR-001): the model chooses its next *read-only investigative* action from the fixed whitelist, within step/turn/cost limits — it never publishes, edits, sends, or makes an irreversible change. A bad decision costs at most one wasted tool call.
+5. This is a bounded-execution design (ADR-001): the model chooses its next *read-only investigative* action from the fixed whitelist, within step/turn/cost limits — it never publishes, edits, sends, or makes an irreversible change. A bad decision costs at most one wasted tool call.
 
 ## Outcome
 

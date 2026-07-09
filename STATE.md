@@ -26,8 +26,5 @@ Gate-before-result: eval_config.yaml first committed b041702
 ## Open loops
 - Flip to public: blocked only on publication-gate PASS from this HEAD.
 - Demo assets (recording/GIF): in-scope, not shipped until they
-  exist (adr/0002). The former recording-before-publication
-  requirement was superseded by an owner ruling on 2026-07-09
-  (documentation standard v2.3: demo material is a flagship-tier
-  artifact); publication proceeds on committed artifacts.
+  exist (adr/0002); not a publication precondition.
 - README run-path gap closed this commit (Run It Yourself section).
