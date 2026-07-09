@@ -81,3 +81,12 @@ Cases that hit `max_turns` or the budget ceiling: **none**.
 - **A perfect 35/35 on the first official run is a good sign, not proof of robustness.** The adversarial cases were designed by the same person who wrote the comparison policy the agent is prompted with — there's a shared-author risk that the eval and the prompt are tuned to each other rather than to the general problem. Real-world claim types not represented here (ranges, conditional claims, claims spanning multiple paragraphs, claims about the same fact stated differently across 3+ sources with partial disagreement) haven't been tested.
 - **Path-scoping and audit-trail verification was manual, not automated.** The "all fetch/compare paths stayed inside `evals/dataset/`" and "no ground-truth leakage into tool calls" checks (done before this run, on the earlier Haiku shakedown) were ad hoc SQL queries against `audit.db`, not a repeatable test. They should be a real regression test before this repo goes public.
 - **Cost ceiling was miscalibrated on the first attempt at this gate run.** `MAX_BUDGET_USD` (0.25) was tuned for the cheap Haiku dev runs; the first Sonnet attempt hit that ceiling mid-turn on case_01 and the SDK raised a hard exception rather than a graceful capped result — a real gap in the harness (now handled by catching the exception and scoring the case's claims as unresolved, and by giving eval runs their own higher ceiling, `EVAL_MAX_BUDGET_USD = 1.50`). Worth noting since it's exactly the kind of gap this eval is supposed to catch, and it wasn't caught by the (also newly-written) eval runner itself — it was caught by the run crashing.
+
+## Raw run artifacts
+
+- Official gate run: `evals/results/eval-05fbe4ee.json`
+  (claude-sonnet-4-6, 2026-07-06) — source of every number above.
+- Haiku shakedown: `evals/results/eval-33d91861.json`
+  (claude-haiku-4-5, 2026-07-06, ran 20 minutes before the official
+  run; same per-claim verdicts, gate PASS). This is the run named in
+  Known Limitations.

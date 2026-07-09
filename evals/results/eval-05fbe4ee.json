@@ -1,0 +1,433 @@
+{
+  "run_id": "eval-05fbe4ee",
+  "model": "claude-sonnet-4-6",
+  "rows": [
+    {
+      "case_id": "case_01_supported_wireless_earbuds",
+      "claim_id": "case_01_supported_wireless_earbuds_c1",
+      "claim_text": "The SoundWave Pro X2 is priced at $129.99.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_01_supported_wireless_earbuds/source_2_retailer.html",
+      "match": true
+    },
+    {
+      "case_id": "case_01_supported_wireless_earbuds",
+      "claim_id": "case_01_supported_wireless_earbuds_c2",
+      "claim_text": "It features 30 hours of total battery life with the charging case.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_01_supported_wireless_earbuds/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_01_supported_wireless_earbuds",
+      "claim_id": "case_01_supported_wireless_earbuds_c3",
+      "claim_text": "Released on March 1, 2024.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_01_supported_wireless_earbuds/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_02_contradicted_price_laptop",
+      "claim_id": "case_02_contradicted_price_laptop_c1",
+      "claim_text": "Priced at $899.",
+      "true_verdict": "CONTRADICTED",
+      "predicted_verdict": "CONTRADICTED",
+      "predicted_source": "case_02_contradicted_price_laptop/source_1_manufacturer_spec.html",
+      "match": true
+    },
+    {
+      "case_id": "case_02_contradicted_price_laptop",
+      "claim_id": "case_02_contradicted_price_laptop_c2",
+      "claim_text": "Comes with 16GB RAM.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_02_contradicted_price_laptop/source_1_manufacturer_spec.html",
+      "match": true
+    },
+    {
+      "case_id": "case_02_contradicted_price_laptop",
+      "claim_id": "case_02_contradicted_price_laptop_c3",
+      "claim_text": "Ships with Windows 11 Home.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_02_contradicted_price_laptop/source_1_manufacturer_spec.html",
+      "match": true
+    },
+    {
+      "case_id": "case_03_contradicted_storage_phone",
+      "claim_id": "case_03_contradicted_storage_phone_c1",
+      "claim_text": "Comes with 256GB of storage.",
+      "true_verdict": "CONTRADICTED",
+      "predicted_verdict": "CONTRADICTED",
+      "predicted_source": "case_03_contradicted_storage_phone/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_03_contradicted_storage_phone",
+      "claim_id": "case_03_contradicted_storage_phone_c2",
+      "claim_text": "Has a 6.5-inch display.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_03_contradicted_storage_phone/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_03_contradicted_storage_phone",
+      "claim_id": "case_03_contradicted_storage_phone_c3",
+      "claim_text": "Weighs 189 grams.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_03_contradicted_storage_phone/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_04_contradicted_release_date_camera",
+      "claim_id": "case_04_contradicted_release_date_camera_c1",
+      "claim_text": "Released on September 10, 2023.",
+      "true_verdict": "CONTRADICTED",
+      "predicted_verdict": "CONTRADICTED",
+      "predicted_source": "case_04_contradicted_release_date_camera/source_1_press_release.html",
+      "match": true
+    },
+    {
+      "case_id": "case_04_contradicted_release_date_camera",
+      "claim_id": "case_04_contradicted_release_date_camera_c2",
+      "claim_text": "Features a 24MP sensor.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_04_contradicted_release_date_camera/source_2_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_04_contradicted_release_date_camera",
+      "claim_id": "case_04_contradicted_release_date_camera_c3",
+      "claim_text": "Supports 4K video recording at 60fps.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_04_contradicted_release_date_camera/source_2_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_05_unverifiable_warranty_monitor",
+      "claim_id": "case_05_unverifiable_warranty_monitor_c1",
+      "claim_text": "Comes with a 3-year manufacturer warranty.",
+      "true_verdict": "UNVERIFIABLE",
+      "predicted_verdict": "UNVERIFIABLE",
+      "predicted_source": "none",
+      "match": true
+    },
+    {
+      "case_id": "case_05_unverifiable_warranty_monitor",
+      "claim_id": "case_05_unverifiable_warranty_monitor_c2",
+      "claim_text": "Has a 27-inch 4K display.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_05_unverifiable_warranty_monitor/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_05_unverifiable_warranty_monitor",
+      "claim_id": "case_05_unverifiable_warranty_monitor_c3",
+      "claim_text": "Supports HDR10.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_05_unverifiable_warranty_monitor/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_06_unverifiable_availability_speaker",
+      "claim_id": "case_06_unverifiable_availability_speaker_c1",
+      "claim_text": "Currently in stock at all major retailers.",
+      "true_verdict": "UNVERIFIABLE",
+      "predicted_verdict": "UNVERIFIABLE",
+      "predicted_source": "none",
+      "match": true
+    },
+    {
+      "case_id": "case_06_unverifiable_availability_speaker",
+      "claim_id": "case_06_unverifiable_availability_speaker_c2",
+      "claim_text": "Weighs 540 grams.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_06_unverifiable_availability_speaker/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_06_unverifiable_availability_speaker",
+      "claim_id": "case_06_unverifiable_availability_speaker_c3",
+      "claim_text": "Waterproof rating of IPX7.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_06_unverifiable_availability_speaker/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_07_adversarial_near_match_battery_earbuds",
+      "claim_id": "case_07_adversarial_near_match_battery_earbuds_c1",
+      "claim_text": "Battery life of 12 hours per charge.",
+      "true_verdict": "CONTRADICTED",
+      "predicted_verdict": "CONTRADICTED",
+      "predicted_source": "case_07_adversarial_near_match_battery_earbuds/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_07_adversarial_near_match_battery_earbuds",
+      "claim_id": "case_07_adversarial_near_match_battery_earbuds_c2",
+      "claim_text": "Bluetooth 5.3 connectivity.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_07_adversarial_near_match_battery_earbuds/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_08_adversarial_rephrased_price_tablet",
+      "claim_id": "case_08_adversarial_rephrased_price_tablet_c1",
+      "claim_text": "Starts at $499 for the base model.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_08_adversarial_rephrased_price_tablet/source_2_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_08_adversarial_rephrased_price_tablet",
+      "claim_id": "case_08_adversarial_rephrased_price_tablet_c2",
+      "claim_text": "Has a 10.9-inch display.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_08_adversarial_rephrased_price_tablet/source_2_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_09_mixed_multi_claim_router",
+      "claim_id": "case_09_mixed_multi_claim_router_c1",
+      "claim_text": "Supports Wi-Fi 6 (802.11ax).",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_09_mixed_multi_claim_router/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_09_mixed_multi_claim_router",
+      "claim_id": "case_09_mixed_multi_claim_router_c2",
+      "claim_text": "Priced at $249.99.",
+      "true_verdict": "CONTRADICTED",
+      "predicted_verdict": "CONTRADICTED",
+      "predicted_source": "case_09_mixed_multi_claim_router/source_2_manufacturer_price_page.html",
+      "match": true
+    },
+    {
+      "case_id": "case_09_mixed_multi_claim_router",
+      "claim_id": "case_09_mixed_multi_claim_router_c3",
+      "claim_text": "Includes a 2-year warranty.",
+      "true_verdict": "UNVERIFIABLE",
+      "predicted_verdict": "UNVERIFIABLE",
+      "predicted_source": "none",
+      "match": true
+    },
+    {
+      "case_id": "case_09_mixed_multi_claim_router",
+      "claim_id": "case_09_mixed_multi_claim_router_c4",
+      "claim_text": "Has 8 LAN ports.",
+      "true_verdict": "CONTRADICTED",
+      "predicted_verdict": "CONTRADICTED",
+      "predicted_source": "case_09_mixed_multi_claim_router/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_10_supported_specs_bundle_keyboard",
+      "claim_id": "case_10_supported_specs_bundle_keyboard_c1",
+      "claim_text": "Uses hot-swappable mechanical switches.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_10_supported_specs_bundle_keyboard/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_10_supported_specs_bundle_keyboard",
+      "claim_id": "case_10_supported_specs_bundle_keyboard_c2",
+      "claim_text": "Connects via USB-C and Bluetooth 5.0.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_10_supported_specs_bundle_keyboard/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_10_supported_specs_bundle_keyboard",
+      "claim_id": "case_10_supported_specs_bundle_keyboard_c3",
+      "claim_text": "Priced at $89.99.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_10_supported_specs_bundle_keyboard/source_2_retailer.html",
+      "match": true
+    },
+    {
+      "case_id": "case_10_supported_specs_bundle_keyboard",
+      "claim_id": "case_10_supported_specs_bundle_keyboard_c4",
+      "claim_text": "Weighs approximately 950 grams.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_10_supported_specs_bundle_keyboard/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_11_contradicted_availability_gpu",
+      "claim_id": "case_11_contradicted_availability_gpu_c1",
+      "claim_text": "Currently in stock and shipping immediately.",
+      "true_verdict": "CONTRADICTED",
+      "predicted_verdict": "CONTRADICTED",
+      "predicted_source": "case_11_contradicted_availability_gpu/source_1_manufacturer_notice.html",
+      "match": true
+    },
+    {
+      "case_id": "case_11_contradicted_availability_gpu",
+      "claim_id": "case_11_contradicted_availability_gpu_c2",
+      "claim_text": "Has 12GB of GDDR6X memory.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_11_contradicted_availability_gpu/source_2_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_11_contradicted_availability_gpu",
+      "claim_id": "case_11_contradicted_availability_gpu_c3",
+      "claim_text": "TDP rated at 200 watts.",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_11_contradicted_availability_gpu/source_2_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_12_adversarial_authoritative_conflict_smartwatch",
+      "claim_id": "case_12_adversarial_authoritative_conflict_smartwatch_c1",
+      "claim_text": "Battery lasts up to 7 days on a single charge.",
+      "true_verdict": "CONTRADICTED",
+      "predicted_verdict": "CONTRADICTED",
+      "predicted_source": "case_12_adversarial_authoritative_conflict_smartwatch/source_1_spec_sheet.html",
+      "match": true
+    },
+    {
+      "case_id": "case_12_adversarial_authoritative_conflict_smartwatch",
+      "claim_id": "case_12_adversarial_authoritative_conflict_smartwatch_c2",
+      "claim_text": "Water resistant up to 50 meters (5 ATM).",
+      "true_verdict": "SUPPORTED",
+      "predicted_verdict": "SUPPORTED",
+      "predicted_source": "case_12_adversarial_authoritative_conflict_smartwatch/source_1_spec_sheet.html",
+      "match": true
+    }
+  ],
+  "case_reports": [
+    {
+      "case_id": "case_01_supported_wireless_earbuds",
+      "num_turns": 8,
+      "total_cost_usd": 0.0707787,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_02_contradicted_price_laptop",
+      "num_turns": 8,
+      "total_cost_usd": 0.06837460000000001,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_03_contradicted_storage_phone",
+      "num_turns": 8,
+      "total_cost_usd": 0.0672996,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_04_contradicted_release_date_camera",
+      "num_turns": 11,
+      "total_cost_usd": 0.09347729999999999,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_05_unverifiable_warranty_monitor",
+      "num_turns": 8,
+      "total_cost_usd": 0.069147,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_06_unverifiable_availability_speaker",
+      "num_turns": 8,
+      "total_cost_usd": 0.0694022,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_07_adversarial_near_match_battery_earbuds",
+      "num_turns": 7,
+      "total_cost_usd": 0.0890097,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_08_adversarial_rephrased_price_tablet",
+      "num_turns": 7,
+      "total_cost_usd": 0.0647576,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_09_mixed_multi_claim_router",
+      "num_turns": 10,
+      "total_cost_usd": 0.0768761,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_10_supported_specs_bundle_keyboard",
+      "num_turns": 10,
+      "total_cost_usd": 0.0731078,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_11_contradicted_availability_gpu",
+      "num_turns": 8,
+      "total_cost_usd": 0.0695451,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    },
+    {
+      "case_id": "case_12_adversarial_authoritative_conflict_smartwatch",
+      "num_turns": 9,
+      "total_cost_usd": 0.0928862,
+      "subtype": "success",
+      "is_error": false,
+      "capped": null
+    }
+  ],
+  "capped_cases": [],
+  "metrics": {
+    "positive_class": "CONTRADICTED",
+    "precision": 1.0,
+    "recall": 1.0,
+    "precision_min": 0.95,
+    "recall_min": 0.9,
+    "gate": "PASS",
+    "overall_verdict_accuracy": 1.0,
+    "total_claims": 35,
+    "predicted_contradicted_count": 8,
+    "true_contradicted_count": 8,
+    "true_positive_count": 8
+  }
+}
