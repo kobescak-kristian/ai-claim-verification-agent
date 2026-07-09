@@ -4,8 +4,9 @@ Bounded claim-verification agent: 4-tool whitelist, turn cap, cost
 ceiling, SQLite audit trail; eval gate committed before agent code.
 **Classification:** PROJECT · core artifact set, plus DEMO_SCRIPT as a
 recorded exception (adr/0002).
-**Status:** PRIVATE, pre-flip. Pre-publication gate re-run pending
-against post-remediation HEAD.
+**Status:** PRIVATE, pre-flip; publication gate remediation committed,
+final gate re-run pending. Status line updates again in the flip
+commit.
 
 ## Cross-repo pin
 A downstream private system pins this repo at d444b13c as a reused
@@ -23,8 +24,10 @@ Gate-before-result: eval_config.yaml first committed b041702
 (2026-07-05); results bc9f41a (2026-07-06). Threshold predates result.
 
 ## Open loops
-- Flip to public: blocked on (1) pre-publication gate PASS from
-  post-remediation HEAD; (2) an open owner decision on the
-  demo-recording precondition.
-- README cites eval numbers but not the run ID — polish candidate,
-  not blocking.
+- Flip to public: blocked only on publication-gate PASS from this HEAD.
+- Demo assets (recording/GIF): in-scope, not shipped until they
+  exist (adr/0002). The former recording-before-publication
+  requirement was superseded by an owner ruling on 2026-07-09
+  (documentation standard v2.3: demo material is a flagship-tier
+  artifact); publication proceeds on committed artifacts.
+- README run-path gap closed this commit (Run It Yourself section).
