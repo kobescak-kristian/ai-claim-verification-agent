@@ -18,7 +18,7 @@ pin unaffected.
 ## Eval numbers (committed sources only)
 | Quantity | Value | Run ID | Source |
 |---|---|---|---|
-| Official gate run (Sonnet 4.6) | precision 1.00 / recall 1.00, 35/35, gate PASS | eval-05fbe4ee | evals/EVAL_RESULTS.md; evals/results/eval-05fbe4ee.json |
+| Official gate run (Sonnet 4.6) | precision 1.00 / recall 1.00 (synthetic eval set), 35/35, gate PASS | eval-05fbe4ee | evals/EVAL_RESULTS.md; evals/results/eval-05fbe4ee.json |
 | Haiku shakedown (pre-official) | precision 1.00 / recall 1.00, 35/35, PASS | eval-33d91861 | evals/results/eval-33d91861.json; named in EVAL_RESULTS.md |
 
 Gate-before-result: eval_config.yaml first committed b041702

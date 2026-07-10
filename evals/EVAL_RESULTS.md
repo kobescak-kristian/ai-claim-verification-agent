@@ -8,6 +8,8 @@
 
 ## Metrics (per `metric_definition`, `evals/eval_config.yaml`)
 
+Dataset: synthetic seeded pages with known-truth claims (see Known Limitations).
+
 | Metric | Value | Threshold | Result |
 |---|---|---|---|
 | Precision (positive class: CONTRADICTED) | 1.0000 (8/8) | ≥ 0.95 | PASS |

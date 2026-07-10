@@ -2,7 +2,7 @@
 
 Bounded claim-verification agent — verifies factual claims on content pages against source pages; read-only by harness enforcement.
 
-**Status:** v1.0.1 — eval gate green (Sonnet 4.6, 12 cases / 35 claims, precision 1.00, recall 1.00 — see Outcome).
+**Status:** v1.0.1 — eval gate green (Sonnet 4.6, 12 cases / 35 synthetic claims, precision 1.00, recall 1.00 — see Outcome).
 
 ## Problem
 
@@ -112,5 +112,5 @@ The committed reference result is [`evals/results/eval-05fbe4ee.json`](evals/res
 
 | Version | Date | Change |
 |---|---|---|
-| v1.0 | 2026-07-06 | Initial release: bounded harness + 4 MCP tools, eval-gated (Sonnet 4.6 — precision 1.00, recall 1.00 on 12 cases / 35 claims), audit-trail regression tests, architecture diagram. |
+| v1.0 | 2026-07-06 | Initial release: bounded harness + 4 MCP tools, eval-gated (Sonnet 4.6 — precision 1.00, recall 1.00 on 12 cases / 35 synthetic claims), audit-trail regression tests, architecture diagram. |
 | v1.0.1 | 2026-07-09 | Repro instructions added pre-flip: Run It Yourself section (proven from a fresh clone), SPEC.md and detailed-diagram links. |
