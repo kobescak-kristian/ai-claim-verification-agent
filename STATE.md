@@ -4,9 +4,10 @@ Bounded claim-verification agent: 4-tool whitelist, turn cap, cost
 ceiling, SQLite audit trail; eval gate committed before agent code.
 **Classification:** PROJECT · core artifact set, plus DEMO_SCRIPT as a
 recorded exception (adr/0002).
-**Status:** PRIVATE, pre-flip; publication gate remediation committed,
-final gate re-run pending. Status line updates again in the flip
-commit.
+**Status:** PUBLIC since 2026-07-10 (v1.0.1).
+Publication gate PASS at this HEAD; post-publication verification:
+HTTP 200 unauthenticated, fresh public clone matched, pin commit
+reachable in public history.
 
 ## Cross-repo pin
 A downstream private system pins this repo at d444b13c as a reused
@@ -24,7 +25,5 @@ Gate-before-result: eval_config.yaml first committed b041702
 (2026-07-05); results bc9f41a (2026-07-06). Threshold predates result.
 
 ## Open loops
-- Flip to public: blocked only on publication-gate PASS from this HEAD.
 - Demo assets (recording/GIF): in-scope, not shipped until they
   exist (adr/0002); not a publication precondition.
-- README run-path gap closed this commit (Run It Yourself section).
