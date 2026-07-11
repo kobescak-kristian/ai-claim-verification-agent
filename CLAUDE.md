@@ -22,4 +22,5 @@ ADR cap: 5. Version log lives in README, not a separate file.
 - Close ritual: commit -> push origin main -> git log
   origin/main..HEAD empty -> report verbatim. A feature-branch
   push is not done.
-- Work comes from kristian-os/FABLE_QUEUE.md; do not invent tasks.
+- Work comes from the governance repo's queue (kristian-os,
+  FABLE_QUEUE); do not invent tasks.
