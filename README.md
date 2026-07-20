@@ -108,9 +108,14 @@ python evals/run_eval.py
 
 The committed reference result is [`evals/results/eval-05fbe4ee.json`](evals/results/eval-05fbe4ee.json), summarized in [`evals/EVAL_RESULTS.md`](evals/EVAL_RESULTS.md) — compare a fresh run against it rather than trusting either run in isolation.
 
+## Related
+
+This agent was also ported to LangGraph, facing the identical frozen eval: [ai-claim-verification-langgraph](https://github.com/kobescak-kristian/ai-claim-verification-langgraph), parity result precision 1.00 / recall 1.00 (2026-07-20). See that repo's [`COMPARISON.md`](https://github.com/kobescak-kristian/ai-claim-verification-langgraph/blob/main/COMPARISON.md) for what the framework gives, hides, and cannot enforce versus this hand-rolled version.
+
 ## Version Log
 
 | Version | Date | Change |
 |---|---|---|
 | v1.0 | 2026-07-06 | Initial release: bounded harness + 4 MCP tools, eval-gated (Sonnet 4.6 — precision 1.00, recall 1.00 on 12 cases / 35 synthetic claims), audit-trail regression tests, architecture diagram. |
 | v1.0.1 | 2026-07-09 | Repro instructions added pre-flip: Run It Yourself section (proven from a fresh clone), SPEC.md and detailed-diagram links. |
+| v1.0.2 | 2026-07-20 | Related section added, cross-linking the LangGraph port (`ai-claim-verification-langgraph`) and its framework-comparison writeup. |
