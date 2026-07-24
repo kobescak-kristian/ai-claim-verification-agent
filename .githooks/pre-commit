@@ -1,0 +1,35 @@
+#!/bin/sh
+# pre-commit — write-time guard: no machine-local absolute paths in
+# tracked files (adopted 2026-07-21). Machine-specific values live in
+# a gitignored local config; see the governance repo's CONVENTIONS
+# ("Machine-specific values", 2026-07-21).
+# Class exemption: a tracked .repo-class file reading PRIVATE-PERMANENT
+# skips this check (real paths permitted there by classification).
+# Guard identity: username read from $HOME/.kos-guard (untracked,
+# machine-level). Missing or empty file = block (fail-closed by design).
+
+if [ -f .repo-class ] && grep -qi "PRIVATE-PERMANENT" .repo-class; then
+  exit 0
+fi
+
+GUARD_FILE="$HOME/.kos-guard"
+if [ ! -f "$GUARD_FILE" ]; then
+  echo "PRE-COMMIT BLOCK: $GUARD_FILE missing — this guard is fail-closed."
+  echo "One-time setup: echo <local-username> > ~/.kos-guard"
+  exit 1
+fi
+
+U=$(head -1 "$GUARD_FILE" | tr -d '[:space:]')
+if [ -z "$U" ]; then
+  echo "PRE-COMMIT BLOCK: $GUARD_FILE is empty — fail-closed."
+  exit 1
+fi
+
+hits=$(git diff --cached | grep -v '^+++' | grep -inE "^\+.*c:[/\\]users[/\\]$U")
+if [ -n "$hits" ]; then
+  echo "PRE-COMMIT BLOCK: staged lines add a machine-local absolute path:"
+  echo "$hits"
+  echo "Machine-specific values go to a gitignored local config (config.local.yaml / .env)."
+  exit 1
+fi
+exit 0
