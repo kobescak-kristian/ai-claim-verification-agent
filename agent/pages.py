@@ -43,6 +43,14 @@ class _ParagraphExtractor(HTMLParser):
 
 def resolve_dataset_path(rel_path: str) -> Path:
     """Resolve a path relative to evals/dataset/, rejecting any escape attempt."""
+    if "\\" in rel_path:
+        # Backslash is a path separator on Windows but a literal filename
+        # character on POSIX — the same string escapes on one OS and not the
+        # other. The cage treats it as a separator everywhere, so the bound
+        # is OS-independent (design decision 2026-07-24: reject on all OS).
+        raise PathOutsideDatasetError(
+            f"Path '{rel_path}' resolves outside evals/dataset/ — rejected."
+        )
     candidate = (DATASET_ROOT / rel_path).resolve()
     if not candidate.is_relative_to(DATASET_ROOT):
         raise PathOutsideDatasetError(
