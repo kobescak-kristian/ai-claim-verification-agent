@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounds-suite:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.12', '3.14']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements.txt
+      - run: pytest tests/test_bounds.py -v
+
+  # Live demo against the Anthropic API. Dormant unless the repo has an
+  # ANTHROPIC_API_KEY secret (fork owners can set their own); this repo
+  # deliberately sets none.
+  demo:
+    name: demo (runs only with an API key)
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - name: Check for API key
+        id: key
+        shell: bash
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v7
+        if: steps.key.outputs.present == 'true'
+      - uses: actions/setup-python@v7
+        if: steps.key.outputs.present == 'true'
+        with:
+          python-version: '3.12'
+      - if: steps.key.outputs.present == 'true'
+        run: pip install -r requirements.txt
+      - if: steps.key.outputs.present == 'true'
+        run: python run_case.py case_09_mixed_multi_claim_router
