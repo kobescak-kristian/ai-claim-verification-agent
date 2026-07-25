@@ -1,5 +1,7 @@
 # ai-claim-verification-agent
 
+[![CI](https://github.com/kobescak-kristian/ai-claim-verification-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/kobescak-kristian/ai-claim-verification-agent/actions/workflows/ci.yml)
+
 Bounded claim-verification agent — verifies factual claims on content pages against source pages; read-only by harness enforcement.
 
 **Status:** v1.0.1 — eval gate green (Sonnet 4.6, 12 cases / 35 synthetic claims, precision 1.00, recall 1.00 — see Outcome).
@@ -86,7 +88,7 @@ pip install -r requirements.txt
 
 No API key is needed for a Claude subscription (Max plan) login via the Claude CLI — the harness bills to that auth by default (see The Cage, above). To use a per-token API key instead, copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`; only needed for live (non-bounds-test) runs.
 
-**Bounds tests** — 17 total. 15 need no prior run and no API key; the other 2 (`test_every_audit_path_resolves_inside_dataset`, `test_ground_truth_never_appears_in_audit_payloads`) read a real `audit.db` and are skipped until one exists — run any case or the eval once, then re-run pytest for 17/17:
+**Bounds tests** — 17 total. 15 need no prior run and no API key; the other 2 (`test_every_audit_path_resolves_inside_dataset`, `test_ground_truth_never_appears_in_audit_payloads`) read a real `audit.db` and are skipped until one exists — run any case or the eval once, then re-run pytest for 17/17. The suite runs in CI on every push — Ubuntu, macOS and Windows, Python 3.12 and 3.14:
 
 ```bash
 pytest tests/test_bounds.py -v
