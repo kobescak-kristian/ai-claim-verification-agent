@@ -94,7 +94,7 @@ No API key is needed for a Claude subscription (Max plan) login via the Claude C
 pytest tests/test_bounds.py -v
 ```
 
-**Single-case demo** (calls the API — this one case cost $0.13 on a live run):
+**Single-case demo** (calls the API — this case cost $0.0769 in the committed eval run, see [`evals/EVAL_RESULTS.md`](evals/EVAL_RESULTS.md)):
 
 ```bash
 python run_case.py case_09_mixed_multi_claim_router
