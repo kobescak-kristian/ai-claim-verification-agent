@@ -1,0 +1,10 @@
+# Publish-gate allowlist for this repository.
+# Each entry licenses exactly ONE scan hit, format:
+#   <path> | <exact line content> | <dated owner ruling citation>
+# Change law: new entries require a dated owner ruling; no speculative
+# entries. An entry without a dated citation is itself a blocking
+# finding.
+CLAUDE.md | - Governance home: kristian-os (PRINCIPLES.md -> GOVERNANCE.md -> | exposure-KEPT 2026-07-24, extended 2026-07-27
+CLAUDE.md |   FAILURE_REGISTER.md). Read before any irreversible action. | exposure-KEPT 2026-07-24, extended 2026-07-27
+CLAUDE.md | - Work comes from the governance repo's queue (kristian-os, | exposure-KEPT 2026-07-24, extended 2026-07-27
+CLAUDE.md |   FABLE_QUEUE); do not invent tasks. | exposure-KEPT 2026-07-24, extended 2026-07-27

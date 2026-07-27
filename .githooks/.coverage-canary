@@ -1,0 +1,14 @@
+Coverage canary for the repository publish gate.
+
+This file follows the EICAR test-file convention: it contains a
+DELIBERATE, harmless, fake test string that a scanner must detect to
+prove the scanner itself is working. Here the scanner is the publish
+gate's label scan, and the property being proven is that the scan
+reaches files inside dot-directories (such as this one). The string
+below is fake; no real work item with that number exists anywhere.
+
+If a publish-gate scan run does NOT show a hit on the decoy line
+below, the gate's coverage has narrowed and that gate run has FAILED.
+Reference: governed-portfolio coverage canary.
+
+DECOY — fake work-item label planted for gate coverage proof, not a real item: Q-99999
