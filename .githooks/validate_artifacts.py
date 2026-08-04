@@ -20,24 +20,30 @@ else:
         if section not in text:
             errors.append(f"README missing section: {section}")
 
+# Decision-record requirement: adr/ and decisions/ both satisfy it —
+# a repo may use either name for its decision-record folder.
 adr = ROOT / "adr"
-if not adr.is_dir():
-    errors.append("adr/ folder missing")
+decisions = ROOT / "decisions"
+decision_dirs = [d for d in (adr, decisions) if d.is_dir()]
+if not decision_dirs:
+    errors.append("adr/ (or decisions/) folder missing")
 else:
-    count = len([f for f in adr.glob("*.md") if "template" not in f.name.lower()])
+    decision_files = [f for d in decision_dirs for f in d.glob("*.md")
+                       if "template" not in f.name.lower()]
+    count = len(decision_files)
     if count == 0:
-        errors.append("adr/ has no decisions (need 1-5)")
+        errors.append("adr/ (or decisions/) has no decisions (need 1-5)")
     elif count > 5:
-        errors.append(f"adr/ has {count} decisions (cap is 5 - decisions were not decisions)")
+        errors.append(f"adr/ (or decisions/) has {count} decisions (cap is 5 - decisions were not decisions)")
 
 for banned in BANNED_WITHOUT_TRIGGER:
     if (ROOT / banned).exists():
-        # allowed only if an ADR mentions it (the trigger record)
-        justified = adr.is_dir() and any(
+        # allowed only if a decision-record file mentions it (the trigger record)
+        justified = any(
             re.search(re.escape(banned), f.read_text(encoding="utf-8"))
-            for f in adr.glob("*.md"))
+            for d in decision_dirs for f in d.glob("*.md"))
         if not justified:
-            errors.append(f"{banned} exists without an ADR citing its trigger")
+            errors.append(f"{banned} exists without an ADR/decision record citing its trigger")
 
 if errors:
     print("ARTIFACT_STANDARD violations:")

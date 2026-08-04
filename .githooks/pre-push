@@ -1,2 +1,9 @@
 #!/bin/sh
+git fetch origin --quiet || { echo "PRE-PUSH BLOCK: fetch failed — cannot verify freshness"; exit 1; }
+if ! git rev-parse --verify -q origin/main >/dev/null; then
+  echo "PRE-PUSH NOTICE: origin/main not found (first push of a new repo) — freshness check skipped."
+elif ! git merge-base --is-ancestor origin/main HEAD; then
+  echo "PRE-PUSH BLOCK: origin/main is not an ancestor of HEAD — stale base. Fetch/rebase, then retry."
+  exit 1
+fi
 python .githooks/validate_artifacts.py .

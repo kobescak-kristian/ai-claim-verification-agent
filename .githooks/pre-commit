@@ -1,8 +1,7 @@
 #!/bin/sh
 # pre-commit — write-time guard: no machine-local absolute paths in
-# tracked files (adopted 2026-07-21). Machine-specific values live in
-# a gitignored local config; see the governance repo's CONVENTIONS
-# ("Machine-specific values", 2026-07-21).
+# tracked files. Machine-specific values live in a gitignored local
+# config (config.local.yaml / .env), never in tracked files.
 # Class exemption: a tracked .repo-class file reading PRIVATE-PERMANENT
 # skips this check (real paths permitted there by classification).
 # Guard identity: username read from $HOME/.kos-guard (untracked,
@@ -25,7 +24,7 @@ if [ -z "$U" ]; then
   exit 1
 fi
 
-hits=$(git diff --cached | grep -v '^+++' | grep -inE "^\+.*c:[/\\]users[/\\]$U")
+hits=$(git diff --cached | grep -v '^+++' | grep -inE "^\+.*(c:[/\\]|/c/)users[/\\]$U")
 if [ -n "$hits" ]; then
   echo "PRE-COMMIT BLOCK: staged lines add a machine-local absolute path:"
   echo "$hits"
