@@ -20,6 +20,22 @@ else:
         if section not in text:
             errors.append(f"README missing section: {section}")
 
+# AGENTS.md (ARTIFACT_STANDARD v2.7, Tier 0): root file + required H2 headings.
+# Match is case-insensitive; "&" is accepted for "and". Optional
+# "## Repository landmarks" is not checked.
+AGENTS_REQUIRED_HEADINGS = ["Repository purpose", "Authority and conflict handling",
+                            "Task routing", "Always-on constraints", "Verification"]
+agents = ROOT / "AGENTS.md"
+if not agents.exists():
+    errors.append("AGENTS.md missing (ARTIFACT_STANDARD v2.7 Tier 0)")
+else:
+    agents_text = agents.read_text(encoding="utf-8")
+    for heading in AGENTS_REQUIRED_HEADINGS:
+        words = [r"(?:and|&)" if w == "and" else re.escape(w) for w in heading.split()]
+        pattern = r"^##\s+" + r"\s+".join(words) + r"\s*$"
+        if not re.search(pattern, agents_text, re.I | re.M):
+            errors.append(f"AGENTS.md missing section: ## {heading}")
+
 # Decision-record requirement: adr/ and decisions/ both satisfy it —
 # a repo may use either name for its decision-record folder.
 adr = ROOT / "adr"
