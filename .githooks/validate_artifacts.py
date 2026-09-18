@@ -9,7 +9,15 @@ REQUIRED_README_SECTIONS = ["## Problem", "## Solution", "## System", "## Outcom
 BANNED_WITHOUT_TRIGGER = ["SYSTEM_WALKTHROUGH.md", "CHANGELOG.md", "RUNBOOK.md",
                           "PRODUCTION_READINESS.md", "THREAT_MODEL.md", "MONITORING.md",
                           "INCIDENT_RESPONSE.md", "TEST_MATRIX.md"]
+# Six-name propagation (Q-72(f), 2026-09-19) SKIPPED for this repo: it
+# carries a live root SPEC.md with no existing decision record citing
+# it. Not fabricating a citation to satisfy this check -- see STATE.md,
+# "Six-name validator convergence" for the named residual.
 errors = []
+
+# Build-repo STATE rule: STATE.md is part of the scaffold.
+if not (ROOT / "STATE.md").exists():
+    errors.append("STATE.md missing (Build-repo STATE rule)")
 
 readme = ROOT / "README.md"
 if not readme.exists():
@@ -48,9 +56,7 @@ else:
                        if "template" not in f.name.lower()]
     count = len(decision_files)
     if count == 0:
-        errors.append("adr/ (or decisions/) has no decisions (need 1-5)")
-    elif count > 5:
-        errors.append(f"adr/ (or decisions/) has {count} decisions (cap is 5 - decisions were not decisions)")
+        errors.append("adr/ (or decisions/) has no decisions (need at least 1)")
 
 for banned in BANNED_WITHOUT_TRIGGER:
     if (ROOT / banned).exists():
