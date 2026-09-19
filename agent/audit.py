@@ -1,5 +1,5 @@
 """SQLite audit trail. A PreToolUse/PostToolUse hook writes every tool call
-here before its result is used by the model, per SPEC.md bounds.
+here before its result is used by the model, per ADR-001 bounds.
 
 Shared across an eval run: each row is keyed by run_id (one per run_eval.py
 invocation, or one per single-case run_case.py invocation) and case_id (the

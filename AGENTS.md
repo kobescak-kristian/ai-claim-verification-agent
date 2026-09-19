@@ -32,7 +32,6 @@ Each topic has one owning source:
 | Source | Owns |
 |---|---|
 | `STATE.md` | Current repository state, classification, current evidence and status, open loops |
-| `SPEC.md` | Product and problem contract: scope, bounds, model and cost decisions, stop conditions, declared out-of-scope areas |
 | `README.md` | Public system description, usage, claims, limitations, Version Log |
 | `adr/0001-bounded-agent-v2-read-only-whitelist.md` | Accepted bounded-agent architecture and the decision to keep prompts public |
 | `adr/0002-demo-script-tier-exception.md` | Legitimacy of, and trigger for, `DEMO_SCRIPT.md` in this repository |
@@ -49,8 +48,8 @@ Each topic has one owning source:
 When sources disagree:
 
 - An accepted ADR governs the material decision it records.
-- `STATE.md` holds current state. `SPEC.md` holds the repository-level
-  product and bounds contract.
+- `STATE.md` holds current state. The bounds contract is the accepted
+  ADR plus the harness that enforces it.
 - Implementation and config state actual runtime behaviour.
 - `evals/eval_config.yaml` owns policy and threshold definitions. Committed
   eval artifacts state observed results.
@@ -64,7 +63,7 @@ When sources disagree:
 | Task | Go to |
 |---|---|
 | Current state, open loops | `STATE.md` |
-| Product contract, scope, bounds | `SPEC.md` |
+| Product contract, scope, bounds | `README.md`, `adr/0001-bounded-agent-v2-read-only-whitelist.md` |
 | Public description, usage, limitations, version history | `README.md` |
 | Local setup and dependencies | `README.md` (Run It Yourself), `requirements.txt`, `.env.example` |
 | Bounded-agent architecture decision | `adr/0001-bounded-agent-v2-read-only-whitelist.md` |

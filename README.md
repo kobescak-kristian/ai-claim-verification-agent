@@ -31,7 +31,7 @@ Built on the Claude Agent SDK (Python). The harness — not a README promise —
 - `max_turns` caps each run at 20 turns.
 - A per-run cost ceiling (`max_budget_usd`) plus a tool-call-count circuit breaker in the tool wrapper itself — two independent backstops, one SDK-level, one in-process.
 - An SDK `PreToolUse`/`PostToolUse` hook pair writes every tool call to a SQLite audit trail (`audit.db`) *before* its result is used by the model — see [`agent/audit.py`](agent/audit.py). [`tests/test_bounds.py`](tests/test_bounds.py) checks this mechanically against a real run's audit log: every tool-call path resolves inside `evals/dataset/` (with explicit escape-attempt cases asserted rejected), and the fixed eval answer key never appears in any tool input or output.
-- Models: Haiku 4.5 for dev iterations, Sonnet 4.6 for eval and demo runs. Billed to Claude subscription (Max plan) auth, not a per-token API key — see [`SPEC.md`](SPEC.md) → Models & cost for why.
+- Models: Haiku 4.5 for dev iterations, Sonnet 4.6 for eval and demo runs. Billed to Claude subscription (Max plan) auth, not a per-token API key.
 
 ### Output
 
@@ -76,7 +76,7 @@ See [`docs/architecture_detailed.png`](docs/architecture_detailed.png) for the f
 
 All 12 eval cases are synthetic, hand-seeded HTML rather than live web pages, so this gate proves the harness and the model's reasoning against controlled, known-truth claims, not robustness to real-world markup noise — see [Known Limitations](evals/EVAL_RESULTS.md#known-limitations) for what that does and doesn't cover.
 
-**Out of scope (production upgrades)** — per [`SPEC.md`](SPEC.md), deliberately not built and with no trigger yet: live-web crawling at scale, multi-agent teams, subagents, dashboards, scheduled runs, auto-fixing content.
+**Out of scope (production upgrades)** — deliberately not built and with no trigger yet: live-web crawling at scale, multi-agent teams, subagents, dashboards, scheduled runs, auto-fixing content.
 
 ## Run It Yourself
 

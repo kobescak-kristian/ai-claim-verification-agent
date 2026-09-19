@@ -8,11 +8,9 @@ ROOT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")
 REQUIRED_README_SECTIONS = ["## Problem", "## Solution", "## System", "## Outcome", "## Version Log"]
 BANNED_WITHOUT_TRIGGER = ["SYSTEM_WALKTHROUGH.md", "CHANGELOG.md", "RUNBOOK.md",
                           "PRODUCTION_READINESS.md", "THREAT_MODEL.md", "MONITORING.md",
-                          "INCIDENT_RESPONSE.md", "TEST_MATRIX.md"]
-# Six-name propagation (Q-72(f), 2026-09-19) SKIPPED for this repo: it
-# carries a live root SPEC.md with no existing decision record citing
-# it. Not fabricating a citation to satisfy this check -- see STATE.md,
-# "Six-name validator convergence" for the named residual.
+                          "INCIDENT_RESPONSE.md", "TEST_MATRIX.md",
+                          "SLO.md", "MODEL_CARD.md", "DATA_CONTRACT.md",
+                          "DATA_RETENTION_POLICY.md", "SYSTEM_CARD.md", "SPEC.md"]
 errors = []
 
 # Build-repo STATE rule: STATE.md is part of the scaffold.

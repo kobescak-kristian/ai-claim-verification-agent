@@ -53,21 +53,19 @@ substantive commits landed since — none docs-only:
 None of the above changes the publication facts or eval numbers
 recorded above, which remain accurate.
 
-## Six-name validator convergence (Q-72(f), 2026-09-19) — SKIPPED
+## Six-name validator convergence (Q-72(f)) — RESOLVED 2026-09-19
 
-This repo carries a live root `SPEC.md`. No existing decision record
-in `adr/` cites it (checked directly: no match for the string
-"SPEC.md" in any `adr/*.md` file). Per Q-72(f)'s own instruction, a
-decision record is not fabricated merely to satisfy the validator —
-propagating the six-name BANNED_WITHOUT_TRIGGER list to this repo's
-validator is skipped. This is a named Q-72(f) residual, not a silent
-gap. STATE.md-existence enforcement and the obsolete decision-cap
-removal are independently authorized and proceed regardless (see
-validator diff, same commit).
+Root `SPEC.md` was retired as redundant rather than justified with a
+new decision record: every substantive statement in it was already
+carried by `README.md` (problem, solution, cage, models, eval gate,
+out-of-scope), `adr/0001` (bounded-agent v2 rule) and `adr/0002`
+(DEMO_SCRIPT exception and its demo-asset consequence). The deleted
+file remains in git history; nothing at runtime read it. With no
+root file left under any of the six trigger-gated names, the
+canonical six-name BANNED_WITHOUT_TRIGGER list is propagated to this
+repo's validator — closing the Q-72(f) residual recorded here on
+2026-09-19 without fabricating a citation.
 
 ## Open loops
 - Demo assets (recording/GIF): in-scope, not shipped until they
   exist (adr/0002); not a publication precondition.
-- Six-name validator convergence, skipped above — resolvable only by
-  an owner-authorized decision record for the live SPEC.md, or an
-  owner ruling accepting the gap permanently.
