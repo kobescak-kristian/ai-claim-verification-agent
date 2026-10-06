@@ -1,0 +1,20 @@
+# kos-controls — control package member, installed as
+# .github/workflows/kos-controls.yml and verified by sha256 against the
+# package manifest. The job name `kos-controls` is the required check the
+# public-repository protection names.
+name: kos-controls
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  kos-controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Control package check (members against the carried manifest)
+        run: python .githooks/check_controls.py .

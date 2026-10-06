@@ -9,8 +9,17 @@ REQUIRED_README_SECTIONS = ["## Problem", "## Solution", "## System", "## Outcom
 BANNED_WITHOUT_TRIGGER = ["SYSTEM_WALKTHROUGH.md", "CHANGELOG.md", "RUNBOOK.md",
                           "PRODUCTION_READINESS.md", "THREAT_MODEL.md", "MONITORING.md",
                           "INCIDENT_RESPONSE.md", "TEST_MATRIX.md",
+                          "DEMO_SCRIPT.md", "ASSURANCE_ONE_PAGER.md",
+                          "TECHNICAL_OWNERSHIP_GUIDE.md",
+                          # Added 2026-08-04: canonical + sentinel copies only, scoped
+                          # by owner ruling.
                           "SLO.md", "MODEL_CARD.md", "DATA_CONTRACT.md",
                           "DATA_RETENTION_POLICY.md", "SYSTEM_CARD.md", "SPEC.md"]
+# Tier 1 artifacts (ARTIFACT_STANDARD.md #Tier 1) are allowed without an ADR
+# trigger only for the current flagship — exactly one at a time.
+TIER1_ARTIFACTS = {"DEMO_SCRIPT.md", "ASSURANCE_ONE_PAGER.md", "TECHNICAL_OWNERSHIP_GUIDE.md"}
+CURRENT_FLAGSHIP = "ai-reliability-engine"
+IS_FLAGSHIP = ROOT.resolve().name == CURRENT_FLAGSHIP
 errors = []
 
 # Build-repo STATE rule: STATE.md is part of the scaffold.
@@ -58,6 +67,8 @@ else:
 
 for banned in BANNED_WITHOUT_TRIGGER:
     if (ROOT / banned).exists():
+        if banned in TIER1_ARTIFACTS and IS_FLAGSHIP:
+            continue
         # allowed only if a decision-record file mentions it (the trigger record)
         justified = any(
             re.search(re.escape(banned), f.read_text(encoding="utf-8"))

@@ -1,0 +1,29 @@
+{
+  "control_version": "1.1",
+  "repo_class": "PUBLIC-DESTINATION",
+  "classes": {
+    "C1": [
+      "CLAUDE.md",
+      "AGENTS.md"
+    ],
+    "C2": [
+      ".githooks/",
+      ".github/workflows/",
+      ".claude/settings.local.json",
+      ".kos/"
+    ],
+    "C3": [
+      "adr/",
+      "LICENSE"
+    ],
+    "C4": []
+  },
+  "package": [
+    "check_controls.py",
+    "check_work.py",
+    "kos-controls.yml",
+    "pre-commit",
+    "pre-push",
+    "validate_artifacts.py"
+  ]
+}

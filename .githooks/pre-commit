@@ -7,6 +7,29 @@
 # Guard identity: username read from $HOME/.kos-guard (untracked,
 # machine-level). Missing or empty file = block (fail-closed by design).
 
+# Verified-core lint: staged core files match core/manifest.json,
+# rules parse, core within its size budget. Also before the class exemption.
+# Runs wherever the core exists or HEAD tracks it (deleting core/ still
+# blocks); skipped only in repos that never had one (hook fixture repos).
+if [ -f core/kos_core.py ] || git cat-file -e HEAD:core/manifest.json 2>/dev/null; then
+  python core/kos_core.py lint --staged || exit 1
+fi
+
+# Contract scope: on a contract branch work/Q-NNN[-suffix], staged
+# paths must be inside the approved contract's allowed writes (contract read
+# from origin/main). Other branches: not applicable. Also before the class
+# exemption. A work/ branch without the checker blocks (fail-closed).
+BR=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+case "$BR" in
+  work/*)
+    if [ ! -f .githooks/check_work.py ]; then
+      echo "PRE-COMMIT BLOCK: contract branch $BR but .githooks/check_work.py is missing (fail-closed)."
+      exit 1
+    fi
+    python .githooks/check_work.py scope --staged --branch "$BR" || exit 1
+    ;;
+esac
+
 if [ -f .repo-class ] && grep -qi "PRIVATE-PERMANENT" .repo-class; then
   exit 0
 fi

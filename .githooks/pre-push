@@ -1,4 +1,17 @@
 #!/bin/sh
+# pre-push — control package member, installed as .githooks/pre-push and
+# verified by sha256 against the package manifest. Do not edit the
+# installed copy: a local change makes `controls check` block and
+# `controls repair` refuse; a wanted change is an owner decision.
+#
+# 1. Freshness: origin/main must be an ancestor of HEAD (stale base blocks).
+# 2. Control standard: `kos_core.py controls check` from the governance
+#    checkout (KOS_ROOT from the environment, else the git-ignored
+#    .kos/local.env, else `git config kos.root`; machine setup).
+# 3. Artifact validator, where the repository carries it.
+# No publication scan in this version (owner ruling 2026-10-06); the
+# owner-run publication gate is unchanged.
+set -u
 git fetch origin --quiet || { echo "PRE-PUSH BLOCK: fetch failed — cannot verify freshness"; exit 1; }
 if ! git rev-parse --verify -q origin/main >/dev/null; then
   echo "PRE-PUSH NOTICE: origin/main not found (first push of a new repo) — freshness check skipped."
@@ -6,4 +19,22 @@ elif ! git merge-base --is-ancestor origin/main HEAD; then
   echo "PRE-PUSH BLOCK: origin/main is not an ancestor of HEAD — stale base. Fetch/rebase, then retry."
   exit 1
 fi
-python .githooks/validate_artifacts.py .
+
+if [ -z "${KOS_ROOT:-}" ] && [ -f .kos/local.env ]; then
+  # shellcheck disable=SC1091
+  . ./.kos/local.env
+fi
+if [ -z "${KOS_ROOT:-}" ]; then
+  KOS_ROOT=$(git config --get kos.root 2>/dev/null || true)
+fi
+if [ -z "${KOS_ROOT:-}" ] || [ ! -f "$KOS_ROOT/core/kos_core.py" ]; then
+  echo "PRE-PUSH BLOCK: governance checkout not found (fail-closed). Set it once per machine: git config --global kos.root <path-to-governance-checkout>."
+  exit 1
+fi
+python "$KOS_ROOT/core/kos_core.py" --root . controls check || exit 1
+
+if [ -f .githooks/validate_artifacts.py ]; then
+  python .githooks/validate_artifacts.py . || exit 1
+fi
+
+exit 0
