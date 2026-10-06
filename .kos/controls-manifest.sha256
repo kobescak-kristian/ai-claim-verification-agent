@@ -1,5 +1,5 @@
 # control package
-# version 1.2
+# version 1.3
 # requires check_work.py check_write_set.py
 fd1097a3d0d12370190d043f777170be7011ecb48fd7c2cab433afc0459760c7  check_controls.py
 1488336b49650cba59f63146e2f8eadc0c2e7787ef5be7622dbe740aeaa1e082  check_work.py
@@ -9,3 +9,4 @@ a2a02bafd38c5769b99ef6ad07fa5d7ad32d7708cca4127a12f1cecea061f71c  pre-commit
 1d1bfa1c7ba47761d1c47619654afa05c153a9dbaa91170ad0523960eb9728c7  pre-push
 7ba3b302e128707f19badd84a3c42c125a17c67fb1fd85704213be87c66a14e1  public_safe_patterns.txt
 aca7f9989ba4118dfd46ca16d05e900ddc588e37f8a26a4e230d550a9b5b7d80  validate_artifacts.py
+2e20608fd8e5db5cab66d05f43a3c5659133ec9d0ce34c15440e078ee325d465  verdict-bound-head.yml
