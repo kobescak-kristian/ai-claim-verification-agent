@@ -7,8 +7,9 @@ CI cannot read the private governance repository, so this checks the
 repository against the package manifest it carries
 (.kos/controls-manifest.sha256, a byte copy of the release manifest):
 .kos/controls.json pins the manifest's version, and every package member
-the repository lists is present at its installed path with the manifest
-sha256 (line endings normalized to LF). The check against the release
+the repository lists, plus the members a listed one requires (the
+manifest's "# requires" lines), is present at its installed path with the
+manifest sha256 (line endings normalized to LF). The check against the release
 itself (required version, manifest equal to the release) runs locally in
 pre-push (`kos_core.py controls check`) and in the drift scan.
 
@@ -46,11 +47,15 @@ try:
 except ValueError as ex:
     block(".kos/controls.json is not valid JSON (%s)" % ex)
 
-version, digests = None, {}
+version, digests, requires = None, {}, {}
 for line in MANIFEST.read_text(encoding="utf-8").splitlines():
     line = line.strip()
     if line.startswith("# version "):
         version = line.split()[-1]
+    elif line.startswith("# requires "):
+        parts = line.split()[2:]
+        if parts:
+            requires[parts[0]] = parts[1:]
     elif line and not line.startswith("#"):
         parts = line.split()
         if len(parts) != 2:
@@ -64,6 +69,8 @@ if controls.get("control_version") != version:
 members = controls.get("package")
 if not isinstance(members, list) or not members:
     block(".kos/controls.json lists no package members")
+for member in list(members):
+    members += [m for m in requires.get(member, []) if m not in members]
 for member in members:
     if member not in digests:
         block("member %s is not in the manifest at %s" % (member, version))

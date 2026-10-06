@@ -20,7 +20,11 @@ Subcommands:
 Contracts: work/Q-NNN/CONTRACT.md (template: reference/CONTRACT_TEMPLATE.md).
 A contract branch is named work/Q-NNN or work/Q-NNN-<suffix>; any other
 branch has no contract and `scope` reports NOT APPLICABLE (exit 0). A
-branch under work/ that does not match that shape fails closed.
+branch under work/ that does not match that shape fails closed. In a
+project repository that does not hold work/Q-NNN/CONTRACT.md, the
+contract is read from the governance checkout (KOS_ROOT, .kos/local.env
+or `git config kos.root`) and this repository's ```writes <name> block
+applies, as with --contract-repo; neither found = refused.
 
 The contract is always read from --contract-ref (default origin/main),
 never from the working tree or the branch: the approved, merged
@@ -145,6 +149,22 @@ def contract_id_for(branch):
     return m.group(1)
 
 
+def governance_root(top):
+    """The governance checkout, found as the package pre-push finds it: KOS_ROOT, else the
+    git-ignored .kos/local.env of this repository, else `git config kos.root`. None if absent."""
+    v = os.environ.get("KOS_ROOT", "").strip()
+    env = os.path.join(top, ".kos", "local.env")
+    if not v and os.path.isfile(env):
+        with open(env, encoding="utf-8") as f:
+            for line in f:
+                if line.strip().startswith("KOS_ROOT="):
+                    v = line.strip().split("=", 1)[1].strip().strip("'\"")
+    if not v:
+        rc, out, _ = git(["config", "--get", "kos.root"], top)
+        v = out.strip() if rc == 0 else ""
+    return v if v and os.path.isfile(os.path.join(v, "core", "kos_core.py")) else None
+
+
 def read_at(top, ref, path):
     rc, out, err = git(["show", f"{ref}:{path}"], top)
     if rc != 0:
@@ -221,6 +241,19 @@ def cmd_scope(argv):
     if mode is None:
         fail_closed("scope needs --staged or --range")
     top = repo_top()
+    if crepo is None and cid is None and target is None:
+        # A contract branch in a project repository whose approved contract lives in the
+        # governance repository (unit-home work): check this repository's block of that
+        # contract, exactly as --contract-repo does. No contract findable = refused.
+        qid = contract_id_for(branch if branch is not None else current_branch(top))
+        path = f"work/{qid}/CONTRACT.md" if qid else None
+        if qid is not None and git(["cat-file", "-e", f"{ref}:{path}"], top)[0] != 0:
+            gov = governance_root(top)
+            if gov is None:
+                fail_closed(f"{path} is not in this repository at {ref} and the governance checkout was not found "
+                            "(KOS_ROOT, .kos/local.env or git config kos.root): a contract branch needs its contract")
+            if os.path.normcase(os.path.abspath(gov)) != os.path.normcase(os.path.abspath(top)):
+                crepo, cid, branch = gov, qid, None
     if crepo is not None:
         # Cross-repository mode: the contract lives in a private
         # governance repository; the writes being checked are in this one.
