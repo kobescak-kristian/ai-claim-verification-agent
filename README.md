@@ -88,7 +88,7 @@ pip install -r requirements.txt
 
 No API key is needed for a Claude subscription (Max plan) login via the Claude CLI — the harness bills to that auth by default (see The Cage, above). To use a per-token API key instead, copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`; only needed for live (non-bounds-test) runs.
 
-**Bounds tests** — 17 total. 15 need no prior run and no API key; the other 2 (`test_every_audit_path_resolves_inside_dataset`, `test_ground_truth_never_appears_in_audit_payloads`) read a real `audit.db` and are skipped until one exists — run any case or the eval once, then re-run pytest for 17/17. The suite runs in CI on every push — Ubuntu, macOS and Windows, Python 3.12 and 3.14:
+**Bounds tests** — 25 total. 23 need no prior run and no API key; the other 2 (`test_every_audit_path_resolves_inside_dataset`, `test_ground_truth_never_appears_in_audit_payloads`) read a real `audit.db` and are skipped until one exists — run any case or the eval once, then re-run pytest for 25/25. The suite runs in CI on every push — Ubuntu, macOS and Windows, Python 3.12 and 3.14:
 
 ```bash
 pytest tests/test_bounds.py -v
@@ -97,7 +97,7 @@ pytest tests/test_bounds.py -v
 **Single-case demo** (calls the API — this case cost $0.0769 in the committed eval run, see [`evals/EVAL_RESULTS.md`](evals/EVAL_RESULTS.md)):
 
 ```bash
-python run_case.py case_09_mixed_multi_claim_router
+python run_case.py case_09
 ```
 
 Expected output shape: a claim-by-claim verdict table (SUPPORTED / CONTRADICTED / UNVERIFIABLE + evidence source), a one-line summary, and a final line with run cost and turns used.

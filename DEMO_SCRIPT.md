@@ -11,7 +11,7 @@ live run = optional flourish ONLY if offline-rehearsed.
 - [ ] Claude CLI logged in via subscription (`claude auth login` done;
       no ANTHROPIC_API_KEY anywhere in the environment).
 - [ ] Test run completed on THIS laptop, THIS day:
-      `python run_case.py case_09_mixed_multi_claim_router` → verdict table
+      `python run_case.py case_09` → verdict table
       with 2 CONTRADICTED, 1 UNVERIFIABLE, 1 SUPPORTED.
 - [ ] Backup mp4 (Win+G) of that exact run, saved locally, tested it plays.
 - [ ] Terminal font large; notifications off.
