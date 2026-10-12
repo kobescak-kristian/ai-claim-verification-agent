@@ -67,7 +67,7 @@ ESCAPE_ATTEMPTS = [
 
 # The one run whose dataset cases are committed with the repo: every path it
 # touched must still resolve on disk, with no orphan tolerance.
-PINNED_EVAL_RUN_ID = "eval-05fbe4ee"
+PINNED_EVAL_RUN_ID = "eval-199f77c6"  # renamed-dataset re-run, 2026-10-13 (was eval-05fbe4ee)
 
 
 def _lexical_containment_ok(path_value: str) -> bool:

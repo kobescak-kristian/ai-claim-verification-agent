@@ -20,6 +20,7 @@ pin unaffected.
 |---|---|---|---|
 | Official gate run (Sonnet 4.6) | precision 1.00 / recall 1.00 (synthetic eval set), 35/35, gate PASS | eval-05fbe4ee | evals/EVAL_RESULTS.md; evals/results/eval-05fbe4ee.json |
 | Haiku shakedown (pre-official) | precision 1.00 / recall 1.00, 35/35, PASS | eval-33d91861 | evals/results/eval-33d91861.json; named in EVAL_RESULTS.md |
+| Re-run, renamed dataset (Sonnet 4.6, 2026-10-13) | precision 1.00 / recall 1.00, 35/35, gate PASS | eval-199f77c6 | evals/rerun_2026-10-13.md; evals/results/eval-199f77c6.json |
 
 Gate-before-result: eval_config.yaml first committed b041702
 (2026-07-05); results bc9f41a (2026-07-06). Threshold predates result.
@@ -68,9 +69,8 @@ repo's validator — closing the residual recorded here on
 
 ## Eval dataset rename (2026-10-13)
 
-8 of the 12 eval case directory names contained a verdict word (`supported`, `contradicted` or `unverifiable`), and the directory name reaches the model in the user prompt and in the `fetch_page` tool description. The directories are now `case_01` to `case_12`; `evals/ground_truth.json` changed by name substitution only, verdicts unchanged (35 claims, 8 CONTRADICTED). The eval numbers above were produced under the old names. A re-run on the renamed dataset (same scorer, thresholds, model and per-case ceiling) is pending and will be recorded alongside the original, never replacing it.
+8 of the 12 eval case directory names contained a verdict word (`supported`, `contradicted` or `unverifiable`), and the directory name reaches the model in the user prompt and in the `fetch_page` tool description. The directories are now `case_01` to `case_12`; `evals/ground_truth.json` changed by name substitution only, verdicts unchanged (35 claims, 8 CONTRADICTED). The eval numbers above were produced under the old names. Re-run on the renamed dataset, same scorer, thresholds, model and per-case ceiling (2026-10-13, run `eval-199f77c6`): precision 1.00 (8/8), recall 1.00 (8/8), 35/35, gate PASS; recorded in `evals/rerun_2026-10-13.md` alongside the official gate run. The bounds suite now pins this run.
 
 ## Open loops
-- Re-run of the frozen eval on the renamed dataset: pending.
 - Demo assets (recording/GIF): in-scope, not shipped until they
   exist (adr/0002); not a publication precondition.
