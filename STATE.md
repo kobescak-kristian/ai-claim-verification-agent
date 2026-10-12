@@ -47,7 +47,8 @@ substantive commits landed since — none docs-only:
 - **a55c3b2** (2026-07-27) — bounds-suite rewrite: pinned-run
   non-vacuousness checking (`PINNED_EVAL_RUN_ID`) added alongside
   lexical-containment tolerance for ephemeral dev/smoke rows; the
-  pinned eval run above gets zero orphan tolerance.
+  pinned eval run (`eval-05fbe4ee` then; `eval-199f77c6` since
+  2026-10-13) gets zero orphan tolerance.
 - **7ddf34e** (2026-09-15) — canonical AGENTS.md router adopted;
   validator extended with the AGENTS.md v2.7 heading check.
 
