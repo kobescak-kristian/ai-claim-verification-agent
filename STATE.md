@@ -24,7 +24,7 @@ pin unaffected.
 Gate-before-result: eval_config.yaml first committed b041702
 (2026-07-05); results bc9f41a (2026-07-06). Threshold predates result.
 
-## Post-publication changes (Q-72(f) reconciliation, 2026-09-19)
+## Post-publication changes (reconciliation, 2026-09-19)
 
 Frozen at 2026-07-10 (v1.0.1), this file was silent on four
 substantive commits landed since — none docs-only:
@@ -35,25 +35,25 @@ substantive commits landed since — none docs-only:
   bounds-suite run). Test-portability hardening, not a sandbox fix —
   the cage held on both OS before this change.
 - **76145d5** (2026-07-24) — canonical pre-commit local-path guard
-  added (Q-48 wave 1).
+  added.
 - **ad28f32** (2026-07-25) — keyless CI added: 6-leg matrix
   (ubuntu/macos/windows x Python 3.12/3.14) running the bounds suite;
   a demo job stays dormant without an API-key secret this repo does
   not set.
-- **700e0bf** (2026-08-04, Q-35 hook rollout) — validator now accepts
+- **700e0bf** (2026-08-04, hook rollout) — validator now accepts
   `decisions/` as an alternate to `adr/`; pre-commit regex widened for
   `/c/`-style paths; pre-push freshness guard added.
 - **a55c3b2** (2026-07-27) — bounds-suite rewrite: pinned-run
   non-vacuousness checking (`PINNED_EVAL_RUN_ID`) added alongside
   lexical-containment tolerance for ephemeral dev/smoke rows; the
   pinned eval run above gets zero orphan tolerance.
-- **7ddf34e** (2026-09-15, Q-93) — canonical AGENTS.md router adopted;
+- **7ddf34e** (2026-09-15) — canonical AGENTS.md router adopted;
   validator extended with the AGENTS.md v2.7 heading check.
 
 None of the above changes the publication facts or eval numbers
 recorded above, which remain accurate.
 
-## Six-name validator convergence (Q-72(f)) — RESOLVED 2026-09-19
+## Six-name validator convergence — RESOLVED 2026-09-19
 
 Root `SPEC.md` was retired as redundant rather than justified with a
 new decision record: every substantive statement in it was already
@@ -63,9 +63,14 @@ out-of-scope), `adr/0001` (bounded-agent v2 rule) and `adr/0002`
 file remains in git history; nothing at runtime read it. With no
 root file left under any of the six trigger-gated names, the
 canonical six-name BANNED_WITHOUT_TRIGGER list is propagated to this
-repo's validator — closing the Q-72(f) residual recorded here on
+repo's validator — closing the residual recorded here on
 2026-09-19 without fabricating a citation.
 
+## Eval dataset rename (2026-10-13)
+
+8 of the 12 eval case directory names contained a verdict word (`supported`, `contradicted` or `unverifiable`), and the directory name reaches the model in the user prompt and in the `fetch_page` tool description. The directories are now `case_01` to `case_12`; `evals/ground_truth.json` changed by name substitution only, verdicts unchanged (35 claims, 8 CONTRADICTED). The eval numbers above were produced under the old names. A re-run on the renamed dataset (same scorer, thresholds, model and per-case ceiling) is pending and will be recorded alongside the original, never replacing it.
+
 ## Open loops
+- Re-run of the frozen eval on the renamed dataset: pending.
 - Demo assets (recording/GIF): in-scope, not shipped until they
   exist (adr/0002); not a publication precondition.

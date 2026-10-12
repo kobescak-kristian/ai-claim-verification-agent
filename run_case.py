@@ -2,7 +2,7 @@
 """CLI entrypoint: run the bounded claim-verification agent on one eval case.
 
 Usage:
-    python run_case.py case_01_supported_wireless_earbuds
+    python run_case.py case_01
 """
 import asyncio
 import sys

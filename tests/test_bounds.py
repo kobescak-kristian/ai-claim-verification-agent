@@ -251,7 +251,7 @@ class TestGroundTruthNotLeaked:
         secrets = {"ground_truth.json", "ground_truth"}
         for case in gt["cases"]:
             for claim in case["claims"]:
-                secrets.add(claim["id"])  # e.g. "case_09_..._c3" — never shown to the model
+                secrets.add(claim["id"])  # e.g. "case_09_c3" — never shown to the model
         return secrets
 
     def test_ground_truth_never_appears_in_audit_payloads(self):
@@ -267,3 +267,22 @@ class TestGroundTruthNotLeaked:
                     f"row {row['id']}: ground_truth.json content leaked into "
                     f"audit payload: {secret!r}"
                 )
+
+
+class TestDatasetNamesCarryNoVerdict:
+    def test_no_dataset_path_component_names_a_verdict(self):
+        """No directory or file name under evals/dataset/ contains a verdict
+        word. Case paths reach the model in the user prompt and in the
+        fetch_page tool description, so a directory name
+        that carries a verdict word hints at the expected verdict.
+        Checks names only: page text such as "HDR10 supported." is product
+        content, not a hint."""
+        verdict_tokens = ("supported", "contradicted", "unverifiable")
+        names = list(DATASET_ROOT.rglob("*"))
+        assert names, "evals/dataset/ is empty"
+        offenders = sorted(
+            p.relative_to(DATASET_ROOT).as_posix()
+            for p in names
+            if any(t in p.name.lower() for t in verdict_tokens)
+        )
+        assert not offenders, f"dataset names carry a verdict word: {offenders}"
