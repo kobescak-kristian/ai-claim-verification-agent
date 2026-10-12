@@ -4,7 +4,7 @@
 
 Bounded claim-verification agent — verifies factual claims on content pages against source pages; read-only by harness enforcement.
 
-**Status:** v1.0.1 — eval gate green (Sonnet 4.6, 12 cases / 35 synthetic claims, precision 1.00, recall 1.00 — see Outcome).
+**Status:** v1.0.3 — eval gate green (Sonnet 4.6, 12 cases / 35 synthetic claims, precision 1.00, recall 1.00 — see Outcome). Until 2026-10-13, 8 of the 12 eval case directory names contained a verdict word (`supported`, `contradicted` or `unverifiable`) that reached the model; the re-run with neutral names (`case_01` to `case_12`), same scorer, thresholds and model, scored precision 1.00, recall 1.00, 35/35 ([record](evals/rerun_2026-10-13.md)). The cases remain synthetic.
 
 ## Problem
 
@@ -74,6 +74,8 @@ See [`docs/architecture_detailed.png`](docs/architecture_detailed.png) for the f
 
 12 cases / 35 claims, $0.9047 total run cost, no case hit `max_turns` or the budget ceiling.
 
+Re-run with neutral case directory names, 2026-10-13 ([record](evals/rerun_2026-10-13.md)): precision 1.0000 (8/8), recall 1.0000 (8/8), 35/35, no case capped.
+
 All 12 eval cases are synthetic, hand-seeded HTML rather than live web pages, so this gate proves the harness and the model's reasoning against controlled, known-truth claims, not robustness to real-world markup noise — see [Known Limitations](evals/EVAL_RESULTS.md#known-limitations) for what that does and doesn't cover.
 
 **Out of scope (production upgrades)** — deliberately not built and with no trigger yet: live-web crawling at scale, multi-agent teams, subagents, dashboards, scheduled runs, auto-fixing content.
@@ -112,7 +114,7 @@ The committed reference result is [`evals/results/eval-05fbe4ee.json`](evals/res
 
 ## Related
 
-This agent was also ported to LangGraph, facing the identical frozen eval: [ai-claim-verification-langgraph](https://github.com/kobescak-kristian/ai-claim-verification-langgraph), parity result precision 1.00 / recall 1.00 (2026-07-20). See that repo's [`COMPARISON.md`](https://github.com/kobescak-kristian/ai-claim-verification-langgraph/blob/main/COMPARISON.md) for what the framework gives, hides, and cannot enforce versus this hand-rolled version.
+This agent was also ported to LangGraph, facing the identical frozen eval: [ai-claim-verification-langgraph](https://github.com/kobescak-kristian/ai-claim-verification-langgraph), parity result precision 1.00 / recall 1.00 (2026-07-20); its re-run with neutral case names (2026-10-13) also scored 1.00 / 1.00. See that repo's [`COMPARISON.md`](https://github.com/kobescak-kristian/ai-claim-verification-langgraph/blob/main/COMPARISON.md) for what the framework gives, hides, and cannot enforce versus this hand-rolled version.
 
 ## Version Log
 
@@ -121,3 +123,4 @@ This agent was also ported to LangGraph, facing the identical frozen eval: [ai-c
 | v1.0 | 2026-07-06 | Initial release: bounded harness + 4 MCP tools, eval-gated (Sonnet 4.6 — precision 1.00, recall 1.00 on 12 cases / 35 synthetic claims), audit-trail regression tests, architecture diagram. |
 | v1.0.1 | 2026-07-09 | Repro instructions added pre-flip: Run It Yourself section (proven from a fresh clone), SPEC.md and detailed-diagram links. |
 | v1.0.2 | 2026-07-20 | Related section added, cross-linking the LangGraph port (`ai-claim-verification-langgraph`) and its framework-comparison writeup. |
+| v1.0.3 | 2026-10-13 | Eval case directories renamed to neutral `case_01` to `case_12` (8 of 12 old names contained a verdict word that reached the model); bounds test added for verdict words in dataset names; frozen eval re-run: precision 1.00 / recall 1.00, 35/35. |
