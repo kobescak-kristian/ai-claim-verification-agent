@@ -68,7 +68,7 @@ repo's validator — closing the residual recorded here on
 
 ## Eval dataset rename (2026-10-13)
 
-8 of the 12 eval case directories named the case's dominant verdict, and the directory name reaches the model in the user prompt and in the `fetch_page` tool description. The directories are now `case_01` to `case_12`; `evals/ground_truth.json` changed by name substitution only, verdicts unchanged (35 claims, 8 CONTRADICTED). The eval numbers above were produced under the old names. A re-run on the renamed dataset (same scorer, thresholds, model and per-case ceiling) is pending and will be recorded alongside the original, never replacing it.
+8 of the 12 eval case directory names contained a verdict word (`supported`, `contradicted` or `unverifiable`), and the directory name reaches the model in the user prompt and in the `fetch_page` tool description. The directories are now `case_01` to `case_12`; `evals/ground_truth.json` changed by name substitution only, verdicts unchanged (35 claims, 8 CONTRADICTED). The eval numbers above were produced under the old names. A re-run on the renamed dataset (same scorer, thresholds, model and per-case ceiling) is pending and will be recorded alongside the original, never replacing it.
 
 ## Open loops
 - Re-run of the frozen eval on the renamed dataset: pending.

@@ -251,7 +251,7 @@ class TestGroundTruthNotLeaked:
         secrets = {"ground_truth.json", "ground_truth"}
         for case in gt["cases"]:
             for claim in case["claims"]:
-                secrets.add(claim["id"])  # e.g. "case_09_..._c3" — never shown to the model
+                secrets.add(claim["id"])  # e.g. "case_09_c3" — never shown to the model
         return secrets
 
     def test_ground_truth_never_appears_in_audit_payloads(self):
