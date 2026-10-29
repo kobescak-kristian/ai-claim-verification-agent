@@ -72,6 +72,10 @@ repo's validator — closing the residual recorded here on
 
 8 of the 12 eval case directory names contained a verdict word (`supported`, `contradicted` or `unverifiable`), and the directory name reaches the model in the user prompt and in the `fetch_page` tool description. The directories are now `case_01` to `case_12`; `evals/ground_truth.json` changed by name substitution only, verdicts unchanged (35 claims, 8 CONTRADICTED). The eval numbers above were produced under the old names. Re-run on the renamed dataset, same scorer, thresholds, model and per-case ceiling (2026-10-13, run `eval-199f77c6`): precision 1.00 (8/8), recall 1.00 (8/8), 35/35, gate PASS; recorded in `evals/rerun_2026-10-13.md` alongside the official gate run. The bounds suite now pins this run.
 
+## Plain-language README and eval-note correction (2026-10-29)
+
+README gains an "In plain words" paragraph under the title (v1.0.4). `evals/EVAL_RESULTS.md`: the Known Limitations note that called the path-scoping and answer-key checks manual now says `tests/test_bounds.py` has run them as regression tests since 2026-07-06 (dated correction mark); the two references to the retired `SPEC.md` now point to the README and `evals/ground_truth.json`. No eval number, threshold or test changed.
+
 ## Open loops
 - Demo assets (recording/GIF): in-scope, not shipped until they
   exist (adr/0002); not a publication precondition.

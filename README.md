@@ -4,7 +4,9 @@
 
 Bounded claim-verification agent — verifies factual claims on content pages against source pages; read-only by harness enforcement.
 
-**Status:** v1.0.3 — eval gate green (Sonnet 4.6, 12 cases / 35 synthetic claims, precision 1.00, recall 1.00 — see Outcome). Until 2026-10-13, 8 of the 12 eval case directory names contained a verdict word (`supported`, `contradicted` or `unverifiable`) that reached the model; the re-run with neutral names (`case_01` to `case_12`), same scorer, thresholds and model, scored precision 1.00, recall 1.00, 35/35 ([record](evals/rerun_2026-10-13.md)). The cases remain synthetic.
+**In plain words:** This agent checks the facts on a page, such as prices, specs and release dates, against other pages that should agree with it. For each fact it says whether the sources support it, contradict it, or cannot confirm it, and it shows which source it used. It can only read: it cannot publish, edit or send anything, and every step it takes is logged so a person can check it later. In a test on 12 hand-made product pages with 35 facts, it got all 35 right, including all 8 facts that were wrong.
+
+**Status:** v1.0.4 — eval gate green (Sonnet 4.6, 12 cases / 35 synthetic claims, precision 1.00, recall 1.00 — see Outcome). Until 2026-10-13, 8 of the 12 eval case directory names contained a verdict word (`supported`, `contradicted` or `unverifiable`) that reached the model; the re-run with neutral names (`case_01` to `case_12`), same scorer, thresholds and model, scored precision 1.00, recall 1.00, 35/35 ([record](evals/rerun_2026-10-13.md)). The cases remain synthetic.
 
 ## Problem
 
@@ -124,3 +126,4 @@ This agent was also ported to LangGraph, facing the identical frozen eval: [ai-c
 | v1.0.1 | 2026-07-09 | Repro instructions added pre-flip: Run It Yourself section (proven from a fresh clone), SPEC.md and detailed-diagram links. |
 | v1.0.2 | 2026-07-20 | Related section added, cross-linking the LangGraph port (`ai-claim-verification-langgraph`) and its framework-comparison writeup. |
 | v1.0.3 | 2026-10-13 | Eval case directories renamed to neutral `case_01` to `case_12` (8 of 12 old names contained a verdict word that reached the model); bounds test added for verdict words in dataset names; frozen eval re-run: precision 1.00 / recall 1.00, 35/35. |
+| v1.0.4 | 2026-10-29 | Plain-language summary added under the title. EVAL_RESULTS corrected: the audit-trail note now names the existing `tests/test_bounds.py`, and two references to the retired SPEC.md are updated. |
