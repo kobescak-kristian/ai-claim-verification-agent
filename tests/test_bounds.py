@@ -296,3 +296,253 @@ class TestDatasetNamesCarryNoVerdict:
             if any(t in p.name.lower() for t in verdict_tokens)
         )
         assert not offenders, f"dataset names carry a verdict word: {offenders}"
+
+
+# --- Harness isolation (no model calls: query() is replaced by a fake) ---
+
+from claude_agent_sdk import ResultMessage, SystemMessage  # noqa: E402
+
+from agent import audit as agent_audit  # noqa: E402
+from agent import harness  # noqa: E402
+from agent.config import QUALIFIED_TOOL_NAMES  # noqa: E402
+from evals import score_v2  # noqa: E402
+
+FAKE_SECRET_VALUE = "sk-fake-value-never-printed"
+
+
+def _init_message(api_key_source="none", tools=None):
+    data = {
+        "type": "system",
+        "subtype": "init",
+        "apiKeySource": api_key_source,
+        "tools": list(QUALIFIED_TOOL_NAMES) if tools is None else tools,
+        "mcp_servers": [{"name": "claimverify", "status": "connected"}],
+        "model": "claude-haiku-4-5-20251001",
+        "cwd": "/machine/local/path",
+        "session_id": "s-1",
+    }
+    return SystemMessage(subtype="init", data=data)
+
+
+def _result_message(subtype="success", is_error=False):
+    return ResultMessage(
+        subtype=subtype, duration_ms=1, duration_api_ms=1, is_error=is_error,
+        num_turns=3, session_id="s-1", total_cost_usd=0.01, result="done",
+    )
+
+
+def _fake_query(messages, raise_after=None, closed=None, called=None):
+    async def fake(prompt, options):
+        if called is not None:
+            called.append(options)
+        try:
+            for message in messages:
+                yield message
+            if raise_after is not None:
+                raise raise_after
+        finally:
+            if closed is not None:
+                closed.append(True)
+    return fake
+
+
+@pytest.fixture
+def isolated(monkeypatch, tmp_path):
+    """Clean guarded env and a throwaway audit database; the real audit.db
+    is never touched."""
+    for name in harness.GUARDED_ENV_NAMES:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(agent_audit, "AUDIT_DB_PATH", tmp_path / "audit.db")
+    return tmp_path
+
+
+class TestHarnessIsolation:
+    def test_options_load_no_settings_and_only_the_four_tools(self):
+        options = harness.build_options()
+        assert options.setting_sources == []
+        assert options.tools == []
+        assert sorted(options.allowed_tools) == sorted(QUALIFIED_TOOL_NAMES)
+        assert len(options.allowed_tools) == 4
+
+    def test_audit_hook_registered_on_all_three_tool_events(self):
+        hooks = harness.build_options().hooks
+        for event in ("PreToolUse", "PostToolUse", "PostToolUseFailure"):
+            assert event in hooks
+            assert any(agent_audit.audit_hook in m.hooks for m in hooks[event])
+
+    def test_names_match_the_frozen_gate(self):
+        guard = harness.AuthGuardError
+        assert f"{guard.__module__}.{guard.__qualname__}" == score_v2.AUTH_GUARD_TYPE
+        assert harness.SDK_CALL_ORIGIN == score_v2.SDK_CALL_ORIGIN
+
+    @pytest.mark.parametrize("name", harness.GUARDED_ENV_NAMES)
+    def test_env_guard_rejects_each_name_without_reading_the_value(self, name):
+        with pytest.raises(harness.AuthGuardError) as info:
+            harness.check_env({name: FAKE_SECRET_VALUE, "PATH": "x"})
+        assert name in str(info.value)
+        assert FAKE_SECRET_VALUE not in str(info.value)
+
+    def test_env_guard_rejects_an_empty_value_too(self):
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_env({"ANTHROPIC_API_KEY": ""})
+
+    def test_env_guard_accepts_a_clean_env(self):
+        harness.check_env({"PATH": "x", "HOME": "y"})
+
+    def test_init_check_accepts_and_records_only_named_fields(self):
+        recorded = harness.check_init(_init_message())
+        assert set(recorded) == set(harness.INIT_FIELDS)
+        assert recorded["apiKeySource"] == "none"
+        assert "/machine/local/path" not in json.dumps(recorded)
+
+    @pytest.mark.parametrize("source", ["ANTHROPIC_API_KEY", "apiKeyHelper", None, ""])
+    def test_init_check_rejects_api_key_source(self, source):
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_init(_init_message(api_key_source=source))
+
+    def test_init_check_rejects_missing_api_key_source(self):
+        message = _init_message()
+        del message.data["apiKeySource"]
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_init(message)
+
+    @pytest.mark.parametrize("tools", [
+        list(QUALIFIED_TOOL_NAMES) + ["Bash"],
+        list(QUALIFIED_TOOL_NAMES)[:3],
+        list(QUALIFIED_TOOL_NAMES)[:3] + ["Read"],
+        [],
+        None,
+    ])
+    def test_init_check_rejects_any_other_tool_set(self, tools):
+        message = _init_message()
+        message.data["tools"] = tools
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_init(message)
+
+    def test_init_check_rejects_a_first_message_that_is_not_init(self):
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_init(_result_message())
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_init(SystemMessage(subtype="status", data={}))
+
+
+class TestHarnessExecution:
+    def _run(self, case_id="case_01", run_id="test-run"):
+        return asyncio.run(harness.run_case_execution(case_id, run_id))
+
+    def test_clean_run_keeps_result_and_init(self, isolated, monkeypatch):
+        result = _result_message()
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), result]))
+        outcome = self._run()
+        assert outcome.error is None and outcome.error_origin is None
+        assert outcome.result is result
+        assert outcome.init["apiKeySource"] == "none"
+        assert harness.last_init == outcome.init
+
+    def test_sdk_error_after_result_keeps_result_and_sets_origin(self, isolated, monkeypatch):
+        result = _result_message()
+        crash = Exception("Command failed with exit code 1 (exit code: 1)\n"
+                          "Error output: Check stderr output for details")
+        monkeypatch.setattr(harness, "query",
+                            _fake_query([_init_message(), result], raise_after=crash))
+        outcome = self._run()
+        assert outcome.result is result
+        assert outcome.error is crash
+        assert outcome.error_origin == harness.SDK_CALL_ORIGIN
+
+    def test_sdk_error_before_any_message_sets_origin(self, isolated, monkeypatch):
+        crash = RuntimeError("")
+        monkeypatch.setattr(harness, "query", _fake_query([], raise_after=crash))
+        outcome = self._run()
+        assert outcome.result is None and outcome.init is None
+        assert outcome.error is crash
+        assert outcome.error_origin == harness.SDK_CALL_ORIGIN
+        assert harness.last_init is None
+
+    def test_bad_init_aborts_closes_stream_and_has_no_sdk_origin(self, isolated, monkeypatch):
+        closed = []
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(api_key_source="ANTHROPIC_API_KEY"), _result_message()],
+            closed=closed,
+        ))
+        outcome = self._run()
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.error_origin is None
+        assert outcome.result is None  # nothing after the first message is used
+        assert closed == [True]
+
+    def test_wrong_tool_set_aborts(self, isolated, monkeypatch):
+        tools = list(QUALIFIED_TOOL_NAMES) + ["Bash"]
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(tools=tools), _result_message()]))
+        outcome = self._run()
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.result is None
+
+    def test_env_guard_runs_before_anything_is_spawned(self, isolated, monkeypatch):
+        called = []
+        monkeypatch.setenv("ANTHROPIC_API_KEY", FAKE_SECRET_VALUE)
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message()], called=called))
+        outcome = self._run()
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert FAKE_SECRET_VALUE not in str(outcome.error)
+        assert outcome.error_origin is None
+        assert called == []
+        assert not (isolated / "audit.db").exists()
+
+    def test_last_init_is_reset_for_each_execution(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), _result_message()]))
+        self._run()
+        assert harness.last_init is not None
+        monkeypatch.setattr(harness, "query", _fake_query([], raise_after=RuntimeError("x")))
+        self._run()
+        assert harness.last_init is None
+
+    def test_run_case_result_still_raises_on_error(self, isolated, monkeypatch):
+        crash = RuntimeError("boom")
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message()], raise_after=crash))
+        with pytest.raises(RuntimeError, match="boom"):
+            asyncio.run(harness.run_case_result("case_01", "test-run"))
+
+    def test_run_case_result_returns_result_on_success(self, isolated, monkeypatch):
+        result = _result_message()
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), result]))
+        got, findings = asyncio.run(harness.run_case_result("case_01", "test-run"))
+        assert got is result and findings == []
+
+
+class TestAuditFailureRows:
+    def _rows(self, db):
+        conn = sqlite3.connect(db)
+        conn.row_factory = sqlite3.Row
+        try:
+            return conn.execute("SELECT * FROM tool_calls ORDER BY id").fetchall()
+        finally:
+            conn.close()
+
+    def test_failure_row_closes_the_pre_row_with_error_payload(self, isolated):
+        agent_audit.init_audit_db()
+        agent_audit.set_run_context("test-run", "case_01")
+        tool = QUALIFIED_TOOL_NAMES[0]
+        base = {"session_id": "s-1", "tool_name": tool, "tool_input": {"path": "x"},
+                "tool_use_id": "tu-1"}
+        asyncio.run(agent_audit.audit_hook(
+            {**base, "hook_event_name": "PreToolUse"}, "tu-1", None))
+        asyncio.run(agent_audit.audit_hook(
+            {**base, "hook_event_name": "PostToolUseFailure",
+             "error": "Circuit breaker tripped"}, "tu-1", None))
+        rows = self._rows(isolated / "audit.db")
+        assert [r["event_type"] for r in rows] == ["PreToolUse", score_v2.POST_FAILURE]
+        assert {r["tool_use_id"] for r in rows} == {"tu-1"}
+        assert {r["run_id"] for r in rows} == {"test-run"}
+        assert json.loads(rows[1]["payload"])["error"] == "Circuit breaker tripped"
+
+    def test_failure_row_takes_tool_use_id_from_input_when_argument_missing(self, isolated):
+        agent_audit.init_audit_db()
+        agent_audit.set_run_context("test-run", "case_01")
+        asyncio.run(agent_audit.audit_hook(
+            {"hook_event_name": "PostToolUseFailure", "session_id": "s-1",
+             "tool_name": QUALIFIED_TOOL_NAMES[0], "tool_input": {},
+             "tool_use_id": "tu-9", "error": "e"}, None, None))
+        rows = self._rows(isolated / "audit.db")
+        assert rows[0]["tool_use_id"] == "tu-9"

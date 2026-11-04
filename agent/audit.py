@@ -1,4 +1,4 @@
-"""SQLite audit trail. A PreToolUse/PostToolUse hook writes every tool call
+"""SQLite audit trail. A PreToolUse/PostToolUse/PostToolUseFailure hook writes every tool call
 here before its result is used by the model, per ADR-001 bounds.
 
 Shared across an eval run: each row is keyed by run_id (one per run_eval.py
@@ -75,9 +75,15 @@ def _insert(session_id, tool_use_id, tool_name, event_type, payload: dict) -> No
 
 
 async def audit_hook(input_data, tool_use_id, context):
-    """Registered on both PreToolUse and PostToolUse. Writes to SQLite
-    before the result is used by the model — that write happens here,
-    synchronously, before this hook returns control to the SDK."""
+    """Registered on PreToolUse, PostToolUse and PostToolUseFailure. Writes
+    to SQLite before the result is used by the model — that write happens
+    here, synchronously, before this hook returns control to the SDK.
+
+    A PostToolUseFailure row (a tool that returned an error) closes its
+    PreToolUse row through the same tool_use_id; the error text is stored
+    under payload key "error". For a failure row the id falls back to the
+    hook input's own tool_use_id field, so it is never NULL when the CLI
+    sends one."""
     event = input_data.get("hook_event_name")
     if event == "PreToolUse":
         _insert(
@@ -97,5 +103,19 @@ async def audit_hook(input_data, tool_use_id, context):
                 "tool_input": input_data.get("tool_input"),
                 "tool_response": input_data.get("tool_response"),
             },
+        )
+    elif event == "PostToolUseFailure":
+        payload = {
+            "tool_input": input_data.get("tool_input"),
+            "error": input_data.get("error"),
+        }
+        if "is_interrupt" in input_data:
+            payload["is_interrupt"] = input_data.get("is_interrupt")
+        _insert(
+            input_data.get("session_id"),
+            tool_use_id or input_data.get("tool_use_id"),
+            input_data.get("tool_name"),
+            "PostToolUseFailure",
+            payload,
         )
     return {}
