@@ -30,6 +30,7 @@ from agent.config import AUDIT_DB_PATH, DATASET_ROOT  # noqa: E402
 from agent.pages import PathOutsideDatasetError, resolve_dataset_path  # noqa: E402
 
 GROUND_TRUTH_PATH = REPO_ROOT / "evals" / "ground_truth.json"
+ANSWER_KEYS_DIR = REPO_ROOT / "evals" / "answer_keys"
 
 
 def _audit_rows() -> list[sqlite3.Row]:
@@ -248,10 +249,19 @@ class TestGroundTruthNotLeaked:
         leaked, with no false-positive path via convergent reasoning."""
         with open(GROUND_TRUTH_PATH, encoding="utf-8") as f:
             gt = json.load(f)
-        secrets = {"ground_truth.json", "ground_truth"}
+        secrets = {"ground_truth.json", "ground_truth", "answer_keys"}
         for case in gt["cases"]:
             for claim in case["claims"]:
                 secrets.add(claim["id"])  # e.g. "case_09_c3" — never shown to the model
+        # Every v2 answer key is covered the same way: its file name
+        # and its claim IDs.
+        for key_path in sorted(ANSWER_KEYS_DIR.glob("*.json")):
+            secrets.add(key_path.name)
+            with open(key_path, encoding="utf-8") as f:
+                key = json.load(f)
+            for case in key["cases"]:
+                for claim in case["claims"]:
+                    secrets.add(claim["id"])
         return secrets
 
     def test_ground_truth_never_appears_in_audit_payloads(self):

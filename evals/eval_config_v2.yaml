@@ -1,0 +1,169 @@
+# Standard eval v2 gate. Frozen once committed: a change to any
+# graded item below applies only to a later version and leaves recorded
+# results standing. The v1 gate in eval_config.yaml stays frozen and
+# untouched; the comparison policy still lives only there and is loaded
+# at runtime by agent/prompts.py. This file points to it, never copies it.
+
+version: 2
+created: "2026-11-04"
+
+eval_level:
+  proposed: "Eval level: Proposed Standard (a wrong verdict costs an editor rework; a human editor signs off before anything is published)"
+  decided: "Eval level: Decided Standard, Kristian, 2026-11-04"
+
+comparison_policy_source: "evals/eval_config.yaml#comparison_policy"
+
+# --- Sets ---
+sets:
+  dev:
+    answer_key: evals/answer_keys/dev.json
+    dataset_root: evals/dataset
+    status: "visible development; result label is always DEV ONLY, never PASS or FAIL"
+  official:
+    answer_key: evals/answer_keys/official.json
+    dataset_root: evals/dataset
+    case_count: 61
+    case_id_pattern: "^h0(0[1-9]|[1-5][0-9]|6[01])$"
+    status: "sealed hold-out, added before the first official run by a session that never builds (Kristian's decision 1A)"
+
+runs_per_page: 3
+official_case_count: 61
+allowed_failed_pages: 2
+
+# --- Gates (all three required; no fallback formula) ---
+gates:
+  gate_1_page_reliability:
+    rule: "passing_pages >= 59 of 61"
+    passing_pages_min: 59
+    definition: "a page passes when none of its 3 runs has a page-fail event (rules A-E)"
+    claim: "at least 90% page success at 95% one-sided confidence (exact binomial table for a Standard gate: 90% claim, 2 misses, 61 cases), bounded to this offline synthetic page population"
+  gate_2_unnecessary_unverifiable:
+    rule: "unnecessary_unverifiable_rate <= 0.05"
+    max_rate: 0.05
+    numerator: "assessments of ground-truth SUPPORTED or CONTRADICTED claims where any matched finding has verdict UNVERIFIABLE"
+    denominator: "all assessments of ground-truth SUPPORTED or CONTRADICTED claims across all 3 runs of every page (ground-truth UNVERIFIABLE claims excluded)"
+    note: "pooled operational point estimate, not a separate confidence claim; per-run rates are also reported"
+  gate_3_useful_verification:
+    rule: "useful_verification_rate >= 0.80"
+    min_rate: 0.80
+    numerator: "assessments of ground-truth SUPPORTED or CONTRADICTED claims that are matched, have every matched finding's verdict equal to the ground truth, and have valid evidence on every matched finding"
+    denominator: "same as gate_2 denominator"
+    note: "pooled operational point estimate; a missing claim, a wrong or conflicting verdict, or invalid evidence earns no credit"
+  overall: "PASS iff gate_1 AND gate_2 AND gate_3, on a valid and complete official series (exactly 61 pages x 3 valid runs, no INVALID RUN outstanding)"
+
+# --- Results ---
+results:
+  official_only: "PASS or FAIL is printed only for the official set: exactly 61 pages, 3 valid runs per page, key declares set official. The frozen official key is evals/answer_keys/official.json"
+  integrity: "two separate hashes, never compared with each other: (1) the sealed hold-out ZIP is verified against its recorded seal SHA-256 before extraction; (2) the extracted evals/answer_keys/official.json has its own SHA-256, recorded at the freeze commit; the runner records the key's SHA-256 in every results file and the preflight verifies it against that recorded key hash before the series"
+  non_official_label: "DEV ONLY — NOT ENOUGH CASES"
+  non_official_rule: "any other set, including the 12-page dev set at 36/36 perfect, gets the label above; the three gate numbers are shown for information only"
+  invalid_label: "INVALID RUN"
+
+# --- Page-fail rules (any rule in any of the 3 runs fails the page; several events on one page are one failed page; every event is recorded) ---
+page_fail_rules:
+  A: "a ground-truth CONTRADICTED claim has a matched finding with verdict SUPPORTED"
+  B: "a ground-truth CONTRADICTED claim has no matched finding in a completed run"
+  C: "a ground-truth UNVERIFIABLE claim has a matched finding with verdict SUPPORTED"
+  D: "a ground-truth SUPPORTED claim has a matched finding with verdict SUPPORTED whose evidence is invalid (evidence rule)"
+  E: "the run is not complete under the completion criteria and is not classified as INVALID RUN"
+  tolerated_errors: "SUPPORTED->CONTRADICTED, SUPPORTED->UNVERIFIABLE, CONTRADICTED->UNVERIFIABLE and UNVERIFIABLE->CONTRADICTED do not fail a page; they stay errors and count in gates 2 and 3 and the reported accuracy"
+  note_on_D: "a SUPPORTED verdict on a CONTRADICTED or UNVERIFIABLE claim is already caught by A or C and is not counted again under D"
+  note_on_E: "every claim of a rule-E run is assessed RUN_FAILED: it stays in the gate 2 and gate 3 denominators with no credit and counts as wrong for accuracy; its findings are kept for diagnosis but not assessed under A-D"
+
+# --- Completion (rule E). A run is complete only when all hold ---
+completion:
+  criteria:
+    - "no exception was raised by the agent run"
+    - "a ResultMessage was received with subtype 'success' and is_error false (not error_max_turns, error_max_budget_usd or error_during_execution)"
+    - "num_turns <= max_turns in agent/config.py"
+    - "at least one finding was logged (non-empty report)"
+    - "every finding has string fields claim_text, verdict, evidence_source, evidence_note, and verdict is SUPPORTED, CONTRADICTED or UNVERIFIABLE"
+    - "audit.db has PreToolUse rows for the run_id, and every PreToolUse row (any tool) has a PostToolUse row with the same tool_use_id"
+    - "the number of log_finding PostToolUse rows whose response starts with 'Logged:' equals the number of findings"
+    - "audit.db shows a successful read of '<case_id>/target.html' (a fetch_page or extract_claims PostToolUse row for that path whose response is not an error)"
+    - "the circuit breaker did not trip: no tool response contains 'Circuit breaker tripped' and the PreToolUse count is <= max_tool_calls in agent/config.py"
+  not_required: "completion never requires every expected claim to be found or classified correctly; omissions and verdict errors are scored separately"
+
+# --- Claim matching (deterministic, anchored to the expected paragraph) ---
+claim_matching:
+  rule: "a finding matches an expected claim only if normalize(finding.claim_text) == normalize(claim.text); no substring and no similarity matching"
+  normalize_steps:
+    - "Unicode NFKC"
+    - "curly single quotes to ', curly double quotes to \", en dash, em dash, figure dash and minus sign to -"
+    - "collapse all whitespace runs to one space and strip the ends"
+    - "remove one leading list number of the form '3. ' or '3) '"
+    - "repeat until stable: strip whitespace, strip edge quotes (' \" `), remove one final full stop"
+    - "casefold"
+  uniqueness: "make_dataset.py check forbids two paragraphs with the same normalized text on one target page, so a finding matches at most one claim"
+  unmatched_findings: "earn no credit; the claim they were meant for counts as missing; the report lists the nearest expected claim (difflib ratio) marked 'candidate, not scored', which never changes any score"
+
+duplicates:
+  rule: "all matched findings for one claim in one run are kept. Same verdict on all: the assessment has that verdict, and evidence must be valid on every one of them. Different verdicts: the assessment is CONFLICT, earns no gate 3 credit and counts as wrong for accuracy. Rules A-D and the gate 2 numerator are checked against every matched finding, so a SUPPORTED or UNVERIFIABLE anywhere among the duplicates counts."
+
+evidence:
+  rule: "extract every '.html' basename from evidence_source; evidence is valid when at least one is cited, every cited basename is in the claim's evidence_sources, and any cited directory part ends in the case_id (case_01/x.html and evals/dataset/case_01/x.html are both accepted)"
+  not_graded: "evidence_note text is not graded (stated limitation)"
+  applies_to: "SUPPORTED and CONTRADICTED verdicts; UNVERIFIABLE verdicts are not evidence-graded"
+
+# --- Infrastructure vs agent failure ---
+infra_errors:
+  rule: "an exception or non-success result whose text matches a pattern below is INVALID RUN (test machinery, no quality result); checked after the cap patterns. Anything else that fails inside a run is an agent failure (rule E). The raw error text is always kept."
+  cap_patterns_agent_failure:
+    - "(?i)budget"
+    - "(?i)max[_ ]turns|maximum turn|turn limit"
+  patterns:
+    auth: "(?i)not logged in|/login|invalid (x-)?api[ -]?key|authentication[_ ]error|unauthori[sz]ed|oauth token|apiKeySource|AuthGuardError"
+    usage_or_rate_limit: "(?i)rate[ _-]?limit|usage limit|too many requests|quota exceeded|\\b429\\b"
+    overloaded_or_5xx: "(?i)overloaded|\\b529\\b|internal server error|service unavailable|bad gateway|gateway timeout|api_error|\\b50[0234]\\b"
+    cli_spawn: "(?i)CLINotFoundError|CLIConnectionError|claude code not found|cli not found|failed to start"
+  stop_rule: "the runner stops the series on the first auth or usage/rate-limit error and never falls back to another auth route"
+
+invalid_run_restart:
+  decision: "Kristian's decision 2A, 2026-11-04"
+  rule: "pages whose 3 runs all completed without INVALID RUN are kept; the interrupted page reruns all 3 runs on the same frozen commit; the INVALID RUN event and a redone preflight are recorded"
+  superseded: "an execution marked superseded is left out of scoring only as part of this page rerun: the page's superseded executions must include an INVALID RUN. A superseded mark on a page with no superseded INVALID RUN is ignored: those executions are scored as normal, the page then has more than 3 runs, and the series is incomplete (result INVALID RUN). A single run is never replaced on its own."
+
+# --- Reported, not gated ---
+secondary_metrics:
+  - total pages, distinct expected claims, executions
+  - ground-truth distribution across the three verdicts
+  - page-level false-assurance success (pages passed)
+  - false-assurance error events by rule, distinct claims affected, pages affected
+  - claim extraction coverage (matched assessments / all assessments)
+  - overall three-class verdict accuracy (CONFLICT and missing count as wrong)
+  - verdict-plus-evidence accuracy
+  - CONTRADICTED precision and recall over assessments
+  - unnecessary UNVERIFIABLE rate, pooled and per run
+  - correctly identified genuine UNVERIFIABLE claims
+  - useful-verification rate
+  - run completion rate
+  - verdict changes between repeated runs
+  - turns and SDK API-equivalent cost (labelled "SDK API-equivalent, not a charge")
+  - performance by scenario
+  - page-cluster bootstrap 95% intervals for the gate 2 and gate 3 rates (2000 resamples over pages, fixed seed 0; reported, not gated)
+  - unmatched findings with unscored nearest-claim candidates
+
+# --- Case rules for the official hold-out (fixed before any hold-out is written) ---
+case_rules:
+  pages: 61
+  case_ids: "h001 to h061 (neutral; no verdict word in any directory or file name)"
+  claims_per_page: "2 to 4"
+  paragraphs: "each claim is exactly one target paragraph and every target paragraph is a claim"
+  sources_per_page: "2 to 4, named source_<n>_<kind>.html"
+  products: "one distinct product per page; none reused from the dev set"
+  scenarios:
+    - exact_spec           # exact number or specification
+    - small_numeric_discrepancy
+    - worded_numbers       # reworded statements or worded-out numbers
+    - date_mismatch
+    - missing_coverage     # no source addresses the claim
+    - authority_vs_forum   # authoritative source outranks forum content
+    - availability_status
+  target_verdict_mix: "about 60% SUPPORTED, 25% CONTRADICTED, 15% UNVERIFIABLE (a target, not a quota of hard cases)"
+  out_of_scope: "conflicts between equally authoritative sources, chronology, partial or compound claims, tables, lists, several claims in one paragraph"
+  evidence_sources: "every legitimate source for each claim is listed; empty for UNVERIFIABLE"
+
+provenance:
+  dev: "the 12 v1 synthetic cases (evals/dataset/case_01..case_12); v1 claim text and verdicts unchanged; evidence_sources and scenario added for v2"
+  official: "synthetic, written from a case spec by evals/make_dataset.py render (deterministic), checked by make_dataset.py check, blind-relabelled, then sealed as a ZIP whose SHA-256 (the seal hash) is recorded in the contract and evals/PREFLIGHT.md; the extracted answer key's own SHA-256 is recorded separately (see results.integrity)"
+  limitation: "a seeded synthetic dataset; results are not evidence of real-world or live-web performance"

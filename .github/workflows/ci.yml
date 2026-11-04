@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -r requirements.txt
-      - run: pytest tests/test_bounds.py -v
+      - run: pytest tests/ -v
 
   # Live demo against the Anthropic API. Dormant unless the repo has an
   # ANTHROPIC_API_KEY secret (fork owners can set their own); this repo

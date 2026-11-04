@@ -1,0 +1,432 @@
+{
+  "set": "dev",
+  "key_version": "2.0",
+  "created": "2026-11-04",
+  "description": "Standard eval v2 dev answer key: the 12 v1 cases with v1 claim text and verdicts unchanged (asserted against ground_truth.json by tests/test_scoring_v2.py); adds evidence_sources (every legitimate source) and scenario per claim.",
+  "case_count": 12,
+  "claim_count": 35,
+  "cases": [
+    {
+      "case_id": "case_01",
+      "product": "SoundWave Pro X2",
+      "claims": [
+        {
+          "id": "case_01_c1",
+          "text": "The SoundWave Pro X2 is priced at $129.99.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_01_c2",
+          "text": "It features 30 hours of total battery life with the charging case.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_01_c3",
+          "text": "Released on March 1, 2024.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_02",
+      "product": "UltraBook Air 14",
+      "claims": [
+        {
+          "id": "case_02_c1",
+          "text": "Priced at $899.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_manufacturer_spec.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_02_c2",
+          "text": "Comes with 16GB RAM.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_manufacturer_spec.html",
+            "source_2_retailer.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_02_c3",
+          "text": "Ships with Windows 11 Home.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_manufacturer_spec.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_03",
+      "product": "Nova Phone 12",
+      "claims": [
+        {
+          "id": "case_03_c1",
+          "text": "Comes with 256GB of storage.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_03_c2",
+          "text": "Has a 6.5-inch display.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_03_c3",
+          "text": "Weighs 189 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_04",
+      "product": "Pixel Shot Z5",
+      "claims": [
+        {
+          "id": "case_04_c1",
+          "text": "Released on September 10, 2023.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_press_release.html",
+            "source_2_spec_sheet.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "date_mismatch"
+        },
+        {
+          "id": "case_04_c2",
+          "text": "Features a 24MP sensor.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_press_release.html",
+            "source_2_spec_sheet.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_04_c3",
+          "text": "Supports 4K video recording at 60fps.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_press_release.html",
+            "source_2_spec_sheet.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_05",
+      "product": "ViewClear 27",
+      "claims": [
+        {
+          "id": "case_05_c1",
+          "text": "Comes with a 3-year manufacturer warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "case_05_c2",
+          "text": "Has a 27-inch 4K display.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_05_c3",
+          "text": "Supports HDR10.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_06",
+      "product": "BoomBox Mini",
+      "claims": [
+        {
+          "id": "case_06_c1",
+          "text": "Currently in stock at all major retailers.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "case_06_c2",
+          "text": "Weighs 540 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_06_c3",
+          "text": "Waterproof rating of IPX7.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_07",
+      "product": "AeroBuds 3",
+      "claims": [
+        {
+          "id": "case_07_c1",
+          "text": "Battery life of 12 hours per charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "case_07_c2",
+          "text": "Bluetooth 5.3 connectivity.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_08",
+      "product": "TabPro 11",
+      "claims": [
+        {
+          "id": "case_08_c1",
+          "text": "Starts at $499 for the base model.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_retailer.html",
+            "source_2_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "case_08_c2",
+          "text": "Has a 10.9-inch display.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_retailer.html",
+            "source_2_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_09",
+      "product": "NetFast AX6000",
+      "claims": [
+        {
+          "id": "case_09_c1",
+          "text": "Supports Wi-Fi 6 (802.11ax).",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_retailer.html",
+            "source_4_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_09_c2",
+          "text": "Priced at $249.99.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_manufacturer_price_page.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_09_c3",
+          "text": "Includes a 2-year warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "case_09_c4",
+          "text": "Has 8 LAN ports.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_4_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_10",
+      "product": "MechType K87",
+      "claims": [
+        {
+          "id": "case_10_c1",
+          "text": "Uses hot-swappable mechanical switches.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_10_c2",
+          "text": "Connects via USB-C and Bluetooth 5.0.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_10_c3",
+          "text": "Priced at $89.99.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html",
+            "source_4_manufacturer_faq.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_10_c4",
+          "text": "Weighs approximately 950 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_4_manufacturer_faq.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_11",
+      "product": "GraphixPro RTX 4070",
+      "claims": [
+        {
+          "id": "case_11_c1",
+          "text": "Currently in stock and shipping immediately.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_manufacturer_notice.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "availability_status"
+        },
+        {
+          "id": "case_11_c2",
+          "text": "Has 12GB of GDDR6X memory.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_spec_sheet.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "case_11_c3",
+          "text": "TDP rated at 200 watts.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_spec_sheet.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "case_12",
+      "product": "PulseFit Watch S2",
+      "claims": [
+        {
+          "id": "case_12_c1",
+          "text": "Battery lasts up to 7 days on a single charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "case_12_c2",
+          "text": "Water resistant up to 50 meters (5 ATM).",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    }
+  ]
+}
