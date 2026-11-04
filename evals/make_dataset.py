@@ -31,6 +31,7 @@ import re
 import shutil
 import sys
 import tempfile
+import unicodedata
 from pathlib import Path
 
 import yaml
@@ -43,6 +44,11 @@ from evals.score_v2 import VERDICTS, load_config, normalize_claim  # noqa: E402
 
 VERDICT_WORDS = ("supported", "contradicted", "unverifiable")
 SOURCE_NAME = re.compile(r"^source_\d+_[a-z0-9_]+\.html$")
+
+
+def _format_chars(text: str) -> list[str]:
+    """Unicode format characters (category Cf), e.g. U+200B or U+00AD."""
+    return sorted({f"U+{ord(ch):04X}" for ch in text if unicodedata.category(ch) == "Cf"})
 
 
 def _read_paragraphs(path: Path) -> tuple[str, list[str]]:
@@ -118,6 +124,10 @@ def check(dataset_root: Path, key_path: Path, against: list[Path] | None = None)
             problems.append(f"{where} {len(sources)} source pages, needs 2 to 4")
 
         _title, paragraphs = _read_paragraphs(target)
+        for p in paragraphs:
+            if _format_chars(p):
+                problems.append(f"{where} format character(s) {', '.join(_format_chars(p))} "
+                                f"in target paragraph {p!r}")
         norm_paragraphs = [normalize_claim(p) for p in paragraphs]
         if len(set(norm_paragraphs)) != len(norm_paragraphs):
             problems.append(f"{where} two target paragraphs normalize to the same text")
@@ -138,6 +148,9 @@ def check(dataset_root: Path, key_path: Path, against: list[Path] | None = None)
                 problems.append(f"{cwhere} bad verdict {claim.get('verdict')!r}")
             if claim.get("scenario") not in allowed_scenarios:
                 problems.append(f"{cwhere} scenario {claim.get('scenario')!r} not in case_rules")
+            if _format_chars(claim.get("text", "")):
+                problems.append(f"{cwhere} format character(s) {', '.join(_format_chars(claim['text']))} "
+                                "in claim text")
             norm = normalize_claim(claim.get("text", ""))
             hits = norm_paragraphs.count(norm)
             if hits != 1:
@@ -162,11 +175,14 @@ def check(dataset_root: Path, key_path: Path, against: list[Path] | None = None)
             if norm not in claimed:
                 problems.append(f"{where} target paragraph is not a claim: {p!r}")
 
-    on_disk = sorted(p.name for p in dataset_root.iterdir() if p.is_dir()) if dataset_root.is_dir() else []
-    if official:
-        for name in on_disk:
-            if re.match(config["sets"]["official"]["case_id_pattern"], name) and name not in seen_cases:
-                problems.append(f"{name}: case directory has no answer-key entry")
+    # case_rules.dataset_root: only case folders of this key or a compared key
+    known = seen_cases | other_cases
+    on_disk = sorted(dataset_root.iterdir()) if dataset_root.is_dir() else []
+    for entry in on_disk:
+        if not entry.is_dir():
+            problems.append(f"{entry.name}: unknown file at the dataset root")
+        elif entry.name not in known:
+            problems.append(f"{entry.name}: case directory has no answer-key entry")
     return problems
 
 

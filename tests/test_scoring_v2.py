@@ -7,6 +7,7 @@ the test code. The synthetic 61-page fixture is generated from a fixed seed
 import copy
 import json
 import random
+import shutil
 import sqlite3
 import sys
 from pathlib import Path
@@ -28,12 +29,16 @@ from evals.score_v2 import (  # noqa: E402
     INVALID_RUN,
     classify_execution,
     evidence_valid,
+    format_report,
+    key_sha256,
     load_audit_rows,
     load_config,
     load_key,
     normalize_claim,
+    rescore_key_problem,
     score,
 )
+from evals.score_v2 import main as score_main  # noqa: E402
 
 DEV_KEY_PATH = REPO_ROOT / "evals" / "answer_keys" / "dev.json"
 GROUND_TRUTH_PATH = REPO_ROOT / "evals" / "ground_truth.json"
@@ -63,6 +68,8 @@ def perfect_executions(key: dict, runs: int = 3) -> list[dict]:
             "execution_id": f"fx-{case['case_id']}-r{r}",
             "case_id": case["case_id"],
             "run_index": r,
+            "attempt": 1,
+            "superseded": False,
             "status": COMPLETED,
             "failures": [],
             "num_turns": 8,
@@ -104,6 +111,24 @@ def synthetic_official_key(seed: int = 114) -> dict:
 
 def by_id(executions: list[dict]) -> dict:
     return {e["execution_id"]: e for e in executions}
+
+
+def rerun_page(execs: list[dict], case: dict, invalid_run: int, attempt: int = 2) -> list[dict]:
+    """Decision 2A in attempt form: the page's earlier executions are marked
+    superseded, run `invalid_run` of the previous attempt is INVALID RUN,
+    and a fresh, perfect attempt of 3 runs is added."""
+    out = copy.deepcopy(execs)
+    page = [e for e in out if e["case_id"] == case["case_id"]]
+    for e in page:
+        e["superseded"] = True
+        if e["attempt"] == attempt - 1 and e["run_index"] == invalid_run:
+            e["status"] = INVALID_RUN
+    for r in (1, 2, 3):
+        out.append({"execution_id": f"fx-{case['case_id']}-r{r}-a{attempt}", "case_id": case["case_id"],
+                    "run_index": r, "attempt": attempt, "superseded": False, "status": COMPLETED,
+                    "failures": [], "num_turns": 8, "total_cost_usd": 0.1,
+                    "findings": perfect_findings(case)})
+    return out
 
 
 def claim_of(key: dict, verdict: str, skip: int = 0) -> tuple[dict, dict]:
@@ -193,11 +218,11 @@ class TestOfficialGate:
 
     def test_superseded_invalid_run_after_page_rerun(self, official_key):
         execs = perfect_executions(official_key)
-        old = copy.deepcopy(execs[:3])
-        for e in old:
-            e["superseded"] = True
-        old[1]["status"] = INVALID_RUN
-        assert score(official_key, old + execs, CONFIG)["result"] == "PASS"
+        fresh = rerun_page(execs, official_key["cases"][0], invalid_run=2)
+        scored = score(official_key, fresh, CONFIG)
+        assert scored["result"] == "PASS"
+        assert scored["pages"][0]["scored_attempt"] == 2
+        assert len(scored["history"]) == len(execs) + 3
 
     def test_superseded_without_invalid_run_is_refused(self, official_key):
         """2A allows only a whole-page rerun after an INVALID RUN; a bad run
@@ -210,7 +235,7 @@ class TestOfficialGate:
         bad["superseded"] = True
         scored = score(official_key, [bad] + execs, CONFIG)
         assert scored["result"] == INVALID_LABEL
-        assert scored["improper_supersede"] == [bad["execution_id"]]
+        assert any(bad["execution_id"] in p for p in scored["attempt_problems"])
         page = next(p for p in scored["pages"] if p["case_id"] == case["case_id"])
         assert "E" in page["rules"]  # the bad run is still scored
 
@@ -344,6 +369,7 @@ class TestMatching:
         '"The SoundWave Pro X2 is priced at $129.99."',
         "“The SoundWave Pro X2 is priced at $129.99.”",
         "  the soundwave   PRO X2 is priced at $129.99. ",
+        "- The SoundWave Pro X2 is priced at $129.99.",  # the fetch_page bullet
     ])
     def test_variants_match(self, variant):
         assert normalize_claim(variant) == normalize_claim(self.CLAIM)
@@ -434,42 +460,108 @@ class TestEvidence:
 
 # --- failure classification and completion -------------------------------------------------
 
+SDK_RESULT_ERROR = "builtins.Exception"  # the SDK's error-result exception type
+PROCESS_ERROR = "claude_agent_sdk._errors.ProcessError"
+CLI_NOT_FOUND = "claude_agent_sdk._errors.CLINotFoundError"
+CLI_JSON = "claude_agent_sdk._errors.CLIJSONDecodeError"
+AUTH_GUARD = "agent.harness.AuthGuardError"
+
+
+def error_result(text: str, subtype: str = "success", errors=None) -> dict:
+    """An is_error result as the CLI reports an API error."""
+    return {"subtype": subtype, "is_error": True, "num_turns": 1, "result_text": text,
+            "errors": errors or []}
+
+
 class TestClassification:
-    def _classify(self, error=None, result=None, **kw):
-        return classify_execution(error, result, kw.get("findings", []), kw.get("rows", []),
+    def _classify(self, error_type=None, error=None, result=None, **kw):
+        return classify_execution(error_type, error, result, kw.get("findings", []), kw.get("rows", []),
                                   "case_01", 20, 60, CONFIG)
 
+    # Texts as they appear in the bundled CLI 2.1.191 (claude.exe), except
+    # the 429/529 bodies and the 401 form, which follow its "API Error: "
+    # prefix with the API's own error JSON.
     @pytest.mark.parametrize("text,category", [
         ("Not logged in · Please run /login", "auth"),
         ("Invalid API key · Fix external API key", "auth"),
-        ("AuthGuardError: apiKeySource is 'ANTHROPIC_API_KEY', expected 'none'", "auth"),
-        ("API Error: 429 {\"type\":\"rate_limit_error\"}", "usage_or_rate_limit"),
+        ("OAuth token revoked · Please run /login", "auth"),
+        ("Authentication error · This may be a temporary network issue, please try again", "auth"),
+        ('API Error: 401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}',
+         "auth"),
+        ('API Error: 429 {"type":"rate_limit_error"}', "usage_or_rate_limit"),
         ("Claude AI usage limit reached", "usage_or_rate_limit"),
+        ("You're out of usage credits. /model to switch models.", "usage_or_rate_limit"),
+        ("You've hit your monthly spend limit. Run /usage-credits to manage your limit", "usage_or_rate_limit"),
+        ("Credit balance is too low", "usage_or_rate_limit"),
+        ("Server is temporarily limiting requests (not your usage limit)", "usage_or_rate_limit"),
         ("API Error: 529 overloaded_error", "overloaded_or_5xx"),
-        ("CLINotFoundError: Claude Code not found", "cli_spawn"),
+        ("Repeated 529 Overloaded errors", "overloaded_or_5xx"),
+        ("API Error: 500 Internal server error", "overloaded_or_5xx"),
+        ("Request timed out. Check your internet connection and proxy settings", "network"),
+        ("Connection error.", "network"),
+        ("Unable to connect to API. Check your internet connection", "network"),
+        ("Unable to connect to API: SSL certificate verification failed. Check your proxy or corporate "
+         "SSL certificates", "network"),
     ])
-    def test_infra_is_invalid_run(self, text, category):
-        out = self._classify(error=text)
+    def test_error_result_infra_texts_are_invalid_run(self, text, category):
+        out = self._classify(result=error_result(text))
         assert out["status"] == INVALID_RUN and out["infra_category"] == category
 
-    @pytest.mark.parametrize("text", [
-        "Command failed with exit code 1: max budget exceeded",
-        "Reached max_turns limit",
-        "KeyError: 'claim_text'",
+    def test_result_is_kept_when_the_sdk_raises(self):
+        """RT1-02: the SDK's exception text is generic; the kept result decides."""
+        out = self._classify(SDK_RESULT_ERROR, "Claude Code returned an error result: success",
+                             error_result("API Error: 529 Overloaded"))
+        assert out["status"] == INVALID_RUN and out["infra_category"] == "overloaded_or_5xx"
+        assert "Claude Code returned an error result: success" in out["failures"][0]
+
+    def test_errors_list_is_classified(self):
+        out = self._classify(SDK_RESULT_ERROR, "Claude Code returned an error result: Credit balance is too low",
+                             error_result("", errors=["Credit balance is too low"]))
+        assert out["infra_category"] == "usage_or_rate_limit"
+
+    @pytest.mark.parametrize("error_type,text,result,category", [
+        (CLI_NOT_FOUND, "Claude Code not found", None, "cli_spawn"),
+        (PROCESS_ERROR, "Command failed with exit code 1 (exit code: 1)", None, "cli_process"),
+        (AUTH_GUARD, "apiKeySource is 'ANTHROPIC_API_KEY', expected 'none'", None, "auth"),
     ])
-    def test_other_exceptions_are_agent_failures(self, text):
-        out = self._classify(error=text)
-        assert out["status"] == AGENT_FAILURE
-        assert text in out["failures"][0]
+    def test_sdk_exceptions(self, error_type, text, result, category):
+        out = self._classify(error_type, text, result)
+        assert out["status"] == INVALID_RUN and out["infra_category"] == category
 
-    def test_error_result_with_infra_text_is_invalid(self):
-        result = {"subtype": "error_during_execution", "is_error": True, "num_turns": 2,
-                  "result_text": "API Error: 529 overloaded"}
-        assert self._classify(result=result)["status"] == INVALID_RUN
+    @pytest.mark.parametrize("error_type,text,result", [
+        # RT1-04: runner or agent code is never matched against infra patterns
+        ("json.decoder.JSONDecodeError", "Expecting value: line 1 column 500 (char 499)", None),
+        ("builtins.KeyError", "'h001' while scoring 429 findings", None),
+        ("builtins.RuntimeError", "MCP server claimverify failed to start: ImportError in agent/tools.py", None),
+        ("builtins.ValueError", "unauthorized verdict value", None),
+        ("builtins.KeyError", "'claim_text'", None),
+        # caps decide by subtype, whatever the text says
+        (None, None, error_result("Reached maximum number of turns (20); API Error: 500",
+                                  subtype="error_max_turns")),
+        (None, None, error_result("Error: Exceeded USD budget (1.5); API Error: 529",
+                                  subtype="error_max_budget_usd")),
+        # cap text beats an infra type rule
+        (PROCESS_ERROR, "Command failed with exit code 1: max budget exceeded", None),
+        (SDK_RESULT_ERROR, "Claude Code returned an error result: Reached maximum number of turns (20)", None),
+        # SDK origin, but no anchored pattern: unclassified, so never INVALID RUN
+        (CLI_JSON, "Failed to decode JSON: {\"col\": 500, \"n\": 429}...", None),
+        (SDK_RESULT_ERROR, "Claude Code returned an error result: error_during_execution",
+         error_result("", subtype="error_during_execution")),
+        # a plain Exception without the SDK's prefix is runner code
+        ("builtins.Exception", "Not logged in · Please run /login", None),
+    ])
+    def test_agent_failures(self, error_type, text, result):
+        out = self._classify(error_type, text, result)
+        assert out["status"] == AGENT_FAILURE and out["infra_category"] is None
+        if text:
+            assert text in out["failures"][0]
 
-    def test_max_turns_result_is_agent_failure(self):
-        result = {"subtype": "error_max_turns", "is_error": True, "num_turns": 20, "result_text": ""}
-        assert self._classify(result=result)["status"] == AGENT_FAILURE
+    def test_success_result_text_is_never_matched(self):
+        """A success result's text is the agent's own answer."""
+        result = {"subtype": "success", "is_error": False, "num_turns": 3,
+                  "result_text": "Not logged in? API Error: 529. Usage limit reached."}
+        out = self._classify(result=result)  # fails completion: no findings, no audit
+        assert out["status"] == AGENT_FAILURE and out["infra_category"] is None
 
 
 class TestCompletion:
@@ -486,6 +578,8 @@ class TestCompletion:
         payload = {"tool_input": tool_input}
         if event == "PostToolUse":
             payload["tool_response"] = [{"type": "text", "text": response}]
+        elif event == "PostToolUseFailure":  # the hook input's error field (SDK 0.2.110)
+            payload.update(error=response, is_interrupt=False)
         conn = sqlite3.connect(db)
         conn.execute("INSERT INTO tool_calls (run_id, case_id, session_id, tool_use_id, tool_name, "
                      "event_type, timestamp, payload) VALUES (?, 'case_01', 's', ?, ?, ?, 't', ?)",
@@ -505,7 +599,8 @@ class TestCompletion:
 
     def _status(self, db, run_id="r1", findings=None, result=None):
         rows = load_audit_rows(db, run_id)
-        return classify_execution(None, result or self.RESULT, self.FINDINGS if findings is None else findings,
+        return classify_execution(None, None, result or self.RESULT,
+                                  self.FINDINGS if findings is None else findings,
                                   rows, "case_01", 20, 60, CONFIG)
 
     def test_complete_run(self, db):
@@ -524,7 +619,60 @@ class TestCompletion:
         self._insert(db, "r1", "t3", tool, "PreToolUse", {"path": "case_01/source_1_spec_sheet.html"})
         out = self._status(db)
         assert out["status"] == AGENT_FAILURE
-        assert any("without PostToolUse" in f for f in out["failures"])
+        assert any("without PostToolUse or PostToolUseFailure" in f for f in out["failures"])
+
+    @pytest.mark.parametrize("tool", [LOG, EXTRACT, "mcp__claimverify__fetch_page",
+                                      "mcp__claimverify__compare_source"])
+    def test_failure_row_closes_the_pair(self, db, tool):
+        """RT1-01: a tool error is recorded as PostToolUseFailure, not PostToolUse."""
+        self._good_run(db)
+        self._insert(db, "r1", "t3", tool, "PreToolUse", {"path": "case_01/nope.html"})
+        self._insert(db, "r1", "t3", tool, "PostToolUseFailure", {"path": "case_01/nope.html"},
+                     "MCP tool returned error")
+        out = self._status(db)
+        assert out["status"] == COMPLETED, out["failures"]
+
+    def test_failure_row_is_not_a_target_read(self, db):
+        self._insert(db, "r1", "t1", EXTRACT, "PreToolUse", {"path": "case_01/target.html"})
+        self._insert(db, "r1", "t1", EXTRACT, "PostToolUseFailure", {"path": "case_01/target.html"},
+                     "Found 1 candidate claim(s):\n1. x")
+        self._insert(db, "r1", "t2", LOG, "PreToolUse", {"claim_text": "x"})
+        self._insert(db, "r1", "t2", LOG, "PostToolUse", {"claim_text": "x"}, "Logged: SUPPORTED — 'x'")
+        assert any("no successful read" in f for f in self._status(db)["failures"])
+
+    def test_failure_row_is_not_a_logged_row(self, db):
+        self._good_run(db)
+        self._insert(db, "r1", "t4", LOG, "PreToolUse", {"claim_text": "y"})
+        self._insert(db, "r1", "t4", LOG, "PostToolUseFailure", {"claim_text": "y"}, "Logged: SUPPORTED — 'y'")
+        out = self._status(db, findings=self.FINDINGS * 2)
+        assert any("1 logged log_finding response(s) vs 2" in f for f in out["failures"])
+
+    def test_breaker_text_in_failure_row(self, db):
+        self._good_run(db)
+        self._insert(db, "r1", "t9", EXTRACT, "PreToolUse", {"path": "case_01/target.html"})
+        self._insert(db, "r1", "t9", EXTRACT, "PostToolUseFailure", {"path": "case_01/target.html"},
+                     "Circuit breaker tripped: tool-call ceiling (60) reached for this run.")
+        assert any("circuit breaker" in f for f in self._status(db)["failures"])
+
+    @pytest.mark.parametrize("target", ["./case_01/target.html", "case_01//target.html",
+                                        "case_01/./target.html", "CASE_01/target.html"])
+    def test_target_path_forms(self, db, target):
+        """RT1-09: the path is compared after normpath and casefold; the
+        response must still be a successful read."""
+        self._good_run(db, target=target)
+        assert self._status(db)["status"] == COMPLETED
+
+    @pytest.mark.parametrize("target", ["case_02/target.html", "case_01/source_1_spec_sheet.html",
+                                        "case_01/../case_02/target.html"])
+    def test_other_paths_are_not_the_target(self, db, target):
+        self._good_run(db, target=target)
+        assert any("no successful read" in f for f in self._status(db)["failures"])
+
+    def test_malformed_findings_fail_completion(self, db):
+        self._good_run(db)
+        for bad in ([dict(self.FINDINGS[0], verdict="supported")], [{"claim_text": "x"}], ["x"]):
+            out = self._status(db, findings=bad)
+            assert out["status"] == AGENT_FAILURE
 
     def test_logged_count_must_equal_findings(self, db):
         self._good_run(db)
@@ -552,6 +700,215 @@ class TestCompletion:
         self._insert(db, "r1", "t9", EXTRACT, "PostToolUse", {"path": "case_01/target.html"},
                      "Circuit breaker tripped: tool-call ceiling (60) reached for this run.")
         assert any("circuit breaker" in f for f in self._status(db)["failures"])
+
+
+# --- attempts, records, rule F and the official label (first red-team amendment) ---------
+
+def _page(scored, case_id):
+    return next(p for p in scored["pages"] if p["case_id"] == case_id)
+
+
+class TestAttempts:
+    def test_partial_swap_is_invalid(self, official_key):
+        """RT1-05: replacing runs 1 and 2 but keeping run 3 must not reach PASS."""
+        execs = perfect_executions(official_key)
+        case = official_key["cases"][0]
+        cid = case["case_id"]
+        contradicted = next(c for c in case["claims"] if c["verdict"] != "UNVERIFIABLE")
+        set_verdict(execs, case, contradicted, 1, "UNVERIFIABLE")
+        by_id(execs)[f"fx-{cid}-r2"]["status"] = INVALID_RUN
+        for r in (1, 2):
+            by_id(execs)[f"fx-{cid}-r{r}"]["superseded"] = True
+            fresh = copy.deepcopy(by_id(perfect_executions(official_key))[f"fx-{cid}-r{r}"])
+            fresh.update(execution_id=f"fx-{cid}-r{r}-a2", attempt=2)
+            execs.append(fresh)
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any(f"fx-{cid}-r3 not superseded" in p for p in scored["attempt_problems"])
+
+    def test_events_of_a_superseded_attempt_still_fail_the_page(self, official_key):
+        """RT1-06 and the rerun-attempt ruling: a rule A-E event seen in a valid
+        run of an earlier attempt still fails the page and stays reported."""
+        execs = perfect_executions(official_key)
+        case, claim = claim_of(official_key, "CONTRADICTED")
+        cid = case["case_id"]
+        set_verdict(execs, case, claim, 1, "SUPPORTED")  # rule A
+        by_id(execs)[f"fx-{cid}-r2"]["status"] = AGENT_FAILURE  # rule E
+        fresh = rerun_page(execs, case, invalid_run=3)
+        scored = score(official_key, fresh, CONFIG)
+        page = _page(scored, cid)
+        assert page["rules"] == ["A", "E"] and not page["passed"]
+        assert {e["rule"] for e in scored["events"] if e["superseded"]} == {"A", "E"}
+        assert scored["result"] == "PASS"  # one failed page of 61 is within the gate
+        assert "(superseded attempt 1, still fails the page)" in format_report(scored)
+        # superseded runs stay out of the gate 2 and 3 denominators
+        perfect = score(official_key, perfect_executions(official_key), CONFIG)
+        assert scored["gates"]["gate_3_useful_verification"]["denominator"] == \
+            perfect["gates"]["gate_3_useful_verification"]["denominator"]
+        assert scored["secondary"]["executions_valid"] == 183
+
+    def test_earlier_attempt_without_invalid_run_is_invalid(self, official_key):
+        execs = perfect_executions(official_key)
+        case = official_key["cases"][0]
+        fresh = rerun_page(execs, case, invalid_run=0)  # nothing was INVALID RUN
+        scored = score(official_key, fresh, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any("superseded without an INVALID RUN" in p for p in scored["attempt_problems"])
+
+    def test_attempt_gap_is_invalid(self, official_key):
+        execs = perfect_executions(official_key)
+        fresh = rerun_page(execs, official_key["cases"][0], invalid_run=1, attempt=3)
+        scored = score(official_key, fresh, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any("without gaps" in p for p in scored["attempt_problems"])
+
+    def test_second_rerun(self, official_key):
+        execs = perfect_executions(official_key)
+        case = official_key["cases"][0]
+        twice = rerun_page(rerun_page(execs, case, invalid_run=1), case, invalid_run=2, attempt=3)
+        assert score(official_key, twice, CONFIG)["result"] == "PASS"
+
+    def test_incomplete_scored_attempt_is_invalid(self, official_key):
+        execs = perfect_executions(official_key)
+        fresh = [e for e in rerun_page(execs, official_key["cases"][0], invalid_run=1)
+                 if e["execution_id"] != f"fx-{official_key['cases'][0]['case_id']}-r3-a2"]
+        assert score(official_key, fresh, CONFIG)["result"] == INVALID_LABEL
+
+
+class TestRecords:
+    def test_lowercase_verdict_is_rule_e(self, official_key):
+        """RT1-07: a malformed finding in a run recorded as completed is agent
+        output: rule E, never a silent pass and never INVALID RUN."""
+        execs = perfect_executions(official_key)
+        case, claim = claim_of(official_key, "CONTRADICTED")
+        set_verdict(execs, case, claim, 1, "supported")
+        scored = score(official_key, execs, CONFIG)
+        assert _page(scored, case["case_id"])["rules"] == ["E"]
+        assert scored["result"] == "PASS"  # one failed page; the series is still valid
+
+    def test_missing_finding_field_is_rule_e(self, official_key):
+        execs = perfect_executions(official_key)
+        case = official_key["cases"][0]
+        del by_id(execs)[f"fx-{case['case_id']}-r1"]["findings"][0]["evidence_note"]
+        assert _page(score(official_key, execs, CONFIG), case["case_id"])["rules"] == ["E"]
+
+    @pytest.mark.parametrize("mutate,expect", [
+        (lambda e: e.update(status="complete"), "unknown status"),
+        (lambda e: e.pop("attempt"), "attempt"),
+        (lambda e: e.update(run_index="1"), "run_index"),
+        (lambda e: e.update(superseded="no"), "superseded"),
+        (lambda e: e.update(attempt=True), "attempt"),
+        (lambda e: e.update(attempt=0), "attempt 0 < 1"),
+    ])
+    def test_malformed_record_is_invalid(self, official_key, mutate, expect):
+        execs = perfect_executions(official_key)
+        mutate(execs[0])
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any(expect in p for p in scored["record_problems"]), scored["record_problems"]
+
+    def test_stray_execution_is_invalid(self, official_key):
+        """RT1-12: an execution for a case outside the key is never ignored."""
+        execs = perfect_executions(official_key)
+        stray = dict(copy.deepcopy(execs[0]), execution_id="fx-h999-r1", case_id="h999", status=AGENT_FAILURE)
+        scored = score(official_key, execs + [stray], CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any("h999" in p for p in scored["record_problems"])
+
+    def test_duplicate_execution_id_is_invalid(self, official_key):
+        execs = perfect_executions(official_key)
+        scored = score(official_key, execs + [copy.deepcopy(execs[0])], CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any("duplicate execution_id" in p for p in scored["record_problems"])
+
+    def test_dev_record_problems_are_reported(self, dev_key):
+        execs = perfect_executions(dev_key)
+        execs[0]["status"] = "complete"
+        scored = score(dev_key, execs, CONFIG)
+        assert scored["result"] == DEV_ONLY and scored["record_problems"]
+        assert "Record problems (left out of scoring)" in format_report(scored)
+
+
+class TestRuleF:
+    def _paraphrase(self, key, verdict):
+        execs = perfect_executions(key)
+        case, claim = claim_of(key, verdict)
+        e = by_id(execs)[f"fx-{case['case_id']}-r1"]
+        for f in e["findings"]:
+            if f["claim_text"] == claim["text"]:
+                f["claim_text"] = "A paraphrase that matches no paragraph."
+        return execs, case
+
+    def test_unmatched_supported_fails_the_page(self, dev_key):
+        """RT1-08 and the unmatched-SUPPORTED ruling."""
+        execs, case = self._paraphrase(dev_key, "SUPPORTED")
+        scored = score(dev_key, execs, CONFIG)
+        assert _page(scored, case["case_id"])["rules"] == ["F"]
+        assert [e["rule"] for e in scored["events"]] == ["F"]
+
+    def test_unmatched_unverifiable_claim_marked_supported(self, dev_key):
+        execs, case = self._paraphrase(dev_key, "UNVERIFIABLE")
+        for e in execs:
+            for f in e["findings"]:
+                if f["claim_text"] == "A paraphrase that matches no paragraph.":
+                    f["verdict"] = "SUPPORTED"
+        assert _page(score(dev_key, execs, CONFIG), case["case_id"])["rules"] == ["F"]
+
+    def test_unmatched_unverifiable_does_not_fail(self, dev_key):
+        execs, case = self._paraphrase(dev_key, "UNVERIFIABLE")
+        scored = score(dev_key, execs, CONFIG)
+        assert _page(scored, case["case_id"])["passed"]
+        assert len(scored["unmatched_findings"]) == 1
+
+    def test_fetch_page_bullet_matches(self, dev_key):
+        execs = perfect_executions(dev_key)
+        for f in execs[0]["findings"]:
+            f["claim_text"] = "- " + f["claim_text"]
+        scored = score(dev_key, execs, CONFIG)
+        assert scored["unmatched_findings"] == [] and all(p["passed"] for p in scored["pages"])
+
+
+class TestOfficialLabel:
+    def test_duplicate_case_id_is_not_official(self, official_key):
+        """RT1-12: 61 entries but 60 distinct pages is not an official set."""
+        official_key["cases"][1] = copy.deepcopy(official_key["cases"][0])
+        scored = score(official_key, perfect_executions(official_key)[3:], CONFIG)
+        assert scored["result"] == DEV_ONLY
+        assert any("duplicate case_id" in p for p in scored["key_problems"])
+
+    def test_case_id_pattern(self, official_key):
+        official_key["cases"][0]["case_id"] = "x001"
+        scored = score(official_key, perfect_executions(official_key), CONFIG)
+        assert scored["result"] == DEV_ONLY
+        assert any("x001" in p for p in scored["key_problems"])
+
+
+class TestRescore:
+    def _recorded(self, tmp_path, key_text='{"set": "dev", "cases": []}'):
+        key_path = tmp_path / "key.json"
+        key_path.write_text(key_text, encoding="utf-8")
+        recorded = {"answer_key": str(key_path), "answer_key_sha256": key_sha256(key_path), "executions": []}
+        return recorded, key_path
+
+    def test_same_key_is_accepted(self, tmp_path):
+        recorded, key_path = self._recorded(tmp_path)
+        assert rescore_key_problem(recorded, key_path) is None
+
+    def test_changed_key_is_refused(self, tmp_path, monkeypatch, capsys):
+        recorded, key_path = self._recorded(tmp_path)
+        key_path.write_text('{"set": "dev", "cases": [] }', encoding="utf-8")
+        assert "differs from the recorded" in rescore_key_problem(recorded, key_path)
+        results = tmp_path / "results.json"
+        results.write_text(json.dumps(recorded), encoding="utf-8")
+        monkeypatch.setattr(sys, "argv", ["score_v2.py", str(results)])
+        with pytest.raises(SystemExit) as exc:
+            score_main()
+        assert exc.value.code == 2 and "Refused" in capsys.readouterr().err
+
+    def test_missing_hash_is_refused(self, tmp_path):
+        recorded, key_path = self._recorded(tmp_path)
+        del recorded["answer_key_sha256"]
+        assert "records no answer_key_sha256" in rescore_key_problem(recorded, key_path)
 
 
 # --- make_dataset ------------------------------------------------------------------------------
@@ -733,3 +1090,53 @@ class TestMakeDataset:
         def m(root, key):
             key["cases"] = key["cases"][:60]
         self._plant(rendered, m, "needs 61")
+
+    def test_format_character_in_claim(self, rendered):
+        """RT1-11: a zero-width space in a claim and its paragraph is refused."""
+        def m(root, key):
+            t = root / "h001" / "target.html"
+            t.write_text(t.read_text(encoding="utf-8").replace("weighs", "wei​ghs"), encoding="utf-8")
+            key["cases"][0]["claims"][0]["text"] = key["cases"][0]["claims"][0]["text"].replace(
+                "weighs", "wei​ghs")
+        self._plant(rendered, m, "format character(s) U+200B in claim text")
+
+    def test_nfkc_difference_is_not_refused(self, rendered):
+        root, key_path = rendered
+        t = root / "h001" / "target.html"
+        t.write_text(t.read_text(encoding="utf-8").replace("weighs 101 grams", "weighs 10¹ grams"),
+                     encoding="utf-8")
+        key = json.loads(key_path.read_text(encoding="utf-8"))
+        key["cases"][0]["claims"][0]["text"] = "Fixture Gadget 1 weighs 10¹ grams."
+        key_path.write_text(json.dumps(key), encoding="utf-8")
+        assert make_dataset.check(root, key_path, against=[DEV_KEY_PATH]) == []
+
+    @pytest.mark.parametrize("name,is_dir,expect", [
+        ("notes.html", False, "unknown file at the dataset root"),
+        ("spec_draft", True, "case directory has no answer-key entry"),
+        ("h062", True, "case directory has no answer-key entry"),
+    ])
+    def test_unknown_dataset_root_entry(self, rendered, name, is_dir, expect):
+        """RT1-13: the agent's tools can read anything under the dataset root."""
+        def m(root, key):
+            if is_dir:
+                (root / name).mkdir()
+            else:
+                (root / name).write_text("x", encoding="utf-8")
+        self._plant(rendered, m, expect)
+
+    def test_dev_and_official_share_the_dataset_root(self, tmp_path):
+        """Both sets live under evals/dataset: each check accounts for the
+        other set's folders through the default comparison with every other
+        key in the key directory (the existing --against mechanism)."""
+        root, keys = tmp_path / "dataset", tmp_path / "keys"
+        shutil.copytree(DATASET_ROOT, root)
+        keys.mkdir()
+        shutil.copyfile(DEV_KEY_PATH, keys / "dev.json")
+        spec_path = tmp_path / "spec.json"
+        spec_path.write_text(json.dumps(_spec()), encoding="utf-8")
+        assert make_dataset.render(spec_path, root, keys / "official.json") == []
+        assert make_dataset.check(root, keys / "dev.json") == []
+        assert make_dataset.check(root, keys / "official.json") == []
+        # without the comparison, the other set's folders are unknown entries
+        unknown = make_dataset.check(root, keys / "dev.json", against=[])
+        assert len(unknown) == 61 and all("no answer-key entry" in p for p in unknown)

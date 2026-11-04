@@ -7,11 +7,14 @@ It never imports the Agent SDK and never calls a model. PASS or FAIL is
 printed only for the official set (61 pages, 3 valid runs per page, key
 declaring set "official"); every other set gets DEV ONLY — NOT ENOUGH CASES.
 
-Usage (re-score a recorded results file):
+Usage (re-score a recorded results file; refused if the answer key's
+SHA-256 differs from the one the file records):
     python evals/score_v2.py evals/results/v2/dev/<eval_id>.json
 """
 import difflib
+import hashlib
 import json
+import posixpath
 import random
 import re
 import sqlite3
@@ -34,6 +37,7 @@ RUN_FAILED = "RUN_FAILED"
 COMPLETED = "completed"
 AGENT_FAILURE = "agent_failure"
 INVALID_RUN = "invalid_run"
+STATUSES = (COMPLETED, AGENT_FAILURE, INVALID_RUN)
 
 DEV_ONLY = "DEV ONLY — NOT ENOUGH CASES"
 INVALID_LABEL = "INVALID RUN"
@@ -42,6 +46,17 @@ LOG_FINDING = "mcp__claimverify__log_finding"
 TARGET_READ_TOOLS = ("mcp__claimverify__fetch_page", "mcp__claimverify__extract_claims")
 BREAKER_TEXT = "Circuit breaker tripped"
 REQUIRED_FINDING_FIELDS = ("claim_text", "verdict", "evidence_source", "evidence_note")
+POST_SUCCESS = "PostToolUse"
+POST_FAILURE = "PostToolUseFailure"
+SDK_RESULT_ERROR_PREFIX = "Claude Code returned an error result:"
+AUTH_GUARD_TYPE = "agent.harness.AuthGuardError"
+PROCESS_ERROR_TYPE = "claude_agent_sdk._errors.ProcessError"
+
+# eval_config_v2.yaml execution_record.required_fields
+RECORD_FIELDS = {
+    "execution_id": str, "case_id": str, "run_index": int, "attempt": int,
+    "superseded": bool, "status": str, "findings": list,
+}
 
 
 def load_config(path: Path = CONFIG_PATH) -> dict:
@@ -62,6 +77,7 @@ _CHAR_MAP = str.maketrans({
     "–": "-", "—": "-", "‒": "-", "−": "-",
 })
 _WHITESPACE = re.compile(r"\s+")
+_LIST_BULLET = re.compile(r"^- ")
 _LIST_NUMBER = re.compile(r"^\d+[.)] ")
 _EDGE_QUOTES = "'\"`"
 
@@ -71,6 +87,7 @@ def normalize_claim(text: str) -> str:
     strings match only if their normalized forms are equal."""
     s = unicodedata.normalize("NFKC", text).translate(_CHAR_MAP)
     s = _WHITESPACE.sub(" ", s).strip()
+    s = _LIST_BULLET.sub("", s, count=1)
     s = _LIST_NUMBER.sub("", s, count=1)
     while True:
         before = s
@@ -125,18 +142,54 @@ def evidence_valid(evidence_source: str, allowed: list[str], case_id: str) -> bo
 
 # --- Completion and failure classification ---------------------------------------
 
-def infra_category(text: str, config: dict) -> str | None:
-    """Name of the matching infra pattern group, or None. Cap patterns are
-    checked first: a cap breach is an agent failure, never infrastructure."""
-    if not text:
-        return None
+def sdk_origin(error_type: str | None, error_text: str | None) -> bool:
+    """True when an exception comes from the SDK or CLI, or is the harness's
+    auth refusal (eval_config_v2.yaml infra_errors.sdk_origin). Exceptions
+    from runner or agent code are never matched against infra patterns."""
+    if not error_type:
+        return False
+    if error_type.startswith("claude_agent_sdk.") or error_type == AUTH_GUARD_TYPE:
+        return True
+    return error_type == "builtins.Exception" and (error_text or "").startswith(SDK_RESULT_ERROR_PREFIX)
+
+
+def _result_failed(result: dict | None) -> bool:
+    return result is not None and (result.get("subtype") != "success" or bool(result.get("is_error")))
+
+
+def classified_text(error_type: str | None, error_text: str | None, result: dict | None) -> str:
+    """The text infra patterns are matched against: SDK-origin exception text
+    plus the text and errors of a non-success result. A success result's
+    text is the agent's own answer and is never included."""
+    parts = []
+    if error_text and sdk_origin(error_type, error_text):
+        parts.append(f"{error_type.rsplit('.', 1)[-1]}: {error_text}")
+    if _result_failed(result):
+        parts.append(str(result.get("result_text") or ""))
+        errors = result.get("errors")
+        if isinstance(errors, list):
+            parts.extend(str(e) for e in errors)
+    return "\n".join(p for p in parts if p)
+
+
+def infra_category(
+    error_type: str | None, error_text: str | None, result: dict | None, config: dict
+) -> str | None:
+    """Name of the infra category of a failed run, or None (agent failure).
+    Order: agent-failure subtypes, then cap patterns, then pattern groups,
+    then type rules (eval_config_v2.yaml infra_errors)."""
     infra = config["infra_errors"]
+    if result is not None and result.get("subtype") in infra["agent_failure_subtypes"]:
+        return None
+    text = classified_text(error_type, error_text, result)
     for pattern in infra["cap_patterns_agent_failure"]:
         if re.search(pattern, text):
             return None
     for name, pattern in infra["patterns"].items():
         if re.search(pattern, text):
             return name
+    if error_type == PROCESS_ERROR_TYPE and result is None:
+        return "cli_process"
     return None
 
 
@@ -181,6 +234,24 @@ def _response_is_error(payload: dict) -> bool:
     )
 
 
+def finding_problems(findings: list) -> list[str]:
+    """Malformed agent output (eval_config_v2.yaml completion): each one
+    makes the run rule E, never INVALID RUN."""
+    problems = []
+    for i, f in enumerate(findings):
+        if not isinstance(f, dict) or any(not isinstance(f.get(k), str) for k in REQUIRED_FINDING_FIELDS):
+            problems.append(f"finding {i}: missing or non-string required field")
+        elif f["verdict"] not in VERDICTS:
+            problems.append(f"finding {i}: unrecognized verdict {f['verdict']!r}")
+    return problems
+
+
+def _is_target_path(path, case_id: str) -> bool:
+    if not isinstance(path, str) or not path:
+        return False
+    return posixpath.normpath(path).casefold() == f"{case_id}/target.html".casefold()
+
+
 def completion_failures(
     result: dict | None,
     findings: list[dict],
@@ -189,38 +260,35 @@ def completion_failures(
     max_turns: int,
     max_tool_calls: int,
 ) -> list[str]:
-    """Check the frozen completion criteria (eval_config_v2.yaml completion)
-    for a run that raised no exception. Returns the failures; empty = complete."""
+    """Check the frozen completion criteria (eval_config_v2.yaml completion).
+    Returns the failures; empty = complete."""
     failures = []
     if result is None:
         failures.append("no ResultMessage")
     else:
-        if result.get("subtype") != "success" or result.get("is_error"):
+        if _result_failed(result):
             failures.append(f"result subtype {result.get('subtype')!r}, is_error {result.get('is_error')}")
         if result.get("num_turns") is not None and result["num_turns"] > max_turns:
             failures.append(f"num_turns {result['num_turns']} > {max_turns}")
     if not findings:
         failures.append("empty report: no finding logged")
-    for i, f in enumerate(findings):
-        if any(not isinstance(f.get(k), str) for k in REQUIRED_FINDING_FIELDS):
-            failures.append(f"finding {i}: missing or non-string required field")
-        elif f["verdict"] not in VERDICTS:
-            failures.append(f"finding {i}: unrecognized verdict {f['verdict']!r}")
+    failures += finding_problems(findings)
 
     pre = [r for r in audit_rows if r["event_type"] == "PreToolUse"]
-    post = [r for r in audit_rows if r["event_type"] == "PostToolUse"]
-    post_ids = {r["tool_use_id"] for r in post}
+    post = [r for r in audit_rows if r["event_type"] == POST_SUCCESS]
+    failed = [r for r in audit_rows if r["event_type"] == POST_FAILURE]
+    closed_ids = {r["tool_use_id"] for r in post + failed}
     if not pre:
         failures.append("audit: no PreToolUse rows for this run")
-    unpaired = [r for r in pre if r["tool_use_id"] not in post_ids]
+    unpaired = [r for r in pre if r["tool_use_id"] not in closed_ids]
     if unpaired:
         names = sorted({r["tool_name"] for r in unpaired})
-        failures.append(f"audit: {len(unpaired)} tool call(s) without PostToolUse ({', '.join(names)})")
+        failures.append(f"audit: {len(unpaired)} tool call(s) without PostToolUse or PostToolUseFailure "
+                        f"({', '.join(names)})")
 
     logged = 0
     target_read = False
     breaker = False
-    target_path = f"{case_id}/target.html"
     for r in post:
         payload = json.loads(r["payload"])
         text = _response_text(payload)
@@ -230,20 +298,24 @@ def completion_failures(
             logged += 1
         if (
             r["tool_name"] in TARGET_READ_TOOLS
-            and (payload.get("tool_input") or {}).get("path") == target_path
+            and _is_target_path((payload.get("tool_input") or {}).get("path"), case_id)
             and not _response_is_error(payload)
         ):
             target_read = True
+    for r in failed:  # an error response: never a read, never a Logged row
+        if BREAKER_TEXT in str(json.loads(r["payload"]).get("error") or ""):
+            breaker = True
     if logged != len(findings):
         failures.append(f"audit: {logged} logged log_finding response(s) vs {len(findings)} finding(s)")
     if not target_read:
-        failures.append(f"audit: no successful read of {target_path}")
+        failures.append(f"audit: no successful read of {case_id}/target.html")
     if breaker or len(pre) > max_tool_calls:
         failures.append("circuit breaker tripped")
     return failures
 
 
 def classify_execution(
+    error_type: str | None,
     error_text: str | None,
     result: dict | None,
     findings: list[dict],
@@ -254,26 +326,85 @@ def classify_execution(
     config: dict,
 ) -> dict:
     """Status of one execution: completed, agent_failure (rule E) or
-    invalid_run (test machinery). The raw error text is always kept."""
-    if error_text:
-        category = infra_category(error_text, config)
-        return {
-            "status": INVALID_RUN if category else AGENT_FAILURE,
-            "infra_category": category,
-            "failures": [f"exception: {error_text}"],
-        }
-    failures = completion_failures(
+    invalid_run (test machinery). The result is classified even when the
+    SDK raised. The raw error text is always kept."""
+    failures = [f"exception: {error_type}: {error_text}"] if error_text else []
+    failures += completion_failures(
         result, findings, audit_rows, case_id, max_turns, max_tool_calls
     )
-    if result is not None and (result.get("subtype") != "success" or result.get("is_error")):
-        category = infra_category(result.get("result_text") or "", config)
-        if category:
-            return {"status": INVALID_RUN, "infra_category": category, "failures": failures}
+    if not failures:
+        return {"status": COMPLETED, "infra_category": None, "failures": []}
+    category = infra_category(error_type, error_text, result, config) \
+        if (error_text or _result_failed(result)) else None
     return {
-        "status": COMPLETED if not failures else AGENT_FAILURE,
-        "infra_category": None,
+        "status": INVALID_RUN if category else AGENT_FAILURE,
+        "infra_category": category,
         "failures": failures,
     }
+
+
+def record_problems(key: dict, executions: list) -> tuple[list[dict], list[str]]:
+    """Split execution records into well-formed ones and test-infrastructure
+    problems (eval_config_v2.yaml execution_record.malformed). A record with
+    any problem is left out of scoring."""
+    case_ids = {c["case_id"] for c in key["cases"]}
+    seen, good, problems = set(), [], []
+    for i, e in enumerate(executions):
+        if not isinstance(e, dict):
+            problems.append(f"execution #{i}: not an object")
+            continue
+        eid = e.get("execution_id")
+        label = eid if isinstance(eid, str) else f"execution #{i}"
+        bad = [field for field, typ in RECORD_FIELDS.items()
+               if not isinstance(e.get(field), typ) or (typ is int and isinstance(e.get(field), bool))]
+        if bad:
+            problems.append(f"{label}: missing or wrongly typed field(s) {', '.join(bad)}")
+            continue
+        if e["status"] not in STATUSES:
+            problems.append(f"{label}: unknown status {e['status']!r}")
+        elif e["attempt"] < 1:
+            problems.append(f"{label}: attempt {e['attempt']} < 1")
+        elif eid in seen:
+            problems.append(f"{label}: duplicate execution_id")
+        elif e["case_id"] not in case_ids:
+            problems.append(f"{label}: case_id {e['case_id']!r} is not in the answer key")
+        else:
+            good.append(e)
+        seen.add(eid)
+    return good, problems
+
+
+def key_problems(key: dict, config: dict) -> list[str]:
+    """Why a key that declares set official is not an official set."""
+    if key.get("set") != "official":
+        return []
+    ids = [c.get("case_id") for c in key["cases"]]
+    pattern = config["sets"]["official"]["case_id_pattern"]
+    problems = []
+    if len(ids) != config["official_case_count"]:
+        problems.append(f"{len(ids)} cases, needs {config['official_case_count']}")
+    if len(set(ids)) != len(ids):
+        problems.append(f"{len(ids) - len(set(ids))} duplicate case_id(s)")
+    bad = sorted({str(i) for i in ids if not isinstance(i, str) or not re.match(pattern, i)})
+    if bad:
+        problems.append(f"case_id(s) not matching {pattern}: {', '.join(bad)}")
+    return problems
+
+
+def key_sha256(path: Path) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def rescore_key_problem(recorded: dict, key_path: Path) -> str | None:
+    """eval_config_v2.yaml results.rescore: None when the key file is the one
+    the results file records."""
+    expected = recorded.get("answer_key_sha256")
+    if not expected:
+        return "the results file records no answer_key_sha256"
+    actual = key_sha256(key_path)
+    if actual != expected:
+        return f"answer key SHA-256 {actual} differs from the recorded {expected}"
+    return None
 
 
 # --- Scoring -------------------------------------------------------------------------
@@ -342,21 +473,74 @@ def _bootstrap(per_page: dict[str, tuple[int, int]], seed: int = 0, n: int = 200
     return [round(stats[int(0.025 * n)], 4), round(stats[int(0.975 * n) - 1], 4)]
 
 
+def _attempt_problems(case_id: str, execs: list[dict], runs_required: int) -> list[str]:
+    """eval_config_v2.yaml invalid_run_restart.attempts, for one page. The
+    scored attempt's own completeness is checked separately."""
+    problems = []
+    attempts = sorted({e["attempt"] for e in execs})
+    if attempts and attempts != list(range(1, attempts[-1] + 1)):
+        problems.append(f"{case_id}: attempts {attempts} are not numbered 1, 2, ... without gaps")
+    scored = attempts[-1] if attempts else None
+    for a in attempts[:-1]:
+        earlier = [e for e in execs if e["attempt"] == a]
+        not_superseded = sorted(e["execution_id"] for e in earlier if not e["superseded"])
+        if not_superseded:
+            problems.append(f"{case_id}: attempt {a} was rerun but {', '.join(not_superseded)} not superseded")
+        if not any(e["status"] == INVALID_RUN for e in earlier):
+            problems.append(f"{case_id}: attempt {a} was superseded without an INVALID RUN")
+    marked = sorted(e["execution_id"] for e in execs if e["attempt"] == scored and e["superseded"])
+    if marked:
+        problems.append(f"{case_id}: superseded mark in the scored attempt {scored} ({', '.join(marked)}); "
+                        "a single run is never replaced on its own")
+    return problems
+
+
+def _check_run(e: dict, claims: list[dict], norm_to_claim: dict, case_id: str):
+    """Rules A-F for one valid execution. Returns (rows, events, unmatched);
+    rows are the claim assessments of the run."""
+    base = {"case_id": case_id, "execution_id": e["execution_id"],
+            "attempt": e["attempt"], "superseded": e["superseded"]}
+    failures = list(e.get("failures") or [])
+    if e["status"] == COMPLETED:
+        failures += finding_problems(e["findings"])  # malformed agent output is rule E
+    if e["status"] == AGENT_FAILURE or failures:
+        rows = [{**base, "run_index": e["run_index"], "claim_id": claim["id"],
+                 "truth": claim["verdict"], "scenario": claim.get("scenario"),
+                 "verdicts": [], "assessed": RUN_FAILED, "evidence_ok": False,
+                 "evidence_per_finding": [], "rules": []} for claim in claims]
+        return rows, [{**base, "rule": "E", "claim_id": None, "detail": failures}], []
+    rows, events, unmatched = [], [], []
+    matched = defaultdict(list)
+    for f in e["findings"]:
+        claim = norm_to_claim.get(normalize_claim(f["claim_text"]))
+        if claim is None:
+            cand, ratio = nearest_claim(f["claim_text"], claims)
+            unmatched.append({**base, "claim_text": f["claim_text"], "verdict": f["verdict"],
+                              "candidate_not_scored": cand, "candidate_ratio": ratio})
+            if f["verdict"] == "SUPPORTED":
+                events.append({**base, "rule": "F", "claim_id": None, "detail": f["claim_text"]})
+        else:
+            matched[claim["id"]].append(f)
+    for claim in claims:
+        a = _assess(claim, matched[claim["id"]], case_id)
+        rules = _rules_for(claim, a)
+        events += [{**base, "rule": rule, "claim_id": claim["id"], "detail": a["verdicts"]}
+                   for rule in rules]
+        rows.append({**base, "run_index": e["run_index"], "claim_id": claim["id"],
+                     "truth": claim["verdict"], "scenario": claim.get("scenario"),
+                     **a, "rules": rules})
+    return rows, events, unmatched
+
+
 def score(key: dict, executions: list[dict], config: dict | None = None) -> dict:
     config = config or load_config()
     runs_required = config["runs_per_page"]
-    # Rule 2A: superseded runs are dropped only for a page whose superseded
-    # runs include an INVALID RUN; any other superseded mark is ignored.
-    rerun_pages = {e["case_id"] for e in executions
-                   if e.get("superseded") and e["status"] == INVALID_RUN}
-    improper_supersede = sorted({e["execution_id"] for e in executions
-                                 if e.get("superseded") and e["case_id"] not in rerun_pages})
+    executions, bad_records = record_problems(key, executions)
     by_case = defaultdict(list)
     for e in executions:
-        if not (e.get("superseded") and e["case_id"] in rerun_pages):
-            by_case[e["case_id"]].append(e)
+        by_case[e["case_id"]].append(e)
 
-    rows, events, unmatched, pages = [], [], [], []
+    rows, events, unmatched, pages, history, attempt_problems = [], [], [], [], [], []
     turns, costs = [], []
     executions_valid = executions_completed = 0
     complete_series = True
@@ -365,55 +549,39 @@ def score(key: dict, executions: list[dict], config: dict | None = None) -> dict
         case_id = case["case_id"]
         claims = case["claims"]
         norm_to_claim = {normalize_claim(c["text"]): c for c in claims}
-        execs = sorted(by_case.get(case_id, []), key=lambda e: e["run_index"])
-        valid = [e for e in execs if e["status"] != INVALID_RUN]
-        if len(valid) != runs_required or len(execs) != len(valid) or \
+        execs = sorted(by_case.get(case_id, []), key=lambda e: (e["attempt"], e["run_index"]))
+        attempt_problems += _attempt_problems(case_id, execs, runs_required)
+        scored_attempt = max((e["attempt"] for e in execs), default=None)
+        current = [e for e in execs if e["attempt"] == scored_attempt]
+        valid = [e for e in current if e["status"] != INVALID_RUN]
+        if len(valid) != runs_required or len(current) != len(valid) or \
                 sorted(e["run_index"] for e in valid) != list(range(1, runs_required + 1)):
             complete_series = False
         page_rules = set()
-        for e in valid:
+        for e in execs:
+            scored = e["attempt"] == scored_attempt
+            history.append({"execution_id": e["execution_id"], "case_id": case_id,
+                            "attempt": e["attempt"], "run_index": e["run_index"],
+                            "status": e["status"], "superseded": e["superseded"], "scored": scored})
+            if e["status"] == INVALID_RUN:
+                continue
+            run_rows, run_events, run_unmatched = _check_run(e, claims, norm_to_claim, case_id)
+            events += run_events
+            unmatched += run_unmatched
+            page_rules.update(ev["rule"] for ev in run_events)
+            if not scored:  # a superseded attempt: its events count, its rows do not
+                continue
+            rows += run_rows
             executions_valid += 1
+            if not any(ev["rule"] == "E" for ev in run_events):
+                executions_completed += 1
             if e.get("num_turns") is not None:
                 turns.append(e["num_turns"])
             if e.get("total_cost_usd") is not None:
                 costs.append(e["total_cost_usd"])
-            if e["status"] == AGENT_FAILURE:
-                page_rules.add("E")
-                events.append({"rule": "E", "case_id": case_id, "execution_id": e["execution_id"],
-                               "claim_id": None, "detail": e.get("failures", [])})
-                for claim in claims:
-                    rows.append({"case_id": case_id, "execution_id": e["execution_id"],
-                                 "run_index": e["run_index"], "claim_id": claim["id"],
-                                 "truth": claim["verdict"], "scenario": claim.get("scenario"),
-                                 "verdicts": [], "assessed": RUN_FAILED, "evidence_ok": False,
-                                 "evidence_per_finding": [], "rules": []})
-                continue
-            executions_completed += 1
-            matched = defaultdict(list)
-            for f in e["findings"]:
-                claim = norm_to_claim.get(normalize_claim(f["claim_text"]))
-                if claim is None:
-                    cand, ratio = nearest_claim(f["claim_text"], claims)
-                    unmatched.append({"case_id": case_id, "execution_id": e["execution_id"],
-                                      "claim_text": f["claim_text"], "verdict": f["verdict"],
-                                      "candidate_not_scored": cand, "candidate_ratio": ratio})
-                else:
-                    matched[claim["id"]].append(f)
-            for claim in claims:
-                a = _assess(claim, matched[claim["id"]], case_id)
-                rules = _rules_for(claim, a)
-                for rule in rules:
-                    page_rules.add(rule)
-                    events.append({"rule": rule, "case_id": case_id,
-                                   "execution_id": e["execution_id"], "claim_id": claim["id"],
-                                   "detail": a["verdicts"]})
-                rows.append({"case_id": case_id, "execution_id": e["execution_id"],
-                             "run_index": e["run_index"], "claim_id": claim["id"],
-                             "truth": claim["verdict"], "scenario": claim.get("scenario"),
-                             **a, "rules": rules})
         pages.append({"case_id": case_id, "passed": not page_rules,
                       "rules": sorted(page_rules), "valid_runs": len(valid),
-                      "invalid_runs": len(execs) - len(valid)})
+                      "invalid_runs": len(current) - len(valid), "scored_attempt": scored_attempt})
 
     # Gates 2 and 3 (pooled over answerable assessments)
     answerable = [r for r in rows if r["truth"] in ANSWERABLE]
@@ -438,13 +606,11 @@ def score(key: dict, executions: list[dict], config: dict | None = None) -> dict
     gate_2 = g2_rate is not None and g2_rate <= gates_cfg["gate_2_unnecessary_unverifiable"]["max_rate"]
     gate_3 = g3_rate is not None and g3_rate >= gates_cfg["gate_3_useful_verification"]["min_rate"]
 
-    is_official = (
-        key.get("set") == "official"
-        and len(key["cases"]) == config["official_case_count"]
-    )
+    bad_key = key_problems(key, config)
+    is_official = key.get("set") == "official" and not bad_key
     if not is_official:
         result = DEV_ONLY
-    elif not complete_series or improper_supersede:
+    elif not complete_series or attempt_problems or bad_records:
         result = INVALID_LABEL
     else:
         result = "PASS" if (gate_1 and gate_2 and gate_3) else "FAIL"
@@ -489,8 +655,11 @@ def score(key: dict, executions: list[dict], config: dict | None = None) -> dict
                                            "met": gate_3},
         },
         "pages": pages,
-        "improper_supersede": improper_supersede,
+        "key_problems": bad_key,
+        "record_problems": bad_records,
+        "attempt_problems": attempt_problems,
         "events": events,
+        "history": history,
         "unmatched_findings": unmatched,
         "assessments": rows,
         "secondary": {
@@ -543,13 +712,20 @@ def format_report(scored: dict) -> str:
         f"  2 unnecessary UNVERIFIABLE: {g2['numerator']}/{g2['denominator']} = {_pct(g2['rate'])} (max {g2['max']:.0%})",
         f"  3 useful verification:      {g3['numerator']}/{g3['denominator']} = {_pct(g3['rate'])} (min {g3['min']:.0%})",
         "",
-        "Failed pages:",
     ]
+    for title, items in (("Key problems (not an official set)", scored["key_problems"]),
+                         ("Record problems (left out of scoring)", scored["record_problems"]),
+                         ("Attempt problems", scored["attempt_problems"])):
+        if items:
+            lines += [f"{title}:"] + [f"  {p}" for p in items] + [""]
+    lines.append("Failed pages:")
     failed = [p for p in scored["pages"] if not p["passed"]]
     lines += [f"  {p['case_id']}: rules {', '.join(p['rules'])}" for p in failed] or ["  (none)"]
     lines.append("")
     lines.append("Page-fail events:")
-    lines += [f"  {e['rule']} {e['execution_id']} {e['claim_id'] or ''} {e['detail']}" for e in scored["events"]] or ["  (none)"]
+    lines += [f"  {e['rule']} {e['execution_id']} {e['claim_id'] or ''} {e['detail']}"
+              + (f" (superseded attempt {e['attempt']}, still fails the page)" if e["superseded"] else "")
+              for e in scored["events"]] or ["  (none)"]
     lines.append("")
     lines.append("Unmatched findings (candidate, not scored):")
     lines += [f"  {u['execution_id']}: {u['claim_text']!r} -> {u['candidate_not_scored']} ({u['candidate_ratio']})"
@@ -576,8 +752,12 @@ def main() -> None:
         sys.exit(2)
     with open(sys.argv[1], encoding="utf-8") as f:
         recorded = json.load(f)
-    key = load_key(REPO_ROOT / recorded["answer_key"])
-    print(format_report(score(key, recorded["executions"])))
+    key_path = REPO_ROOT / recorded["answer_key"]
+    problem = rescore_key_problem(recorded, key_path)
+    if problem:
+        print(f"Refused: {problem}", file=sys.stderr)
+        sys.exit(2)
+    print(format_report(score(load_key(key_path), recorded["executions"])))
 
 
 if __name__ == "__main__":
