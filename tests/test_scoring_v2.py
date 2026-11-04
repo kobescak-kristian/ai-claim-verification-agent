@@ -5,6 +5,7 @@ the test code. The synthetic 61-page fixture is generated from a fixed seed
 (synthetic claim records only, no HTML, no link to the hold-out).
 """
 import copy
+import hashlib
 import json
 import random
 import shutil
@@ -62,6 +63,20 @@ def perfect_findings(case: dict) -> list[dict]:
     ]
 
 
+SUCCESS_RESULT = {"subtype": "success", "is_error": False, "num_turns": 8, "result_text": "done", "errors": []}
+NO_ERROR = {"error_type": None, "error": None, "result": SUCCESS_RESULT}
+
+
+def mark_invalid(e: dict) -> dict:
+    """An INVALID RUN record with the evidence that supports it (an API 529
+    as the SDK reports it)."""
+    e.update(status=INVALID_RUN, infra_category="overloaded_or_5xx", error_type="builtins.Exception",
+             error="Claude Code returned an error result: API Error: 529 Overloaded",
+             result={"subtype": "success", "is_error": True, "num_turns": 1,
+                     "result_text": "API Error: 529 Overloaded", "errors": []})
+    return e
+
+
 def perfect_executions(key: dict, runs: int = 3) -> list[dict]:
     return [
         {
@@ -74,6 +89,7 @@ def perfect_executions(key: dict, runs: int = 3) -> list[dict]:
             "failures": [],
             "num_turns": 8,
             "total_cost_usd": 0.1,
+            **copy.deepcopy(NO_ERROR),
             "findings": perfect_findings(case),
         }
         for case in key["cases"]
@@ -113,20 +129,24 @@ def by_id(executions: list[dict]) -> dict:
     return {e["execution_id"]: e for e in executions}
 
 
-def rerun_page(execs: list[dict], case: dict, invalid_run: int, attempt: int = 2) -> list[dict]:
-    """Decision 2A in attempt form: the page's earlier executions are marked
-    superseded, run `invalid_run` of the previous attempt is INVALID RUN,
-    and a fresh, perfect attempt of 3 runs is added."""
-    out = copy.deepcopy(execs)
-    page = [e for e in out if e["case_id"] == case["case_id"]]
-    for e in page:
+def rerun_page(execs: list[dict], case: dict, invalid_run: int | None, attempt: int = 2) -> list[dict]:
+    """Decision 2A in attempt form: the previous attempt stopped at run
+    `invalid_run`, an INVALID RUN with its evidence (later runs never ran;
+    None = no INVALID RUN, for refusal tests); the page's earlier executions
+    are marked superseded and a fresh, perfect attempt of 3 runs is added."""
+    out = [e for e in copy.deepcopy(execs)
+           if not (e["case_id"] == case["case_id"] and e["attempt"] == attempt - 1
+                   and invalid_run is not None and e["run_index"] > invalid_run)]
+    for e in out:
+        if e["case_id"] != case["case_id"]:
+            continue
         e["superseded"] = True
         if e["attempt"] == attempt - 1 and e["run_index"] == invalid_run:
-            e["status"] = INVALID_RUN
+            mark_invalid(e)
     for r in (1, 2, 3):
         out.append({"execution_id": f"fx-{case['case_id']}-r{r}-a{attempt}", "case_id": case["case_id"],
                     "run_index": r, "attempt": attempt, "superseded": False, "status": COMPLETED,
-                    "failures": [], "num_turns": 8, "total_cost_usd": 0.1,
+                    "failures": [], "num_turns": 8, "total_cost_usd": 0.1, **copy.deepcopy(NO_ERROR),
                     "findings": perfect_findings(case)})
     return out
 
@@ -213,7 +233,7 @@ class TestOfficialGate:
 
     def test_outstanding_invalid_run_blocks_result(self, official_key):
         execs = perfect_executions(official_key)
-        execs[0]["status"] = INVALID_RUN
+        mark_invalid(execs[0])
         assert score(official_key, execs, CONFIG)["result"] == INVALID_LABEL
 
     def test_superseded_invalid_run_after_page_rerun(self, official_key):
@@ -222,7 +242,7 @@ class TestOfficialGate:
         scored = score(official_key, fresh, CONFIG)
         assert scored["result"] == "PASS"
         assert scored["pages"][0]["scored_attempt"] == 2
-        assert len(scored["history"]) == len(execs) + 3
+        assert len(scored["history"]) == len(execs) - 1 + 3  # run 3 never ran after the INVALID RUN
 
     def test_superseded_without_invalid_run_is_refused(self, official_key):
         """2A allows only a whole-page rerun after an INVALID RUN; a bad run
@@ -230,7 +250,7 @@ class TestOfficialGate:
         execs = perfect_executions(official_key)
         case = official_key["cases"][0]
         bad = copy.deepcopy(by_id(execs)[f"fx-{case['case_id']}-r2"])
-        bad["execution_id"] += "-old"
+        bad["execution_id"] = "old-" + bad["execution_id"]
         bad["status"] = AGENT_FAILURE
         bad["superseded"] = True
         scored = score(official_key, [bad] + execs, CONFIG)
@@ -716,7 +736,7 @@ class TestAttempts:
         cid = case["case_id"]
         contradicted = next(c for c in case["claims"] if c["verdict"] != "UNVERIFIABLE")
         set_verdict(execs, case, contradicted, 1, "UNVERIFIABLE")
-        by_id(execs)[f"fx-{cid}-r2"]["status"] = INVALID_RUN
+        mark_invalid(by_id(execs)[f"fx-{cid}-r2"])
         for r in (1, 2):
             by_id(execs)[f"fx-{cid}-r{r}"]["superseded"] = True
             fresh = copy.deepcopy(by_id(perfect_executions(official_key))[f"fx-{cid}-r{r}"])
@@ -750,10 +770,10 @@ class TestAttempts:
     def test_earlier_attempt_without_invalid_run_is_invalid(self, official_key):
         execs = perfect_executions(official_key)
         case = official_key["cases"][0]
-        fresh = rerun_page(execs, case, invalid_run=0)  # nothing was INVALID RUN
+        fresh = rerun_page(execs, case, invalid_run=None)  # nothing was INVALID RUN
         scored = score(official_key, fresh, CONFIG)
         assert scored["result"] == INVALID_LABEL
-        assert any("superseded without an INVALID RUN" in p for p in scored["attempt_problems"])
+        assert any("is not a supported INVALID RUN" in p for p in scored["attempt_problems"])
 
     def test_attempt_gap_is_invalid(self, official_key):
         execs = perfect_executions(official_key)
@@ -909,6 +929,275 @@ class TestRescore:
         recorded, key_path = self._recorded(tmp_path)
         del recorded["answer_key_sha256"]
         assert "records no answer_key_sha256" in rescore_key_problem(recorded, key_path)
+
+
+# --- second amendment: the red-team re-check fixes ---------------------------------
+
+def _rule_a_on_run1(key, pages=3):
+    execs = perfect_executions(key)
+    hit = []
+    for case in key["cases"]:
+        claim = next((c for c in case["claims"] if c["verdict"] == "CONTRADICTED"), None)
+        if claim is not None and len(hit) < pages:
+            set_verdict(execs, case, claim, 1, "SUPPORTED")
+            hit.append(case)
+    return execs, hit
+
+
+class TestStatusIntegrity:
+    def test_unsupported_invalid_run_cannot_erase_a_failure(self, official_key):
+        """Re-check RT1R-01: a bad run relabelled invalid_run with no infra
+        evidence does not justify a rerun, and its failure stays."""
+        execs, hit = _rule_a_on_run1(official_key)
+        for case in hit:
+            by_id(execs)[f"fx-{case['case_id']}-r1"]["status"] = INVALID_RUN  # no evidence
+        for case in hit:
+            execs = rerun_page(execs, case, invalid_run=None)  # keeps the relabelled run 1
+            execs = [e for e in execs if not (e["case_id"] == case["case_id"] and e["attempt"] == 1
+                                              and e["run_index"] > 1)]
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        for case in hit:
+            assert not _page(scored, case["case_id"])["passed"]
+        assert sum("record integrity" in p for p in scored["record_problems"]) == 3
+        assert any("is not a supported INVALID RUN" in p for p in scored["attempt_problems"])
+
+    @pytest.mark.parametrize("mutate,expect", [
+        (lambda e: e.update(error_type=PROCESS_ERROR, error="Command failed with exit code 1"),
+         "an exception is recorded"),
+        (lambda e: e.update(error_type="builtins.TimeoutError", error=""), "an exception is recorded"),
+        (lambda e: e.update(result=dict(SUCCESS_RESULT, subtype="error_max_turns", is_error=True)),
+         "no success result"),
+        (lambda e: e.update(result=None), "no success result"),
+        (lambda e: e.update(result=dict(SUCCESS_RESULT, num_turns=25)), "num_turns is 25"),
+    ])
+    def test_completed_needs_its_evidence(self, official_key, mutate, expect):
+        execs = perfect_executions(official_key)
+        mutate(execs[0])
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any(expect in p for p in scored["record_problems"]), scored["record_problems"]
+        assert _page(scored, execs[0]["case_id"])["rules"] == ["E"]  # kept, as an agent failure
+
+    def test_agent_failure_with_infra_evidence(self, official_key):
+        execs = perfect_executions(official_key)
+        mark_invalid(execs[0])["status"] = AGENT_FAILURE
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any("classifies as infrastructure" in p for p in scored["record_problems"])
+
+    def test_recorded_category_must_match(self, official_key):
+        execs = perfect_executions(official_key)
+        mark_invalid(execs[0])["infra_category"] = "auth"
+        scored = score(official_key, execs, CONFIG)
+        assert any("recorded infra_category 'auth'" in p for p in scored["record_problems"])
+
+    def test_supported_invalid_run_is_consistent(self, official_key):
+        execs = rerun_page(perfect_executions(official_key), official_key["cases"][0], invalid_run=2)
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == "PASS" and scored["record_problems"] == []
+
+    @pytest.mark.parametrize("field", ["error_type", "error", "result"])
+    def test_evidence_fields_are_required(self, official_key, field):
+        execs = perfect_executions(official_key)
+        del execs[0][field]
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any(field in p for p in scored["record_problems"])
+
+
+class TestEarlierAttemptRuns:
+    def test_lost_run_of_an_earlier_attempt(self, official_key):
+        """Re-check RT1R-02: losing a bad run's record from an earlier attempt
+        is refused, so its event cannot disappear."""
+        execs, hit = _rule_a_on_run1(official_key)
+        for case in hit:
+            execs = rerun_page(execs, case, invalid_run=2)
+        full = score(official_key, execs, CONFIG)
+        assert full["result"] == "FAIL" and full["gates"]["gate_1_page_reliability"]["passing_pages"] == 58
+        lost = [e for e in execs if not (e["attempt"] == 1 and e["run_index"] == 1
+                                         and e["case_id"] in {c["case_id"] for c in hit})]
+        scored = score(official_key, lost, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert sum("holds runs [2]" in p for p in scored["attempt_problems"]) == 3
+
+    @pytest.mark.parametrize("run_index", [7, 2])
+    def test_run_index_out_of_range_or_duplicate(self, official_key, run_index):
+        case = official_key["cases"][0]
+        execs = rerun_page(perfect_executions(official_key), case, invalid_run=2)
+        by_id(execs)[f"fx-{case['case_id']}-r1"]["run_index"] = run_index
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any("an earlier attempt needs runs 1 to k" in p for p in scored["attempt_problems"])
+
+    def test_invalid_run_must_end_the_attempt(self, official_key):
+        case = official_key["cases"][0]
+        execs = perfect_executions(official_key)
+        mark_invalid(by_id(execs)[f"fx-{case['case_id']}-r1"])
+        execs = rerun_page(execs, case, invalid_run=None)  # runs 2 and 3 kept after the INVALID RUN
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any("continued after an INVALID RUN" in p for p in scored["attempt_problems"])
+
+    def test_events_of_earlier_valid_runs_are_kept(self, official_key):
+        execs, hit = _rule_a_on_run1(official_key, pages=1)
+        execs = rerun_page(execs, hit[0], invalid_run=2)
+        scored = score(official_key, execs, CONFIG)
+        assert _page(scored, hit[0]["case_id"])["rules"] == ["A"]
+        assert scored["attempt_problems"] == [] and scored["result"] == "PASS"
+
+
+CRASH_TEXT = "Command failed with exit code 1 (exit code: 1)\nError output: Check stderr output for details"
+
+
+class TestCliCrashProvenance:
+    """Re-check RT1R-03: the SDK re-raises a mid-run ProcessError as a plain
+    Exception (claude_agent_sdk 0.2.110 _internal/query.py receive_messages);
+    its text is the ProcessError message built in subprocess_cli.py."""
+
+    def _classify(self, error_type, text, origin, result=None):
+        return classify_execution(error_type, text, result, [], [], "case_01", 20, 60, CONFIG,
+                                  error_origin=origin)
+
+    @pytest.mark.parametrize("text", [CRASH_TEXT, CRASH_TEXT.replace("1", "-1")])
+    def test_crash_at_the_sdk_boundary_is_invalid_run(self, text):
+        out = self._classify("builtins.Exception", text, "sdk_call")
+        assert out["status"] == INVALID_RUN and out["infra_category"] == "cli_process"
+
+    @pytest.mark.parametrize("error_type,text,origin,result", [
+        ("builtins.Exception", CRASH_TEXT, None, None),  # origin not established
+        ("builtins.Exception", CRASH_TEXT, "runner", None),
+        ("builtins.Exception", "Command failed with exit code 1: oops", "sdk_call", None),
+        ("builtins.Exception", CRASH_TEXT.replace("(exit code: 1)", "(exit code: 2)"), "sdk_call", None),
+        ("builtins.Exception", CRASH_TEXT + "\nmore", "sdk_call", None),
+        ("builtins.RuntimeError", CRASH_TEXT, "sdk_call", None),
+        ("builtins.Exception", CRASH_TEXT, "sdk_call", error_result("", subtype="error_max_turns")),
+    ])
+    def test_without_provenance_or_signature_it_stays_rule_e(self, error_type, text, origin, result):
+        out = self._classify(error_type, text, origin, result)
+        assert out["status"] == AGENT_FAILURE and out["infra_category"] is None
+
+    def test_crash_record_is_consistent(self, official_key):
+        case = official_key["cases"][0]
+        execs = rerun_page(perfect_executions(official_key), case, invalid_run=2)
+        e = by_id(execs)[f"fx-{case['case_id']}-r2"]
+        e.update(infra_category="cli_process", error_type="builtins.Exception", error=CRASH_TEXT,
+                 error_origin="sdk_call", result=None)
+        assert score(official_key, execs, CONFIG)["result"] == "PASS"
+        e["error_origin"] = None
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any("show no infrastructure category" in p for p in scored["record_problems"])
+
+
+class TestEmptyException:
+    """Re-check RT1R-04: an exception with an empty message is an exception."""
+
+    @pytest.mark.parametrize("error_type,text", [
+        ("builtins.TimeoutError", ""),
+        ("asyncio.exceptions.CancelledError", ""),
+        ("asyncio.exceptions.CancelledError", None),
+    ])
+    def test_empty_message_after_a_good_run(self, error_type, text):
+        out = classify_execution(error_type, text, TestCompletion.RESULT, TestCompletion.FINDINGS,
+                                 [], "case_01", 20, 60, CONFIG)
+        assert out["status"] == AGENT_FAILURE
+        assert out["failures"][0].startswith(f"exception: {error_type}")
+
+    def test_empty_sdk_exception_is_still_classified(self):
+        out = classify_execution(CLI_NOT_FOUND, "", None, [], [], "case_01", 20, 60, CONFIG)
+        assert out["status"] == INVALID_RUN and out["infra_category"] == "cli_spawn"
+
+
+class TestKeyHashForm:
+    """Re-check RT1R-05: the answer-key hash ignores the checkout's line endings."""
+
+    def test_lf_and_crlf_give_one_hash(self, tmp_path):
+        lf, crlf = tmp_path / "lf.json", tmp_path / "crlf.json"
+        lf.write_bytes(b'{\n  "set": "dev",\n  "cases": []\n}\n')
+        crlf.write_bytes(lf.read_bytes().replace(b"\n", b"\r\n"))
+        assert key_sha256(lf) == key_sha256(crlf) == hashlib.sha256(lf.read_bytes()).hexdigest()
+        assert key_sha256(crlf) != hashlib.sha256(crlf.read_bytes()).hexdigest()
+
+    def test_rescore_accepts_another_checkout(self, tmp_path):
+        key_path = tmp_path / "key.json"
+        key_path.write_bytes(b'{"set": "dev",\n"cases": []}\n')
+        recorded = {"answer_key_sha256": key_sha256(key_path)}
+        key_path.write_bytes(key_path.read_bytes().replace(b"\n", b"\r\n"))
+        assert rescore_key_problem(recorded, key_path) is None
+
+
+class TestNotScoredObservations:
+    """Re-check RT1R-06: findings of an INVALID RUN are reported, never scored."""
+
+    def test_false_assurance_inside_an_invalid_run(self, official_key):
+        execs = perfect_executions(official_key)
+        case, claim = claim_of(official_key, "CONTRADICTED")
+        set_verdict(execs, case, claim, 2, "SUPPORTED")
+        execs = rerun_page(execs, case, invalid_run=2)
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == "PASS" and _page(scored, case["case_id"])["passed"]
+        assert scored["events"] == []
+        assert [(o["rule"], o["label"]) for o in scored["not_scored_observations"]] == [("A", "NOT SCORED")]
+        assert "NOT SCORED A" in format_report(scored)
+
+    def test_no_rule_b_and_malformed_findings(self, official_key):
+        case = official_key["cases"][0]
+        execs = rerun_page(perfect_executions(official_key), case, invalid_run=2)
+        e = by_id(execs)[f"fx-{case['case_id']}-r2"]
+        e["findings"] = []
+        assert score(official_key, execs, CONFIG)["not_scored_observations"] == []
+        e["findings"] = ["x"]
+        obs = score(official_key, execs, CONFIG)["not_scored_observations"]
+        assert obs[0]["rule"] is None and obs[0]["label"] == "NOT SCORED"
+
+
+class TestVerificationFollowUps:
+    """Findings of the focused verification of the second amendment."""
+
+    def test_completed_with_empty_report_is_refused(self, official_key):
+        """V-01: a completed record needs at least one finding, so an empty
+        report cannot hide its rule E by a status relabel."""
+        execs = perfect_executions(official_key)
+        case = next(c for c in official_key["cases"]
+                    if all(cl["verdict"] != "CONTRADICTED" for cl in c["claims"]))
+        e = by_id(execs)[f"fx-{case['case_id']}-r1"]
+        e["findings"] = []
+        del e["failures"]
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any("empty report" in p for p in scored["record_problems"])
+        assert _page(scored, case["case_id"])["rules"] == ["E"]
+
+    def test_execution_id_must_match_run_and_attempt(self, official_key):
+        """V-02: deleting a bad earlier run and renumbering the INVALID RUN is
+        caught by the frozen execution_id format."""
+        execs, hit = _rule_a_on_run1(official_key, pages=1)
+        cid = hit[0]["case_id"]
+        execs = rerun_page(execs, hit[0], invalid_run=2)
+        execs = [e for e in execs if e["execution_id"] != f"fx-{cid}-r1"]
+        by_id(execs)[f"fx-{cid}-r2"]["run_index"] = 1
+        scored = score(official_key, execs, CONFIG)
+        assert scored["result"] == INVALID_LABEL
+        assert any(f"fx-{cid}-r2: execution_id does not end with '-r1'" in p
+                   for p in scored["record_problems"])
+
+    @pytest.mark.parametrize("execution_id", ["fx-h001-r1-a2", "fx-h001-r2"])
+    def test_execution_id_suffix(self, official_key, execution_id):
+        execs = perfect_executions(official_key)
+        execs[0]["execution_id"] = execution_id  # h001, run 1, attempt 1
+        if execution_id == "fx-h001-r2":
+            del execs[1]
+        scored = score(official_key, execs, CONFIG)
+        assert any("execution_id does not end with '-r1'" in p for p in scored["record_problems"])
+
+    def test_missing_num_turns_fails_completion(self):
+        """V-03: the runner's classification and the scorer's integrity check
+        agree that a missing num_turns is not a complete run."""
+        result = dict(TestCompletion.RESULT, num_turns=None)
+        out = classify_execution(None, None, result, TestCompletion.FINDINGS, [], "case_01", 20, 60, CONFIG)
+        assert out["status"] == AGENT_FAILURE
+        assert any("num_turns None is not an integer" in f for f in out["failures"])
 
 
 # --- make_dataset ------------------------------------------------------------------------------

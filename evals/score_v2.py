@@ -26,6 +26,10 @@ from pathlib import Path
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+
+from agent.config import MAX_TURNS  # noqa: E402  (constants only; no SDK import)
+
 CONFIG_PATH = REPO_ROOT / "evals" / "eval_config_v2.yaml"
 
 VERDICTS = ("SUPPORTED", "CONTRADICTED", "UNVERIFIABLE")
@@ -51,12 +55,16 @@ POST_FAILURE = "PostToolUseFailure"
 SDK_RESULT_ERROR_PREFIX = "Claude Code returned an error result:"
 AUTH_GUARD_TYPE = "agent.harness.AuthGuardError"
 PROCESS_ERROR_TYPE = "claude_agent_sdk._errors.ProcessError"
+PLAIN_EXCEPTION_TYPE = "builtins.Exception"
+SDK_CALL_ORIGIN = "sdk_call"
 
 # eval_config_v2.yaml execution_record.required_fields
 RECORD_FIELDS = {
     "execution_id": str, "case_id": str, "run_index": int, "attempt": int,
     "superseded": bool, "status": str, "findings": list,
 }
+# eval_config_v2.yaml execution_record.evidence_fields: present, may be null
+EVIDENCE_FIELDS = {"error_type": str, "error": str, "result": dict}
 
 
 def load_config(path: Path = CONFIG_PATH) -> dict:
@@ -150,7 +158,7 @@ def sdk_origin(error_type: str | None, error_text: str | None) -> bool:
         return False
     if error_type.startswith("claude_agent_sdk.") or error_type == AUTH_GUARD_TYPE:
         return True
-    return error_type == "builtins.Exception" and (error_text or "").startswith(SDK_RESULT_ERROR_PREFIX)
+    return error_type == PLAIN_EXCEPTION_TYPE and (error_text or "").startswith(SDK_RESULT_ERROR_PREFIX)
 
 
 def _result_failed(result: dict | None) -> bool:
@@ -162,8 +170,8 @@ def classified_text(error_type: str | None, error_text: str | None, result: dict
     plus the text and errors of a non-success result. A success result's
     text is the agent's own answer and is never included."""
     parts = []
-    if error_text and sdk_origin(error_type, error_text):
-        parts.append(f"{error_type.rsplit('.', 1)[-1]}: {error_text}")
+    if sdk_origin(error_type, error_text):
+        parts.append(f"{error_type.rsplit('.', 1)[-1]}: {error_text or ''}")
     if _result_failed(result):
         parts.append(str(result.get("result_text") or ""))
         errors = result.get("errors")
@@ -172,8 +180,26 @@ def classified_text(error_type: str | None, error_text: str | None, result: dict
     return "\n".join(p for p in parts if p)
 
 
+def _cli_crash(error_type: str | None, error_text: str | None, error_origin: str | None,
+               result: dict | None, config: dict) -> bool:
+    """infra_errors.type_rules.cli_process: the CLI ended before any result.
+    A plain Exception counts only with the origin the harness established
+    at the SDK call boundary and the SDK's exact crash text; the text alone
+    is not enough."""
+    if result is not None:
+        return False
+    if error_type == PROCESS_ERROR_TYPE:
+        return True
+    return (
+        error_type == PLAIN_EXCEPTION_TYPE
+        and error_origin == SDK_CALL_ORIGIN
+        and re.search(config["infra_errors"]["cli_crash_signature"], error_text or "") is not None
+    )
+
+
 def infra_category(
-    error_type: str | None, error_text: str | None, result: dict | None, config: dict
+    error_type: str | None, error_text: str | None, result: dict | None, config: dict,
+    error_origin: str | None = None,
 ) -> str | None:
     """Name of the infra category of a failed run, or None (agent failure).
     Order: agent-failure subtypes, then cap patterns, then pattern groups,
@@ -188,7 +214,7 @@ def infra_category(
     for name, pattern in infra["patterns"].items():
         if re.search(pattern, text):
             return name
-    if error_type == PROCESS_ERROR_TYPE and result is None:
+    if _cli_crash(error_type, error_text, error_origin, result, config):
         return "cli_process"
     return None
 
@@ -268,8 +294,11 @@ def completion_failures(
     else:
         if _result_failed(result):
             failures.append(f"result subtype {result.get('subtype')!r}, is_error {result.get('is_error')}")
-        if result.get("num_turns") is not None and result["num_turns"] > max_turns:
-            failures.append(f"num_turns {result['num_turns']} > {max_turns}")
+        turns = result.get("num_turns")
+        if not isinstance(turns, int) or isinstance(turns, bool):
+            failures.append(f"num_turns {turns!r} is not an integer")
+        elif turns > max_turns:
+            failures.append(f"num_turns {turns} > {max_turns}")
     if not findings:
         failures.append("empty report: no finding logged")
     failures += finding_problems(findings)
@@ -314,6 +343,12 @@ def completion_failures(
     return failures
 
 
+def _has_exception(error_type: str | None, error_text: str | None) -> bool:
+    """An exception is present when its type or its text is recorded, even
+    with an empty message (eval_config_v2.yaml completion)."""
+    return error_type is not None or error_text is not None
+
+
 def classify_execution(
     error_type: str | None,
     error_text: str | None,
@@ -324,23 +359,59 @@ def classify_execution(
     max_turns: int,
     max_tool_calls: int,
     config: dict,
+    error_origin: str | None = None,
 ) -> dict:
     """Status of one execution: completed, agent_failure (rule E) or
     invalid_run (test machinery). The result is classified even when the
     SDK raised. The raw error text is always kept."""
-    failures = [f"exception: {error_type}: {error_text}"] if error_text else []
+    raised = _has_exception(error_type, error_text)
+    failures = [f"exception: {error_type}: {error_text or ''}"] if raised else []
     failures += completion_failures(
         result, findings, audit_rows, case_id, max_turns, max_tool_calls
     )
     if not failures:
         return {"status": COMPLETED, "infra_category": None, "failures": []}
-    category = infra_category(error_type, error_text, result, config) \
-        if (error_text or _result_failed(result)) else None
+    category = infra_category(error_type, error_text, result, config, error_origin) \
+        if (raised or _result_failed(result)) else None
     return {
         "status": INVALID_RUN if category else AGENT_FAILURE,
         "infra_category": category,
         "failures": failures,
     }
+
+
+def status_problem(e: dict, config: dict, max_turns: int = MAX_TURNS) -> str | None:
+    """eval_config_v2.yaml execution_record.status_integrity: re-derive what
+    the record's own evidence allows. None when the status is consistent."""
+    error_type, error_text, result = e["error_type"], e["error"], e["result"]
+    raised = _has_exception(error_type, error_text)
+    category = infra_category(error_type, error_text, result, config, e.get("error_origin")) \
+        if (raised or _result_failed(result)) else None
+    status = e["status"]
+    if status == INVALID_RUN:
+        if category is None:
+            return "status invalid_run, but its error and result show no infrastructure category"
+        if e.get("infra_category") not in (None, category):
+            return f"recorded infra_category {e['infra_category']!r}, evidence gives {category!r}"
+    elif status == COMPLETED:
+        if raised:
+            return "status completed, but an exception is recorded"
+        if result is None or _result_failed(result):
+            return "status completed, but there is no success result"
+        turns = result.get("num_turns")
+        if not isinstance(turns, int) or isinstance(turns, bool) or turns > max_turns:
+            return f"status completed, but num_turns is {turns!r} (max {max_turns})"
+        if not e["findings"]:
+            return "status completed, but no finding is recorded (empty report)"
+    elif category is not None:
+        return f"status agent_failure, but its evidence classifies as infrastructure ({category})"
+    return None
+
+
+def _id_suffix(e: dict) -> str:
+    """eval_config_v2.yaml execution_record.required_fields.execution_id:
+    '-r<run_index>', plus '-a<attempt>' from attempt 2."""
+    return f"-r{e['run_index']}" + (f"-a{e['attempt']}" if e["attempt"] > 1 else "")
 
 
 def record_problems(key: dict, executions: list) -> tuple[list[dict], list[str]]:
@@ -357,6 +428,10 @@ def record_problems(key: dict, executions: list) -> tuple[list[dict], list[str]]
         label = eid if isinstance(eid, str) else f"execution #{i}"
         bad = [field for field, typ in RECORD_FIELDS.items()
                if not isinstance(e.get(field), typ) or (typ is int and isinstance(e.get(field), bool))]
+        bad += [field for field, typ in EVIDENCE_FIELDS.items()
+                if field not in e or not (e[field] is None or isinstance(e[field], typ))]
+        if "error_origin" in e and not (e["error_origin"] is None or isinstance(e["error_origin"], str)):
+            bad.append("error_origin")
         if bad:
             problems.append(f"{label}: missing or wrongly typed field(s) {', '.join(bad)}")
             continue
@@ -368,10 +443,30 @@ def record_problems(key: dict, executions: list) -> tuple[list[dict], list[str]]
             problems.append(f"{label}: duplicate execution_id")
         elif e["case_id"] not in case_ids:
             problems.append(f"{label}: case_id {e['case_id']!r} is not in the answer key")
+        elif not eid.endswith(_id_suffix(e)):
+            problems.append(f"{label}: execution_id does not end with {_id_suffix(e)!r} "
+                            "(its run_index and attempt)")
         else:
             good.append(e)
         seen.add(eid)
     return good, problems
+
+
+def apply_status_integrity(executions: list[dict], config: dict) -> tuple[list[dict], list[str]]:
+    """Records whose status their own evidence does not support stay in
+    scoring as agent failures (rule E), so a failure they carry never
+    disappears and they never justify a page rerun; each is a
+    record-integrity problem (official result INVALID RUN)."""
+    out, problems = [], []
+    for e in executions:
+        problem = status_problem(e, config)
+        if problem is None:
+            out.append(e)
+            continue
+        problems.append(f"{e['execution_id']}: record integrity: {problem}")
+        out.append({**e, "status": AGENT_FAILURE, "recorded_status": e["status"],
+                    "failures": list(e.get("failures") or []) + [f"record integrity: {problem}"]})
+    return out, problems
 
 
 def key_problems(key: dict, config: dict) -> list[str]:
@@ -392,7 +487,12 @@ def key_problems(key: dict, config: dict) -> list[str]:
 
 
 def key_sha256(path: Path) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    """The LF-normalized SHA-256 of an answer key (eval_config_v2.yaml
+    results.hash_forms): every CR LF becomes LF before hashing, so the
+    checkout's line endings never change the hash. The scorer, the runner
+    and the preflight all use this function. The sealed ZIP's hash is a
+    separate raw-byte hash and is never compared with this one."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
 
 
 def rescore_key_problem(recorded: dict, key_path: Path) -> str | None:
@@ -475,19 +575,30 @@ def _bootstrap(per_page: dict[str, tuple[int, int]], seed: int = 0, n: int = 200
 
 def _attempt_problems(case_id: str, execs: list[dict], runs_required: int) -> list[str]:
     """eval_config_v2.yaml invalid_run_restart.attempts, for one page. The
-    scored attempt's own completeness is checked separately."""
+    scored attempt's own completeness is checked separately. Statuses here
+    are after status_integrity, so an unsupported INVALID RUN label never
+    justifies a rerun."""
     problems = []
     attempts = sorted({e["attempt"] for e in execs})
     if attempts and attempts != list(range(1, attempts[-1] + 1)):
         problems.append(f"{case_id}: attempts {attempts} are not numbered 1, 2, ... without gaps")
     scored = attempts[-1] if attempts else None
     for a in attempts[:-1]:
-        earlier = [e for e in execs if e["attempt"] == a]
+        earlier = sorted((e for e in execs if e["attempt"] == a), key=lambda e: e["run_index"])
         not_superseded = sorted(e["execution_id"] for e in earlier if not e["superseded"])
         if not_superseded:
             problems.append(f"{case_id}: attempt {a} was rerun but {', '.join(not_superseded)} not superseded")
-        if not any(e["status"] == INVALID_RUN for e in earlier):
-            problems.append(f"{case_id}: attempt {a} was superseded without an INVALID RUN")
+        indexes = [e["run_index"] for e in earlier]
+        if indexes != list(range(1, len(indexes) + 1)) or len(indexes) > runs_required:
+            problems.append(f"{case_id}: attempt {a} holds runs {indexes}; an earlier attempt needs runs "
+                            f"1 to k without a gap or duplicate, k <= {runs_required}")
+            continue
+        if earlier[-1]["status"] != INVALID_RUN:
+            problems.append(f"{case_id}: attempt {a} was superseded, but its last run "
+                            f"{indexes[-1]} is not a supported INVALID RUN")
+        early_invalid = [e["execution_id"] for e in earlier[:-1] if e["status"] == INVALID_RUN]
+        if early_invalid:
+            problems.append(f"{case_id}: attempt {a} continued after an INVALID RUN ({', '.join(early_invalid)})")
     marked = sorted(e["execution_id"] for e in execs if e["attempt"] == scored and e["superseded"])
     if marked:
         problems.append(f"{case_id}: superseded mark in the scored attempt {scored} ({', '.join(marked)}); "
@@ -495,20 +606,9 @@ def _attempt_problems(case_id: str, execs: list[dict], runs_required: int) -> li
     return problems
 
 
-def _check_run(e: dict, claims: list[dict], norm_to_claim: dict, case_id: str):
-    """Rules A-F for one valid execution. Returns (rows, events, unmatched);
-    rows are the claim assessments of the run."""
-    base = {"case_id": case_id, "execution_id": e["execution_id"],
-            "attempt": e["attempt"], "superseded": e["superseded"]}
-    failures = list(e.get("failures") or [])
-    if e["status"] == COMPLETED:
-        failures += finding_problems(e["findings"])  # malformed agent output is rule E
-    if e["status"] == AGENT_FAILURE or failures:
-        rows = [{**base, "run_index": e["run_index"], "claim_id": claim["id"],
-                 "truth": claim["verdict"], "scenario": claim.get("scenario"),
-                 "verdicts": [], "assessed": RUN_FAILED, "evidence_ok": False,
-                 "evidence_per_finding": [], "rules": []} for claim in claims]
-        return rows, [{**base, "rule": "E", "claim_id": None, "detail": failures}], []
+def _assess_findings(e: dict, claims: list[dict], norm_to_claim: dict, case_id: str, base: dict):
+    """Rules A-D and F over well-formed findings. Returns (rows, events,
+    unmatched)."""
     rows, events, unmatched = [], [], []
     matched = defaultdict(list)
     for f in e["findings"]:
@@ -532,15 +632,48 @@ def _check_run(e: dict, claims: list[dict], norm_to_claim: dict, case_id: str):
     return rows, events, unmatched
 
 
+def _check_run(e: dict, claims: list[dict], norm_to_claim: dict, case_id: str):
+    """Rules A-F for one valid execution. Returns (rows, events, unmatched);
+    rows are the claim assessments of the run."""
+    base = {"case_id": case_id, "execution_id": e["execution_id"],
+            "attempt": e["attempt"], "superseded": e["superseded"]}
+    failures = list(e.get("failures") or [])
+    if e["status"] == COMPLETED:
+        failures += finding_problems(e["findings"])  # malformed agent output is rule E
+    if e["status"] == AGENT_FAILURE or failures:
+        rows = [{**base, "run_index": e["run_index"], "claim_id": claim["id"],
+                 "truth": claim["verdict"], "scenario": claim.get("scenario"),
+                 "verdicts": [], "assessed": RUN_FAILED, "evidence_ok": False,
+                 "evidence_per_finding": [], "rules": []} for claim in claims]
+        return rows, [{**base, "rule": "E", "claim_id": None, "detail": failures}], []
+    return _assess_findings(e, claims, norm_to_claim, case_id, base)
+
+
+def _observe_invalid_run(e: dict, claims: list[dict], norm_to_claim: dict, case_id: str) -> list[dict]:
+    """eval_config_v2.yaml invalid_run_restart.invalid_run_observations:
+    rules A, C, D and F over an INVALID RUN execution's findings, labelled
+    NOT SCORED. They never fail a page and never change a gate."""
+    base = {"case_id": case_id, "execution_id": e["execution_id"], "attempt": e["attempt"],
+            "superseded": e["superseded"], "label": "NOT SCORED"}
+    problems = finding_problems(e["findings"])
+    if problems:
+        return [{**base, "rule": None, "claim_id": None, "detail": problems}]
+    _rows, events, _unmatched = _assess_findings(e, claims, norm_to_claim, case_id, base)
+    return [ev for ev in events if ev["rule"] != "B"]
+
+
 def score(key: dict, executions: list[dict], config: dict | None = None) -> dict:
     config = config or load_config()
     runs_required = config["runs_per_page"]
     executions, bad_records = record_problems(key, executions)
+    executions, integrity = apply_status_integrity(executions, config)
+    bad_records += integrity
     by_case = defaultdict(list)
     for e in executions:
         by_case[e["case_id"]].append(e)
 
     rows, events, unmatched, pages, history, attempt_problems = [], [], [], [], [], []
+    not_scored = []
     turns, costs = [], []
     executions_valid = executions_completed = 0
     complete_series = True
@@ -562,8 +695,10 @@ def score(key: dict, executions: list[dict], config: dict | None = None) -> dict
             scored = e["attempt"] == scored_attempt
             history.append({"execution_id": e["execution_id"], "case_id": case_id,
                             "attempt": e["attempt"], "run_index": e["run_index"],
-                            "status": e["status"], "superseded": e["superseded"], "scored": scored})
+                            "status": e["status"], "recorded_status": e.get("recorded_status", e["status"]),
+                            "superseded": e["superseded"], "scored": scored})
             if e["status"] == INVALID_RUN:
+                not_scored += _observe_invalid_run(e, claims, norm_to_claim, case_id)
                 continue
             run_rows, run_events, run_unmatched = _check_run(e, claims, norm_to_claim, case_id)
             events += run_events
@@ -659,6 +794,7 @@ def score(key: dict, executions: list[dict], config: dict | None = None) -> dict
         "record_problems": bad_records,
         "attempt_problems": attempt_problems,
         "events": events,
+        "not_scored_observations": not_scored,
         "history": history,
         "unmatched_findings": unmatched,
         "assessments": rows,
@@ -726,6 +862,11 @@ def format_report(scored: dict) -> str:
     lines += [f"  {e['rule']} {e['execution_id']} {e['claim_id'] or ''} {e['detail']}"
               + (f" (superseded attempt {e['attempt']}, still fails the page)" if e["superseded"] else "")
               for e in scored["events"]] or ["  (none)"]
+    if scored["not_scored_observations"]:
+        lines.append("")
+        lines.append("Observations in INVALID RUN executions (NOT SCORED; no page or gate effect):")
+        lines += [f"  NOT SCORED {o['rule'] or 'malformed findings'} {o['execution_id']} "
+                  f"{o['claim_id'] or ''} {o['detail']}" for o in scored["not_scored_observations"]]
     lines.append("")
     lines.append("Unmatched findings (candidate, not scored):")
     lines += [f"  {u['execution_id']}: {u['claim_text']!r} -> {u['candidate_not_scored']} ({u['candidate_ratio']})"

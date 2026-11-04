@@ -9,6 +9,13 @@
 # classification, rerun attempts, strict records, unmatched SUPPORTED
 # findings (rule F) and dataset hygiene. No v2 result existed before this
 # amendment.
+#
+# Second amendment 2026-11-04, still before any result, by Kristian's
+# decisions on the red-team re-check: record status checked against its
+# own evidence, run indexes of earlier attempts, provenance of a CLI
+# process crash, empty exception messages, a line-ending-independent
+# answer-key hash, and NOT SCORED observations from INVALID RUN
+# executions. No threshold, dataset or other policy changed.
 
 version: 2
 created: "2026-11-04"
@@ -62,7 +69,8 @@ gates:
 results:
   official_only: "PASS or FAIL is printed only for the official set: the key declares set official and lists 61 distinct case_ids that all match sets.official.case_id_pattern, with 3 valid runs per page. A key that declares official but fails this shape is not an official set: DEV ONLY, with the key problems listed. The frozen official key is evals/answer_keys/official.json"
   integrity: "two separate hashes, never compared with each other: (1) the sealed hold-out ZIP is verified against its recorded seal SHA-256 before extraction; (2) the extracted evals/answer_keys/official.json has its own SHA-256, recorded at the freeze commit; the runner records the key's SHA-256 in every results file and the preflight verifies it against that recorded key hash before the series"
-  rescore: "score_v2.py re-scoring a results file refuses (exit 2) when the file records no answer_key_sha256 or when the key file's SHA-256 differs from it"
+  hash_forms: "the seal SHA-256 is over the ZIP's raw bytes. The answer-key SHA-256 (answer_key_sha256) is the LF-normalized SHA-256: SHA-256 of the key file's bytes after every CR LF pair is replaced by LF, so a checkout's line endings never change it. The scorer, the runner and the preflight all use this one form (evals/score_v2.py key_sha256)."
+  rescore: "score_v2.py re-scoring a results file refuses (exit 2) when the file records no answer_key_sha256 or when the key file's LF-normalized SHA-256 differs from it"
   non_official_label: "DEV ONLY — NOT ENOUGH CASES"
   non_official_rule: "any other set, including the 12-page dev set at 36/36 perfect, gets the label above; the three gate numbers are shown for information only"
   invalid_label: "INVALID RUN"
@@ -82,9 +90,9 @@ page_fail_rules:
 # --- Completion (rule E). A run is complete only when all hold ---
 completion:
   criteria:
-    - "no exception was raised by the agent run"
+    - "no exception was raised by the agent run (an exception is present when error_type or error is recorded, even with an empty message)"
     - "a ResultMessage was received with subtype 'success' and is_error false (not error_max_turns, error_max_budget_usd or error_during_execution)"
-    - "num_turns <= max_turns in agent/config.py"
+    - "num_turns is an integer and <= max_turns in agent/config.py"
     - "at least one finding was logged (non-empty report)"
     - "every finding is an object with string fields claim_text, verdict, evidence_source, evidence_note, and verdict is exactly SUPPORTED, CONTRADICTED or UNVERIFIABLE (case-sensitive); a malformed finding is agent output and makes the run rule E, never INVALID RUN, also when the record says completed"
     - "audit.db has PreToolUse rows for the run_id, and every PreToolUse row (any tool) has a closing row with the same tool_use_id: PostToolUse, or PostToolUseFailure (the hook event the CLI sends when a tool returns an error)"
@@ -104,8 +112,14 @@ execution_record:
     superseded: "boolean"
     status: "exactly completed, agent_failure or invalid_run"
     findings: "list"
-  also_recorded: "error_type (module and class of the exception), error (exception text), result (subtype, is_error, num_turns, total_cost_usd, result text, errors) kept even when the SDK raised, and the init check"
-  malformed: "a record with a missing or wrongly typed required field, an unknown status, a duplicate execution_id or a case_id that is not in the key is a test-infrastructure fault: it is left out of scoring and the official result is INVALID RUN; it is listed in the report"
+  evidence_fields:
+    error_type: "string 'module.qualname' of the exception, or null when none was raised"
+    error: "string, the exception text (may be empty), or null when none was raised"
+    result: "object with subtype, is_error, num_turns, result_text and errors, kept even when the SDK raised, or null when no ResultMessage arrived"
+    error_origin: "optional; 'sdk_call' only when the harness caught the exception at the SDK call boundary (raised while iterating the SDK's query()); anything else or absent means the origin is not established"
+  also_recorded: "total_cost_usd and num_turns at the top level, and the init check"
+  malformed: "a record with a missing or wrongly typed required field or evidence field, an unknown status, a duplicate execution_id, an execution_id that does not end with its own '-r<run_index>' (and '-a<attempt>' from attempt 2), or a case_id that is not in the key is a test-infrastructure fault: it is left out of scoring and the official result is INVALID RUN; it is listed in the report"
+  status_integrity: "the scorer re-derives what the evidence fields allow. invalid_run needs an infra category from infra_errors on the record's own error_type, error, result and error_origin (and equal to its recorded infra_category, when given). completed needs no exception, a result with subtype 'success' and is_error false, an integer num_turns <= max_turns in agent/config.py, and at least one finding. agent_failure must not have evidence that classifies as infrastructure. A record that fails this check is a record-integrity problem: the official result is INVALID RUN, the record stays in scoring as an agent failure (rule E, so a failure it carries never disappears), and it never justifies a page rerun."
 
 # --- Claim matching (deterministic, anchored to the expected paragraph) ---
 claim_matching:
@@ -148,7 +162,9 @@ infra_errors:
     network: "(?i)request timed out|streaming timeout|connection error|unable to connect to api|ssl (?:error|certificate)|certificate (?:verification failed|has expired|has been revoked)|ECONNRESET|ECONNREFUSED|ETIMEDOUT"
     cli_spawn: "(?i)CLINotFoundError|CLIConnectionError|claude code not found"
   type_rules:
-    cli_process: "error_type claude_agent_sdk ProcessError and no ResultMessage was received (the CLI process ended before any result)"
+    cli_process: "the CLI process ended before any result (no ResultMessage): either error_type claude_agent_sdk ProcessError, or error_type builtins.Exception with error_origin 'sdk_call' whose whole text matches cli_crash_signature (the SDK re-raises a mid-run ProcessError as a plain Exception). The text alone, without the established origin, is not enough: that stays an agent failure (rule E)."
+  cli_crash_signature: "\\ACommand failed with exit code (-?\\d+) \\(exit code: \\1\\)\\nError output: Check stderr output for details\\Z"
+  limitation: "other SDK errors that the SDK re-raises mid-run as a plain Exception without the error-result prefix are not classified as infrastructure; they stay agent failures (rule E), bounded by unclassified_pause"
   pattern_source: "phrases taken from the texts of the bundled CLI 2.1.191 and the SDK 0.2.110 error classes; the fixture tests quote them"
   stop_rule: "the runner stops the series on the first auth or usage/rate-limit error and never falls back to another auth route"
   unclassified_pause: "the runner pauses the series after 2 unclassified exceptions in a row (exceptions that match no pattern group and no type rule). Those runs stay scored agent failures (rule E) and are never reclassified as INVALID RUN. A resume continues the same attempt with the next run; no execution is superseded or replaced."
@@ -156,8 +172,9 @@ infra_errors:
 invalid_run_restart:
   decision: "Kristian's decision 2A, 2026-11-04; attempt form by his rerun-attempt ruling, 2026-11-04"
   rule: "pages whose 3 runs all completed without INVALID RUN are kept; the interrupted page reruns all 3 runs on the same frozen commit as a new attempt; the INVALID RUN event and a redone preflight are recorded"
-  attempts: "a page's scored attempt is its highest attempt number. It must hold exactly runs 1 to runs_per_page, none superseded and none INVALID RUN. Every execution of an earlier attempt must be marked superseded, every earlier attempt must contain an INVALID RUN execution, and attempts are numbered 1, 2, ... without gaps. Any breach is an attempt problem and the official result is INVALID RUN. A single run is never replaced on its own."
+  attempts: "a page's scored attempt is its highest attempt number. It must hold exactly runs 1 to runs_per_page, none superseded and none INVALID RUN. Every execution of an earlier attempt must be marked superseded, and every earlier attempt must hold runs 1 to k (k <= runs_per_page) with no gap and no duplicate, where run k is an INVALID RUN that passes status_integrity and runs 1 to k-1 are valid (the page stopped at its INVALID RUN). Attempts are numbered 1, 2, ... without gaps. Any breach is an attempt problem and the official result is INVALID RUN. A single run is never replaced on its own."
   superseded_runs: "valid executions (completed or agent_failure) of an earlier attempt are still checked under rules A-F: their events are recorded, marked superseded, and fail the page. They do not enter the gate 2 and gate 3 denominators or the secondary rates, which use the scored attempt only. The full execution history is reported."
+  invalid_run_observations: "the findings of an INVALID RUN execution are checked under rules A, C, D and F (B needs a completed run) and listed in the report as NOT SCORED: they never fail a page and never change a gate"
 
 # --- Reported, not gated ---
 secondary_metrics:
