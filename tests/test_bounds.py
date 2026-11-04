@@ -911,3 +911,145 @@ class TestRunnerV2InterruptedSeries:
         assert runner.run(*SMOKE) == run_eval_v2.EXIT_STOPPED
         path, _ = runner.series()
         assert runner.run("--set", "dev", "--resume", str(path), "--recover") == run_eval_v2.EXIT_REFUSED
+
+
+# --- Messages before init: the live smoke test (2026-11-04) saw a
+# HookEventMessage before the init message. The CLI always streams
+# SessionStart/Setup hook lifecycle messages, also from hooks in machine-wide
+# policy settings. Only those may come before init, and only with no hook
+# output (SessionStart output reaches the model). ------------------------------
+
+from claude_agent_sdk import (  # noqa: E402
+    AssistantMessage, HookEventMessage, TextBlock, ToolUseBlock, UserMessage,
+)
+
+KOS_LIKE_OUTPUT = json.dumps({"hookSpecificOutput": {
+    "hookEventName": "SessionStart", "additionalContext": "context text from a hook"}})
+
+
+def _hook_message(subtype, event="SessionStart", hook_id="h-1", output="", stdout=""):
+    data = {"type": "system", "subtype": subtype, "hook_id": hook_id,
+            "hook_name": "SessionStart:startup", "hook_event": event}
+    if subtype == "hook_response":
+        data.update({"output": output, "stdout": stdout, "stderr": "",
+                     "exit_code": 0, "outcome": "success"})
+    if subtype == "hook_progress":  # the SDK parses this one as a plain SystemMessage
+        data.update({"stdout": stdout, "stderr": "", "output": output})
+        return SystemMessage(subtype=subtype, data=data)
+    return HookEventMessage(subtype=subtype, data=data, hook_event_name=event)
+
+
+OBSERVED_ORDER = [_hook_message("hook_started"), _hook_message("hook_response")]
+
+
+class TestPreInitMessages:
+    def _run(self, monkeypatch, messages, closed=None):
+        monkeypatch.setattr(harness, "query", _fake_query(messages, closed=closed))
+        return asyncio.run(harness.run_case_execution("case_01", "test-run"))
+
+    def test_observed_order_with_a_silent_session_start_hook_passes(self, isolated, monkeypatch):
+        result = _result_message()
+        outcome = self._run(monkeypatch, OBSERVED_ORDER + [_init_message(), result])
+        assert outcome.error is None and outcome.result is result
+        assert outcome.init["apiKeySource"] == "none"
+        assert [e["subtype"] for e in outcome.lifecycle] == ["hook_started", "hook_response"]
+        assert all(e["hook_event"] == "SessionStart" for e in outcome.lifecycle)
+        assert "SessionStart:startup" not in json.dumps(outcome.lifecycle)  # no hook name kept
+
+    def test_progress_message_without_output_is_allowed(self, isolated, monkeypatch):
+        outcome = self._run(monkeypatch, [_hook_message("hook_started"), _hook_message("hook_progress"),
+                                          _hook_message("hook_response"), _init_message(),
+                                          _result_message()])
+        assert outcome.error is None and len(outcome.lifecycle) == 3
+
+    @pytest.mark.parametrize("field", ["output", "stdout"])
+    def test_hook_output_before_init_is_refused_without_recording_it(self, isolated, monkeypatch, field):
+        closed = []
+        outcome = self._run(monkeypatch, [_hook_message("hook_started"),
+                                          _hook_message("hook_response", **{field: KOS_LIKE_OUTPUT}),
+                                          _init_message(), _result_message()], closed=closed)
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "printed" in str(outcome.error) and "context text" not in str(outcome.error)
+        assert outcome.result is None and outcome.init is None and harness.last_init is None
+        assert closed == [True]
+
+    def test_progress_output_before_init_is_refused(self, isolated, monkeypatch):
+        outcome = self._run(monkeypatch, [_hook_message("hook_started"),
+                                          _hook_message("hook_progress", stdout="partial"),
+                                          _hook_message("hook_response"), _init_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+
+    def test_hook_output_after_init_is_refused_too(self, isolated, monkeypatch):
+        outcome = self._run(monkeypatch, [_init_message(),
+                                          _hook_message("hook_response", output=KOS_LIKE_OUTPUT),
+                                          _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.result is None
+
+    @pytest.mark.parametrize("event", ["PreToolUse", "PostToolUse", "UserPromptSubmit", "Stop", "", None])
+    def test_hook_messages_of_other_events_are_refused(self, isolated, monkeypatch, event):
+        outcome = self._run(monkeypatch, [_hook_message("hook_started", event=event),
+                                          _init_message(), _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.init is None and outcome.result is None
+
+    @pytest.mark.parametrize("message", [
+        AssistantMessage(content=[TextBlock(text="hi")], model="m"),
+        UserMessage(content="hi"),
+        SystemMessage(subtype="status", data={}),
+        SystemMessage(subtype="hook_started_x", data={"hook_event": "SessionStart"}),
+    ], ids=["assistant", "user", "other-system", "look-alike-subtype"])
+    def test_any_other_message_before_init_is_refused(self, isolated, monkeypatch, message):
+        outcome = self._run(monkeypatch, OBSERVED_ORDER + [message, _init_message(), _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.init is None and outcome.result is None
+
+    def test_a_result_before_init_is_refused(self, isolated, monkeypatch):
+        outcome = self._run(monkeypatch, OBSERVED_ORDER + [_result_message(), _init_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.result is None
+
+    def test_a_hook_started_without_response_before_init_is_refused(self, isolated, monkeypatch):
+        outcome = self._run(monkeypatch, [_hook_message("hook_started"), _init_message(),
+                                          _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "without a response" in str(outcome.error)
+
+    def test_too_many_lifecycle_messages_before_init_are_refused(self, isolated, monkeypatch):
+        many = [_hook_message("hook_started", hook_id=f"h-{i}")
+                for i in range(harness.MAX_PRE_INIT_MESSAGES + 1)]
+        outcome = self._run(monkeypatch, many + [_init_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+
+    @pytest.mark.parametrize("init", [
+        _init_message(api_key_source="ANTHROPIC_API_KEY"),
+        _init_message(tools=list(QUALIFIED_TOOL_NAMES) + ["Bash"]),
+        _init_message(tools=list(QUALIFIED_TOOL_NAMES)[:3]),
+    ], ids=["api-key-source", "extra-tool", "missing-tool"])
+    def test_init_checks_stay_strict_after_lifecycle_messages(self, isolated, monkeypatch, init):
+        outcome = self._run(monkeypatch, OBSERVED_ORDER + [init, _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.result is None
+
+    def test_a_tool_use_before_init_is_refused_and_leaves_no_audit_rows(self, isolated, monkeypatch):
+        tool_use = AssistantMessage(content=[ToolUseBlock(
+            id="tu-early", name=QUALIFIED_TOOL_NAMES[0], input={"path": "case_01/target.html"})],
+            model="m")
+        outcome = self._run(monkeypatch, OBSERVED_ORDER + [tool_use, _init_message(),
+                                                           _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "AssistantMessage" in str(outcome.error)
+        assert outcome.init is None and outcome.result is None and outcome.findings == []
+        db = isolated / "audit.db"
+        conn = sqlite3.connect(db)
+        try:
+            assert conn.execute("SELECT COUNT(*) FROM tool_calls").fetchone()[0] == 0
+        finally:
+            conn.close()
+
+    def test_a_refused_hook_classifies_as_auth_and_stops_the_runner(self):
+        error = harness.AuthGuardError("AuthGuardError: a SessionStart hook printed 9 characters "
+                                       "(hook_response); hook output can reach the model, refusing")
+        category = score_v2.infra_category(score_v2.AUTH_GUARD_TYPE, str(error), None,
+                                           score_v2.load_config())
+        assert category == "auth" and category in run_eval_v2.STOP_CATEGORIES

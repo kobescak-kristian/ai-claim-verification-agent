@@ -182,6 +182,7 @@ async def execute(eval_id: str, case_id: str, run_index: int, attempt: int, conf
         "num_turns": None if outcome.result is None else outcome.result.num_turns,
         "total_cost_usd": None if outcome.result is None else outcome.result.total_cost_usd,
         "init": outcome.init,
+        "lifecycle": outcome.lifecycle,
         "audit_rows": len(rows),
         "started_at": started_at,
         "finished_at": utc_now(),
@@ -264,7 +265,8 @@ async def run_series(series: dict, key: dict, config: dict, out_path: Path) -> i
                 init_shown = True
                 print(f"   init check passed: apiKeySource {init.get('apiKeySource')!r}; "
                       f"model {init.get('model')!r}\n"
-                      f"   observed MCP tools: {init.get('tools')!r}")
+                      f"   observed MCP tools: {init.get('tools')!r}\n"
+                      f"   lifecycle hook messages: {len(record['lifecycle'])} (no output allowed)")
             elif not init:
                 print("   init check: not passed or no init message (see the failure text)")
             cost = record["total_cost_usd"]

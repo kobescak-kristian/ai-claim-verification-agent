@@ -5,7 +5,9 @@ runs one query against a single eval case.
 Isolation: no filesystem settings are loaded (setting_sources=[]), an env
 guard refuses to start when an API-key or provider-routing variable is set
 (names only, values are never read), and the CLI's init message must show
-apiKeySource "none" and exactly the 4 MCP tools before the run continues."""
+apiKeySource "none" and exactly the 4 MCP tools before the run continues.
+Before init, only SessionStart/Setup lifecycle hook messages without any
+hook output are allowed (see LIFECYCLE_HOOK_EVENTS)."""
 import os
 from dataclasses import dataclass, field
 
@@ -48,6 +50,18 @@ SDK_CALL_ORIGIN = "sdk_call"
 # carries machine-local values (working directory, session id).
 INIT_FIELDS = ("apiKeySource", "tools", "mcp_servers", "model")
 
+# Lifecycle hook messages the bundled CLI streams even without
+# include_hook_events: it always reports hooks of these events, in these
+# phases (CLI 2.1.191; the SDK parses hook_started and hook_response as
+# HookEventMessage, hook_progress as a plain SystemMessage). They can come
+# before the init message, from hooks the CLI loads whatever the setting
+# sources say (machine-wide policy settings). Only these messages may come
+# before init, and only when the hook printed nothing: SessionStart output
+# is added to the model's context, so any output is refused.
+LIFECYCLE_HOOK_EVENTS = ("SessionStart", "Setup")
+LIFECYCLE_SUBTYPES = ("hook_started", "hook_progress", "hook_response")
+MAX_PRE_INIT_MESSAGES = 20
+
 # The init check of the most recent execution: the INIT_FIELDS of the CLI's
 # init message when it passed the check; None when no init message arrived
 # or the check failed (the AuthGuardError text then names the bad value).
@@ -73,13 +87,40 @@ def check_env(environ=None) -> None:
         )
 
 
+def lifecycle_event(message) -> dict | None:
+    """None when the message is not a hook lifecycle message. Otherwise the
+    recorded summary (no hook command, no output text), or AuthGuardError
+    when the hook is not a SessionStart/Setup hook or printed output that
+    could reach the model."""
+    if not (isinstance(message, SystemMessage) and message.subtype in LIFECYCLE_SUBTYPES):
+        return None
+    data = message.data or {}
+    event = data.get("hook_event") or data.get("hook_event_name") or getattr(
+        message, "hook_event_name", None)
+    if event not in LIFECYCLE_HOOK_EVENTS:
+        raise AuthGuardError(
+            f"AuthGuardError: {message.subtype} message for hook event {event!r}; "
+            f"only {', '.join(LIFECYCLE_HOOK_EVENTS)} lifecycle messages are allowed"
+        )
+    printed = "".join(str(data.get(k) or "") for k in ("output", "stdout")).strip()
+    if printed:
+        raise AuthGuardError(
+            f"AuthGuardError: a {event} hook printed {len(printed)} characters "
+            f"({message.subtype}); hook output can reach the model, refusing "
+            "(the hook command and its output are not recorded)"
+        )
+    return {"subtype": message.subtype, "hook_event": event, "hook_id": data.get("hook_id"),
+            "exit_code": data.get("exit_code"), "outcome": data.get("outcome")}
+
+
 def check_init(message) -> dict:
-    """Validate the CLI's first message. Returns the recorded INIT_FIELDS or
-    raises AuthGuardError."""
+    """Validate the CLI's first message after any lifecycle hook messages.
+    Returns the recorded INIT_FIELDS or raises AuthGuardError."""
     if not (isinstance(message, SystemMessage) and message.subtype == "init"):
         raise AuthGuardError(
             "AuthGuardError: the first message was not the init message: "
             f"{type(message).__name__}"
+            + (f" ({message.subtype})" if isinstance(message, SystemMessage) else "")
         )
     data = message.data or {}
     recorded = {k: data.get(k) for k in INIT_FIELDS}
@@ -107,6 +148,7 @@ class ExecutionOutcome:
     error: Exception | None = None
     error_origin: str | None = None
     init: dict | None = None
+    lifecycle: list[dict] = field(default_factory=list)
 
 
 def build_options(
@@ -204,7 +246,8 @@ async def run_case_execution(
         return outcome
 
     stream = query(prompt=prompt, options=options).__aiter__()
-    first = True
+    before_init = True
+    open_hooks: set = set()  # hook_ids started before init and not yet answered
     try:
         while True:
             try:
@@ -216,8 +259,25 @@ async def run_case_execution(
                 outcome.error_origin = SDK_CALL_ORIGIN
                 break
             try:
-                if first:
-                    first = False
+                event = lifecycle_event(message)  # anywhere in the stream
+                if event is not None:
+                    outcome.lifecycle.append(event)
+                    if before_init:
+                        if len(outcome.lifecycle) > MAX_PRE_INIT_MESSAGES:
+                            raise AuthGuardError(
+                                "AuthGuardError: more than "
+                                f"{MAX_PRE_INIT_MESSAGES} lifecycle messages before init")
+                        if event["subtype"] == "hook_started":
+                            open_hooks.add(event["hook_id"])
+                        elif event["subtype"] == "hook_response":
+                            open_hooks.discard(event["hook_id"])
+                    continue
+                if before_init:
+                    before_init = False
+                    if open_hooks:
+                        raise AuthGuardError(
+                            f"AuthGuardError: {len(open_hooks)} lifecycle hook(s) started "
+                            "before init without a response")
                     outcome.init = last_init = check_init(message)
                 if isinstance(message, ResultMessage):
                     outcome.result = message

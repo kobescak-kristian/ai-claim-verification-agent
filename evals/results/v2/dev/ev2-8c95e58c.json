@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "eval_id": "ev2-8c95e58c",
+  "set": "dev",
+  "answer_key": "evals/answer_keys/dev.json",
+  "answer_key_sha256": "b950c66eeeb7235b62fe8d58fbe018a9225e39aa1d5aaefbf5685847f8da6aa1",
+  "config_sha256": "c45c590bfff944a7d70fe12a1413fd73d6fa395d03beac1b216cc6324c06c901",
+  "git_head": "02ea27f0c975cf9504b1565b5259b78e1c647878",
+  "git_dirty": false,
+  "model": "claude-sonnet-4-6",
+  "max_budget_usd": 1.5,
+  "max_turns": 20,
+  "max_tool_calls": 60,
+  "runs_per_page": 3,
+  "subset": {
+    "cases": [
+      "case_01"
+    ],
+    "runs": 1
+  },
+  "kind": "smoke_test",
+  "started_at": "2026-11-04T17:49:30.248701+00:00",
+  "state": "stopped",
+  "pending": null,
+  "series_events": [
+    {
+      "time": "2026-11-04T17:49:33.615763+00:00",
+      "kind": "stop",
+      "detail": "stop rule: auth error in ev2-8c95e58c-case_01-r1; the runner never falls back to another auth route"
+    }
+  ],
+  "executions": [
+    {
+      "execution_id": "ev2-8c95e58c-case_01-r1",
+      "case_id": "case_01",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "invalid_run",
+      "infra_category": "auth",
+      "failures": [
+        "exception: agent.harness.AuthGuardError: AuthGuardError: the first message was not the init message: HookEventMessage",
+        "no ResultMessage",
+        "empty report: no finding logged",
+        "audit: no PreToolUse rows for this run",
+        "audit: no successful read of case_01/target.html"
+      ],
+      "findings": [],
+      "error_type": "agent.harness.AuthGuardError",
+      "error": "AuthGuardError: the first message was not the init message: HookEventMessage",
+      "error_origin": null,
+      "result": null,
+      "num_turns": null,
+      "total_cost_usd": null,
+      "init": null,
+      "audit_rows": 0,
+      "started_at": "2026-11-04T17:49:30.254109+00:00",
+      "finished_at": "2026-11-04T17:49:33.612758+00:00"
+    }
+  ],
+  "updated_at": "2026-11-04T17:49:33.615763+00:00"
+}
