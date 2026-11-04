@@ -546,3 +546,368 @@ class TestAuditFailureRows:
              "tool_use_id": "tu-9", "error": "e"}, None, None))
         rows = self._rows(isolated / "audit.db")
         assert rows[0]["tool_use_id"] == "tu-9"
+
+
+# --- Standard eval v2 runner (evals/run_eval_v2.py): no model calls; a fake
+# executor stands in for harness.run_case_execution and writes audit rows to
+# a throwaway database. ---------------------------------------------------------
+
+from evals import run_eval_v2  # noqa: E402
+
+DEV_KEY = json.loads((ANSWER_KEYS_DIR / "dev.json").read_text(encoding="utf-8"))
+DEV_CLAIMS = {c["case_id"]: c["claims"] for c in DEV_KEY["cases"]}
+OVERLOADED = "Claude Code returned an error result: API Error: 529 Overloaded"
+USAGE_TEXT = "You have hit your usage limit. Please try again later."
+
+
+def _hook(event, tool, tool_use_id, tool_input, response=None):
+    data = {"hook_event_name": event, "session_id": "s-1", "tool_name": tool,
+            "tool_input": tool_input, "tool_use_id": tool_use_id}
+    if event == "PostToolUse":
+        data["tool_response"] = [{"type": "text", "text": response}]
+    # audit_hook never awaits; drive it directly so it also works inside the
+    # runner's event loop.
+    coro = agent_audit.audit_hook(data, tool_use_id, None)
+    try:
+        coro.send(None)
+    except StopIteration:
+        return
+    raise AssertionError("audit_hook awaited unexpectedly")
+
+
+def _perfect_findings(case_id):
+    return [{"claim_text": c["text"], "verdict": c["verdict"],
+             "evidence_source": c["evidence_sources"][0] if c["evidence_sources"] else "none",
+             "evidence_note": "n"} for c in DEV_CLAIMS[case_id]]
+
+
+def _write_perfect_audit(case_id, run_id, findings):
+    agent_audit.init_audit_db()
+    agent_audit.set_run_context(run_id, case_id)
+    fetch, log = QUALIFIED_TOOL_NAMES[0], QUALIFIED_TOOL_NAMES[3]
+    path = {"path": f"{case_id}/target.html"}
+    _hook("PreToolUse", fetch, f"{run_id}-t0", path)
+    _hook("PostToolUse", fetch, f"{run_id}-t0", path, "- page text")
+    for i, f in enumerate(findings, start=1):
+        _hook("PreToolUse", log, f"{run_id}-t{i}", f)
+        _hook("PostToolUse", log, f"{run_id}-t{i}", f, f"Logged: {f['verdict']}")
+
+
+def _sdk_result(is_error=False, text="done"):
+    return ResultMessage(subtype="success", duration_ms=1, duration_api_ms=1, is_error=is_error,
+                         num_turns=3, session_id="s-1", total_cost_usd=0.01, result=text)
+
+
+def _outcome(spec, case_id, run_id):
+    init = {"apiKeySource": "none", "tools": list(QUALIFIED_TOOL_NAMES),
+            "mcp_servers": [], "model": "claude-sonnet-4-6"}
+    if spec == "auth":
+        return harness.ExecutionOutcome(
+            error=harness.AuthGuardError("AuthGuardError: init apiKeySource is 'x', expected 'none'"))
+    if spec == "overloaded":
+        return harness.ExecutionOutcome(error=Exception(OVERLOADED),
+                                        error_origin=harness.SDK_CALL_ORIGIN, init=init)
+    if spec == "usage":
+        return harness.ExecutionOutcome(result=_sdk_result(is_error=True, text=USAGE_TEXT), init=init)
+    findings = _perfect_findings(case_id)
+    _write_perfect_audit(case_id, run_id, findings)
+    if spec == "ok":
+        return harness.ExecutionOutcome(result=_sdk_result(), findings=findings, init=init)
+    if spec == "is_error_none":
+        return harness.ExecutionOutcome(result=_sdk_result(is_error=None), findings=findings, init=init)
+    if spec == "boom":  # runner/agent-side exception: unclassified, an agent failure
+        return harness.ExecutionOutcome(result=_sdk_result(), findings=findings, init=init,
+                                        error=RuntimeError("boom"))
+    raise AssertionError(spec)
+
+
+@pytest.fixture
+def runner(isolated, monkeypatch):
+    """A fake executor that plays a script of outcome specs ("ok" once the
+    script runs out), a temporary results folder and a fixed git state."""
+    monkeypatch.delenv(run_eval_v2.CLAUDE_CODE_ENV, raising=False)
+    monkeypatch.setattr(run_eval_v2, "RESULTS_ROOT", isolated / "results")
+    monkeypatch.setattr(run_eval_v2, "git_state", lambda: ("a" * 40, False))
+
+    class Runner:
+        def __init__(self):
+            self.calls, self.script = [], []
+
+        def run(self, *argv):
+            return run_eval_v2.main(list(argv))
+
+        def files(self, set_name="dev"):
+            return sorted((isolated / "results" / set_name).glob("*.json"))
+
+        def series(self, set_name="dev"):
+            (path,) = self.files(set_name)
+            return path, json.loads(path.read_text(encoding="utf-8"))
+
+        def rewrite(self, path, **fields):
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data.update(fields)
+            path.write_text(json.dumps(data), encoding="utf-8")
+
+    r = Runner()
+
+    async def fake(case_id, run_id, model=None, max_budget_usd=None):
+        r.calls.append(run_id)
+        return _outcome(r.script.pop(0) if r.script else "ok", case_id, run_id)
+
+    monkeypatch.setattr(run_eval_v2.harness, "run_case_execution", fake)
+    return r
+
+
+SMOKE = ("--set", "dev", "--cases", "case_01", "--runs", "1")
+
+
+class TestRunnerV2Refusals:
+    def test_refuses_inside_claude_code(self, runner, monkeypatch):
+        monkeypatch.setenv(run_eval_v2.CLAUDE_CODE_ENV, "1")
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_REFUSED
+        assert runner.calls == [] and runner.files() == []
+
+    def test_refuses_a_guarded_env_name_without_printing_its_value(self, runner, monkeypatch, capsys):
+        monkeypatch.setenv("ANTHROPIC_API_KEY", FAKE_SECRET_VALUE)
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_REFUSED
+        out = capsys.readouterr()
+        assert "ANTHROPIC_API_KEY" in out.err
+        assert FAKE_SECRET_VALUE not in out.out + out.err
+        assert runner.calls == []
+
+    def test_official_needs_the_frozen_key_hash_and_the_full_series(self, runner, monkeypatch, tmp_path):
+        assert runner.run("--set", "official") == run_eval_v2.EXIT_REFUSED
+        assert runner.run("--set", "official", "--key-sha256", "0" * 64,
+                          "--cases", "h001") == run_eval_v2.EXIT_REFUSED
+        key = tmp_path / "official.json"
+        key.write_text(json.dumps({"set": "official", "cases": []}), encoding="utf-8")
+        monkeypatch.setattr(run_eval_v2, "key_path_for", lambda s, c: key)
+        assert runner.run("--set", "official", "--key-sha256", "0" * 64) == run_eval_v2.EXIT_REFUSED
+        # right hash, but not an official set (0 cases)
+        assert runner.run("--set", "official", "--key-sha256",
+                          score_v2.key_sha256(key)) == run_eval_v2.EXIT_REFUSED
+        assert runner.calls == [] and runner.files("official") == []
+
+    def test_dev_subset_must_name_cases_of_the_key(self, runner):
+        assert runner.run("--set", "dev", "--cases", "h001") == run_eval_v2.EXIT_REFUSED
+        assert runner.run("--set", "dev", "--runs", "4") == run_eval_v2.EXIT_REFUSED
+        assert runner.run("--set", "dev", "--recover") == run_eval_v2.EXIT_REFUSED
+        assert runner.calls == []
+
+    def test_runner_never_loads_a_dotenv_file_or_the_v1_runner(self):
+        source = Path(run_eval_v2.__file__).read_text(encoding="utf-8")
+        assert "dotenv" not in source
+        assert "run_eval import" not in source and "import run_eval\n" not in source
+
+
+class TestRunnerV2Records:
+    def test_full_dev_series_with_a_perfect_agent(self, runner, monkeypatch, capsys):
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_OK
+        assert len(runner.calls) == 36
+        path, series = runner.series()
+        assert series["state"] == "complete" and series["pending"] is None
+        assert series["kind"] == run_eval_v2.FULL_KIND
+        assert series["summary"]["result"] == score_v2.DEV_ONLY
+        assert series["answer_key"] == "evals/answer_keys/dev.json"
+        good, problems = score_v2.record_problems(DEV_KEY, series["executions"])
+        assert problems == [] and len(good) == 36
+        config = score_v2.load_config()
+        assert all(score_v2.status_problem(e, config) is None for e in series["executions"])
+        assert {e["status"] for e in series["executions"]} == {score_v2.COMPLETED}
+        assert all(e["result"]["is_error"] is False for e in series["executions"])
+        assert run_eval_v2.SMOKE_LABEL not in capsys.readouterr().out
+        monkeypatch.setattr(sys, "argv", ["score_v2.py", str(path)])
+        score_v2.main()  # the rescore accepts the file (no SystemExit)
+        assert score_v2.DEV_ONLY in capsys.readouterr().out
+
+    def test_smoke_test_record_shape_label_and_init_output(self, runner, capsys):
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_OK
+        out = capsys.readouterr().out
+        assert run_eval_v2.SMOKE_LABEL in out
+        assert "apiKeySource 'none'" in out
+        assert f"observed MCP tools: {list(QUALIFIED_TOOL_NAMES)!r}" in out
+        _, series = runner.series()
+        assert series["kind"] == run_eval_v2.SMOKE_KIND
+        assert series["summary"]["kind"] == run_eval_v2.SMOKE_KIND
+        assert series["subset"] == {"cases": ["case_01"], "runs": 1}
+        (e,) = series["executions"]
+        assert e["execution_id"] == f"{series['eval_id']}-case_01-r1"
+        assert runner.calls == [e["execution_id"]]
+        assert set(e["result"]) == {"subtype", "is_error", "num_turns", "result_text", "errors"}
+        assert e["result"]["is_error"] is False
+        assert e["error_type"] is None and e["error"] is None
+        assert e["num_turns"] == 3 and e["total_cost_usd"] == 0.01
+        assert e["init"]["apiKeySource"] == "none"
+        assert e["status"] == score_v2.COMPLETED
+
+    def test_a_non_boolean_is_error_is_never_read_as_false(self, runner):
+        runner.script = ["is_error_none"]
+        assert runner.run("--set", "dev", "--cases", "case_01,case_02",
+                          "--runs", "1") == run_eval_v2.EXIT_STOPPED
+        assert len(runner.calls) == 1
+        _, series = runner.series()
+        (e,) = series["executions"]
+        assert e["result"]["is_error"] is None  # kept as sent, not converted
+        assert e["status"] == score_v2.AGENT_FAILURE
+        assert any("not a boolean" in f for f in e["failures"])
+        assert series["state"] == "stopped"
+        assert score_v2.status_problem(e, score_v2.load_config()) is None
+
+    def test_exception_keeps_result_and_records_module_qualname(self, runner):
+        runner.script = ["boom"]
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_OK
+        (e,) = runner.series()[1]["executions"]
+        assert e["error_type"] == "builtins.RuntimeError" and e["error"] == "boom"
+        assert e["result"] is not None
+        assert e["status"] == score_v2.AGENT_FAILURE and e["infra_category"] is None
+
+    def test_only_the_executions_own_audit_rows_are_used(self, runner):
+        agent_audit.init_audit_db()
+        agent_audit.set_run_context("someone-else", "case_01")
+        _hook("PreToolUse", QUALIFIED_TOOL_NAMES[0], "x-1", {"path": "case_01/target.html"})
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_OK
+        (e,) = runner.series()[1]["executions"]
+        assert e["status"] == score_v2.COMPLETED and e["audit_rows"] == 8
+
+
+class TestRunnerV2StopPauseRerun:
+    def test_auth_error_stops_the_series_at_once(self, runner):
+        runner.script = ["auth"]
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_STOPPED
+        assert len(runner.calls) == 1
+        _, series = runner.series()
+        assert series["state"] == "stopped"
+        (e,) = series["executions"]
+        assert e["status"] == score_v2.INVALID_RUN and e["infra_category"] == "auth"
+        assert e["error_type"] == score_v2.AUTH_GUARD_TYPE
+
+    def test_usage_limit_stops_the_series(self, runner):
+        runner.script = ["ok", "usage"]
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_STOPPED
+        assert len(runner.calls) == 2
+        e = runner.series()[1]["executions"][-1]
+        assert e["infra_category"] == "usage_or_rate_limit"
+
+    def test_invalid_run_stops_the_page_and_resume_reruns_it_as_a_new_attempt(self, runner):
+        runner.script = ["ok", "overloaded"]
+        assert runner.run("--set", "dev", "--cases", "case_01,case_02",
+                          "--runs", "3") == run_eval_v2.EXIT_STOPPED
+        path, series = runner.series()
+        eid = series["eval_id"]
+        assert runner.calls == [f"{eid}-case_01-r1", f"{eid}-case_01-r2"]
+        assert series["executions"][-1]["infra_category"] == "overloaded_or_5xx"
+
+        runner.calls.clear()
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_OK
+        assert runner.calls == [f"{eid}-case_01-r1-a2", f"{eid}-case_01-r2-a2", f"{eid}-case_01-r3-a2",
+                                f"{eid}-case_02-r1", f"{eid}-case_02-r2", f"{eid}-case_02-r3"]
+        _, series = runner.series()
+        assert series["eval_id"] == eid
+        first = [e for e in series["executions"] if e["attempt"] == 1 and e["case_id"] == "case_01"]
+        assert len(first) == 2 and all(e["superseded"] for e in first)
+        assert not any(e["superseded"] for e in series["executions"] if e["attempt"] == 2)
+        assert [ev["kind"] for ev in series["series_events"]] == ["stop", "resume", "rerun", "complete"]
+        scored = score_v2.score(run_eval_v2.subset_key(DEV_KEY, series), series["executions"])
+        assert scored["attempt_problems"] == [] and scored["record_problems"] == []
+
+    def test_two_unclassified_exceptions_in_a_row_pause_and_resume_continues_the_attempt(self, runner):
+        runner.script = ["boom", "boom"]
+        assert runner.run("--set", "dev", "--cases", "case_01",
+                          "--runs", "3") == run_eval_v2.EXIT_PAUSED
+        path, series = runner.series()
+        assert series["state"] == "paused" and len(runner.calls) == 2
+        runner.calls.clear()
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_OK
+        assert runner.calls == [f"{series['eval_id']}-case_01-r3"]
+        _, series = runner.series()
+        assert [e["status"] for e in series["executions"]] == [
+            score_v2.AGENT_FAILURE, score_v2.AGENT_FAILURE, score_v2.COMPLETED]
+        assert not any(e["superseded"] for e in series["executions"])
+
+    def test_unclassified_exceptions_not_in_a_row_do_not_pause(self, runner):
+        runner.script = ["boom", "ok", "boom"]
+        assert runner.run("--set", "dev", "--cases", "case_01", "--runs", "3") == run_eval_v2.EXIT_OK
+
+    def test_an_execution_id_with_audit_rows_is_never_reused(self, runner):
+        runner.script = ["boom", "boom"]
+        assert runner.run("--set", "dev", "--cases", "case_01", "--runs", "3") == run_eval_v2.EXIT_PAUSED
+        path, series = runner.series()
+        agent_audit.set_run_context(f"{series['eval_id']}-case_01-r3", "case_01")
+        _hook("PreToolUse", QUALIFIED_TOOL_NAMES[0], "y-1", {"path": "case_01/target.html"})
+        runner.calls.clear()
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_STOPPED
+        assert runner.calls == []
+        assert runner.series()[1]["state"] == "abandoned"
+
+    @pytest.mark.parametrize("field,value", [
+        ("eval_id", "ev2-00000000"), ("git_head", "b" * 40), ("answer_key_sha256", "0" * 64),
+        ("config_sha256", "0" * 64), ("model", "other"), ("max_budget_usd", 9.0),
+        ("max_turns", 99), ("max_tool_calls", 999), ("runs_per_page", 5),
+        ("subset", {"cases": ["case_02"], "runs": 1}), ("subset", {"cases": ["case_01"], "runs": 9}),
+        ("kind", run_eval_v2.FULL_KIND),
+        ("state", "complete"), ("state", "abandoned"),
+    ])
+    def test_resume_refuses_a_changed_series(self, runner, field, value):
+        runner.script = ["auth"]
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_STOPPED
+        path, _ = runner.series()
+        runner.rewrite(path, **{field: value})
+        runner.calls.clear()
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_REFUSED
+        assert runner.calls == []
+
+    def test_resume_refuses_cases_or_runs_that_differ_from_the_stored_subset(self, runner):
+        runner.script = ["auth"]
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_STOPPED
+        path, series = runner.series()
+        assert runner.run("--set", "dev", "--resume", str(path), "--runs", "2") == run_eval_v2.EXIT_REFUSED
+        assert len(runner.calls) == 1
+        assert runner.run("--set", "dev", "--resume", str(path), "--cases", "case_01",
+                          "--runs", "1") == run_eval_v2.EXIT_OK
+        assert runner.calls[1:] == [f"{series['eval_id']}-case_01-r1-a2"]
+
+
+class TestRunnerV2InterruptedSeries:
+    def _interrupted(self, runner, pending):
+        runner.script = ["boom", "boom"]
+        assert runner.run("--set", "dev", "--cases", "case_01", "--runs", "3") == run_eval_v2.EXIT_PAUSED
+        path, series = runner.series()
+        runner.rewrite(path, state="running", pending=pending)
+        runner.calls.clear()
+        return path, series
+
+    def test_a_running_series_is_not_resumed_without_recover(self, runner):
+        path, before = self._interrupted(runner, pending=None)
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_REFUSED
+        assert runner.calls == []
+        _, after = runner.series()
+        assert after["executions"] == before["executions"] and after["state"] == "running"
+
+    def test_recover_with_an_execution_in_flight_abandons_and_keeps_the_evidence(self, runner):
+        path, before = self._interrupted(runner, pending=None)
+        lost = f"{before['eval_id']}-case_01-r3"
+        runner.rewrite(path, pending={"execution_id": lost, "started_at": "t"})
+        agent_audit.set_run_context(lost, "case_01")
+        _hook("PreToolUse", QUALIFIED_TOOL_NAMES[0], "z-1", {"path": "case_01/target.html"})
+        assert runner.run("--set", "dev", "--resume", str(path), "--recover") == run_eval_v2.EXIT_STOPPED
+        assert runner.calls == []
+        _, after = runner.series()
+        assert after["state"] == "abandoned"
+        assert after["executions"] == before["executions"]
+        assert after["series_events"][-1]["kind"] == "interrupted"
+        assert lost in after["series_events"][-1]["detail"]
+        assert len(score_v2.load_audit_rows(agent_audit.AUDIT_DB_PATH, lost)) == 1
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_REFUSED
+
+    def test_recover_with_nothing_in_flight_continues(self, runner):
+        path, series = self._interrupted(runner, pending=None)
+        assert runner.run("--set", "dev", "--resume", str(path), "--recover") == run_eval_v2.EXIT_OK
+        assert runner.calls == [f"{series['eval_id']}-case_01-r3"]
+        kinds = [ev["kind"] for ev in runner.series()[1]["series_events"]]
+        assert kinds[-3:] == ["recover", "resume", "complete"]
+
+    def test_recover_is_refused_for_a_series_that_is_not_running(self, runner):
+        runner.script = ["auth"]
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_STOPPED
+        path, _ = runner.series()
+        assert runner.run("--set", "dev", "--resume", str(path), "--recover") == run_eval_v2.EXIT_REFUSED
