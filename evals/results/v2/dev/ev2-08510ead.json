@@ -1,0 +1,78 @@
+{
+  "version": 2,
+  "eval_id": "ev2-08510ead",
+  "set": "dev",
+  "answer_key": "evals/answer_keys/dev.json",
+  "answer_key_sha256": "b950c66eeeb7235b62fe8d58fbe018a9225e39aa1d5aaefbf5685847f8da6aa1",
+  "config_sha256": "c45c590bfff944a7d70fe12a1413fd73d6fa395d03beac1b216cc6324c06c901",
+  "git_head": "142485a9c45cc23c41cb938ef05d40404d1e20f0",
+  "git_dirty": false,
+  "model": "claude-sonnet-4-6",
+  "max_budget_usd": 1.5,
+  "max_turns": 20,
+  "max_tool_calls": 60,
+  "runs_per_page": 3,
+  "subset": {
+    "cases": [
+      "case_01"
+    ],
+    "runs": 1
+  },
+  "kind": "smoke_test",
+  "started_at": "2026-11-05T02:44:35.669909+00:00",
+  "state": "stopped",
+  "pending": null,
+  "series_events": [
+    {
+      "time": "2026-11-05T02:44:42.685437+00:00",
+      "kind": "stop",
+      "detail": "stop rule: auth error in ev2-08510ead-case_01-r1; the runner never falls back to another auth route"
+    }
+  ],
+  "executions": [
+    {
+      "execution_id": "ev2-08510ead-case_01-r1",
+      "case_id": "case_01",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "invalid_run",
+      "infra_category": "auth",
+      "failures": [
+        "exception: agent.harness.AuthGuardError: AuthGuardError: init tools are ['mcp__claimverify__compare_source', 'mcp__claimverify__extract_claims', 'mcp__claimverify__fetch_page', 'mcp__claimverify__log_finding', 'mcp__claude_ai_Claude_Docs__batch', 'mcp__claude_ai_Claude_Docs__create', 'mcp__claude_ai_Claude_Docs__delete', 'mcp__claude_ai_Claude_Docs__export', 'mcp__claude_ai_Claude_Docs__guide', 'mcp__claude_ai_Claude_Docs__query', 'mcp__claude_ai_Claude_Docs__read', 'mcp__claude_ai_Claude_Docs__update', 'mcp__claude_ai_Gmail__apply_sensitive_message_label', 'mcp__claude_ai_Gmail__apply_sensitive_thread_label', 'mcp__claude_ai_Gmail__create_draft', 'mcp__claude_ai_Gmail__create_label', 'mcp__claude_ai_Gmail__delete_draft', 'mcp__claude_ai_Gmail__delete_label', 'mcp__claude_ai_Gmail__forward', 'mcp__claude_ai_Gmail__get_draft', 'mcp__claude_ai_Gmail__get_message', 'mcp__claude_ai_Gmail__get_thread', 'mcp__claude_ai_Gmail__label_message', 'mcp__claude_ai_Gmail__label_thread', 'mcp__claude_ai_Gmail__list_drafts', 'mcp__claude_ai_Gmail__list_labels', 'mcp__claude_ai_Gmail__mark_message_spam', 'mcp__claude_ai_Gmail__mark_thread_spam', 'mcp__claude_ai_Gmail__reply', 'mcp__claude_ai_Gmail__search_threads', 'mcp__claude_ai_Gmail__send_message', 'mcp__claude_ai_Gmail__trash_message', 'mcp__claude_ai_Gmail__trash_thread', 'mcp__claude_ai_Gmail__unlabel_message', 'mcp__claude_ai_Gmail__unlabel_thread', 'mcp__claude_ai_Gmail__unmark_message_spam', 'mcp__claude_ai_Gmail__unmark_thread_spam', 'mcp__claude_ai_Gmail__untrash_message', 'mcp__claude_ai_Gmail__untrash_thread', 'mcp__claude_ai_Gmail__update_draft', 'mcp__claude_ai_Gmail__update_label', 'mcp__claude_ai_Gmail__update_message_labels', 'mcp__claude_ai_Google_Calendar__create_event', 'mcp__claude_ai_Google_Calendar__delete_event', 'mcp__claude_ai_Google_Calendar__get_event', 'mcp__claude_ai_Google_Calendar__list_calendars', 'mcp__claude_ai_Google_Calendar__list_events', 'mcp__claude_ai_Google_Calendar__respond_to_event', 'mcp__claude_ai_Google_Calendar__search_events', 'mcp__claude_ai_Google_Calendar__suggest_time', 'mcp__claude_ai_Google_Calendar__update_event', 'mcp__claude_ai_Google_Drive__copy_file', 'mcp__claude_ai_Google_Drive__create_file', 'mcp__claude_ai_Google_Drive__download_file_content', 'mcp__claude_ai_Google_Drive__get_file_metadata', 'mcp__claude_ai_Google_Drive__get_file_permissions', 'mcp__claude_ai_Google_Drive__list_recent_files', 'mcp__claude_ai_Google_Drive__read_file_content', 'mcp__claude_ai_Google_Drive__search_files', 'mcp__claude_ai_Google_Drive__share_file', 'mcp__claude_ai_Google_Drive__trash_file', 'mcp__claude_ai_Google_Drive__update_file'], expected exactly ['mcp__claimverify__compare_source', 'mcp__claimverify__extract_claims', 'mcp__claimverify__fetch_page', 'mcp__claimverify__log_finding']",
+        "no ResultMessage",
+        "empty report: no finding logged",
+        "audit: no PreToolUse rows for this run",
+        "audit: no successful read of case_01/target.html"
+      ],
+      "findings": [],
+      "error_type": "agent.harness.AuthGuardError",
+      "error": "AuthGuardError: init tools are ['mcp__claimverify__compare_source', 'mcp__claimverify__extract_claims', 'mcp__claimverify__fetch_page', 'mcp__claimverify__log_finding', 'mcp__claude_ai_Claude_Docs__batch', 'mcp__claude_ai_Claude_Docs__create', 'mcp__claude_ai_Claude_Docs__delete', 'mcp__claude_ai_Claude_Docs__export', 'mcp__claude_ai_Claude_Docs__guide', 'mcp__claude_ai_Claude_Docs__query', 'mcp__claude_ai_Claude_Docs__read', 'mcp__claude_ai_Claude_Docs__update', 'mcp__claude_ai_Gmail__apply_sensitive_message_label', 'mcp__claude_ai_Gmail__apply_sensitive_thread_label', 'mcp__claude_ai_Gmail__create_draft', 'mcp__claude_ai_Gmail__create_label', 'mcp__claude_ai_Gmail__delete_draft', 'mcp__claude_ai_Gmail__delete_label', 'mcp__claude_ai_Gmail__forward', 'mcp__claude_ai_Gmail__get_draft', 'mcp__claude_ai_Gmail__get_message', 'mcp__claude_ai_Gmail__get_thread', 'mcp__claude_ai_Gmail__label_message', 'mcp__claude_ai_Gmail__label_thread', 'mcp__claude_ai_Gmail__list_drafts', 'mcp__claude_ai_Gmail__list_labels', 'mcp__claude_ai_Gmail__mark_message_spam', 'mcp__claude_ai_Gmail__mark_thread_spam', 'mcp__claude_ai_Gmail__reply', 'mcp__claude_ai_Gmail__search_threads', 'mcp__claude_ai_Gmail__send_message', 'mcp__claude_ai_Gmail__trash_message', 'mcp__claude_ai_Gmail__trash_thread', 'mcp__claude_ai_Gmail__unlabel_message', 'mcp__claude_ai_Gmail__unlabel_thread', 'mcp__claude_ai_Gmail__unmark_message_spam', 'mcp__claude_ai_Gmail__unmark_thread_spam', 'mcp__claude_ai_Gmail__untrash_message', 'mcp__claude_ai_Gmail__untrash_thread', 'mcp__claude_ai_Gmail__update_draft', 'mcp__claude_ai_Gmail__update_label', 'mcp__claude_ai_Gmail__update_message_labels', 'mcp__claude_ai_Google_Calendar__create_event', 'mcp__claude_ai_Google_Calendar__delete_event', 'mcp__claude_ai_Google_Calendar__get_event', 'mcp__claude_ai_Google_Calendar__list_calendars', 'mcp__claude_ai_Google_Calendar__list_events', 'mcp__claude_ai_Google_Calendar__respond_to_event', 'mcp__claude_ai_Google_Calendar__search_events', 'mcp__claude_ai_Google_Calendar__suggest_time', 'mcp__claude_ai_Google_Calendar__update_event', 'mcp__claude_ai_Google_Drive__copy_file', 'mcp__claude_ai_Google_Drive__create_file', 'mcp__claude_ai_Google_Drive__download_file_content', 'mcp__claude_ai_Google_Drive__get_file_metadata', 'mcp__claude_ai_Google_Drive__get_file_permissions', 'mcp__claude_ai_Google_Drive__list_recent_files', 'mcp__claude_ai_Google_Drive__read_file_content', 'mcp__claude_ai_Google_Drive__search_files', 'mcp__claude_ai_Google_Drive__share_file', 'mcp__claude_ai_Google_Drive__trash_file', 'mcp__claude_ai_Google_Drive__update_file'], expected exactly ['mcp__claimverify__compare_source', 'mcp__claimverify__extract_claims', 'mcp__claimverify__fetch_page', 'mcp__claimverify__log_finding']",
+      "error_origin": null,
+      "result": null,
+      "num_turns": null,
+      "total_cost_usd": null,
+      "init": null,
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "efc0b2eb-1893-46ad-b3e3-fa8680f14c1e",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "efc0b2eb-1893-46ad-b3e3-fa8680f14c1e",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 0,
+      "started_at": "2026-11-05T02:44:35.704520+00:00",
+      "finished_at": "2026-11-05T02:44:42.680399+00:00"
+    }
+  ],
+  "updated_at": "2026-11-05T02:44:42.685437+00:00"
+}

@@ -2,7 +2,8 @@
 cost ceiling, and SQLite audit hooks into a single ClaudeAgentOptions, then
 runs one query against a single eval case.
 
-Isolation: no filesystem settings are loaded (setting_sources=[]), an env
+Isolation: no filesystem settings are loaded (setting_sources=[]), no MCP
+server outside mcp_servers is loaded (strict_mcp_config), an env
 guard refuses to start when an API-key or provider-routing variable is set
 (names only, values are never read), and the CLI's init message must show
 apiKeySource "none" and exactly the 4 MCP tools before the run continues.
@@ -164,6 +165,7 @@ def build_options(
         system_prompt=build_system_prompt(),
         tools=[],  # disable all built-in tools (no Write, Bash, Edit, Read, ...)
         mcp_servers={MCP_SERVER_NAME: server},
+        strict_mcp_config=True,  # no claude.ai connectors or other MCP configuration
         allowed_tools=list(QUALIFIED_TOOL_NAMES),  # exactly the 4 custom tools
         setting_sources=[],  # load no user, project or local settings
         max_turns=MAX_TURNS,

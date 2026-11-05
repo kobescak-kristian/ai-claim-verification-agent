@@ -1160,3 +1160,60 @@ class TestEvalMarker:
             asyncio.run(transport.connect())
         assert seen[MARKER_NAME] == MARKER_VALUE
         assert seen["CLAUDE_CODE_ENTRYPOINT"] == "sdk-py"
+
+
+# --- Strict MCP configuration: only the harness's own server is loaded ---
+
+# Tool names of the kind a logged-in CLI adds without strict_mcp_config.
+CONNECTOR_TOOLS = ["mcp__claude_ai_Gmail__send_message", "mcp__claude_ai_Google_Drive__search_files"]
+
+
+def _cli_command(options):
+    """The real SDK command line for these options; nothing is started."""
+    transport = subprocess_cli.SubprocessCLITransport(
+        prompt="x", options=replace(options, cli_path="stub-cli"))
+    return transport._build_command()
+
+
+class TestStrictMcpConfig:
+    def test_options_are_strict_with_and_without_the_marker(self):
+        assert harness.build_options().strict_mcp_config is True
+        assert harness.build_options(env=run_eval_v2.EVAL_ENV).strict_mcp_config is True
+
+    def test_the_sdk_passes_the_strict_flag_to_the_cli(self):
+        assert "--strict-mcp-config" in _cli_command(harness.build_options())
+
+    def test_the_cli_is_still_given_exactly_the_harness_server(self):
+        cmd = _cli_command(harness.build_options())
+        config = json.loads(cmd[cmd.index("--mcp-config") + 1])
+        assert list(config["mcpServers"]) == [harness.MCP_SERVER_NAME]
+        assert config["mcpServers"][harness.MCP_SERVER_NAME]["type"] == "sdk"
+
+    def test_the_server_keeps_its_four_tools(self):
+        options = harness.build_options()
+        server = options.mcp_servers[harness.MCP_SERVER_NAME]
+        assert server["type"] == "sdk" and server["name"] == harness.MCP_SERVER_NAME
+        assert len(agent_tools.ALL_TOOLS) == 4
+        assert sorted(f"mcp__{harness.MCP_SERVER_NAME}__{t.name}" for t in agent_tools.ALL_TOOLS) \
+            == sorted(QUALIFIED_TOOL_NAMES)
+        assert sorted(options.allowed_tools) == sorted(QUALIFIED_TOOL_NAMES)
+
+    def test_every_execution_reaches_query_with_strict_options(self, isolated, monkeypatch):
+        called = []
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), _result_message()],
+                                                          called=called))
+        asyncio.run(harness.run_case_execution("case_01", "test-run", env=run_eval_v2.EVAL_ENV))
+        asyncio.run(harness.run_case_result("case_01", "test-run-2"))
+        assert [o.strict_mcp_config for o in called] == [True, True]
+
+    def test_the_init_check_still_refuses_connector_tools(self, isolated, monkeypatch):
+        closed = []
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(tools=list(QUALIFIED_TOOL_NAMES) + CONNECTOR_TOOLS), _result_message()],
+            closed=closed))
+        outcome = asyncio.run(harness.run_case_execution(
+            "case_01", "test-run", env=run_eval_v2.EVAL_ENV))
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "mcp__claude_ai_Gmail__send_message" in str(outcome.error)
+        assert outcome.result is None and outcome.init is None and harness.last_init is None
+        assert closed == [True]
