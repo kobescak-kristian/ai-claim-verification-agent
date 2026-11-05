@@ -152,8 +152,10 @@ class ExecutionOutcome:
 
 
 def build_options(
-    model: str = MODEL, max_budget_usd: float = MAX_BUDGET_USD
+    model: str = MODEL, max_budget_usd: float = MAX_BUDGET_USD, env: dict | None = None
 ) -> ClaudeAgentOptions:
+    """`env` holds extra variables for the CLI process only; the harness's
+    own environment is not changed. Empty unless a caller passes it."""
     server = create_sdk_mcp_server(
         name=MCP_SERVER_NAME, version="1.0.0", tools=tools.ALL_TOOLS
     )
@@ -166,6 +168,7 @@ def build_options(
         setting_sources=[],  # load no user, project or local settings
         max_turns=MAX_TURNS,
         max_budget_usd=max_budget_usd,  # SDK-level per-run cost ceiling
+        env=dict(env or {}),
         hooks={
             "PreToolUse": [HookMatcher(hooks=[audit_hook])],
             "PostToolUse": [HookMatcher(hooks=[audit_hook])],
@@ -224,22 +227,24 @@ def format_report(case_id: str, result: ResultMessage, findings: list[dict]) -> 
 
 
 async def run_case_execution(
-    case_id: str, run_id: str, model: str = MODEL, max_budget_usd: float = MAX_BUDGET_USD
+    case_id: str, run_id: str, model: str = MODEL, max_budget_usd: float = MAX_BUDGET_USD,
+    env: dict | None = None,
 ) -> ExecutionOutcome:
     """Fresh agent invocation scoped to one case: own ClaudeAgentOptions (own
     max_turns/max_budget_usd allowance, own circuit-breaker counter), own
     findings list. Never raises an Exception: the exception, the
     ResultMessage (if one arrived) and the exception's origin are returned
-    together, so a caller can record all of them."""
+    together, so a caller can record all of them. The env guard also covers
+    `env`, so a guarded variable cannot reach the CLI through it."""
     global last_init
     last_init = None
     outcome = ExecutionOutcome()
     try:
-        check_env()
+        check_env({**os.environ, **(env or {})})
         init_audit_db()
         set_run_context(run_id, case_id)
         tools.reset_run_state()
-        options = build_options(model=model, max_budget_usd=max_budget_usd)
+        options = build_options(model=model, max_budget_usd=max_budget_usd, env=env)
         prompt = build_user_prompt(case_id)
     except Exception as exc:
         outcome.error = exc

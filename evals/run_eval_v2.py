@@ -64,6 +64,11 @@ STOP_CATEGORIES = ("auth", "usage_or_rate_limit")
 UNCLASSIFIED_PAUSE_AFTER = 2
 CLAUDE_CODE_ENV = "CLAUDECODE"
 
+# Set on the CLI process of every v2 execution, and only there. It identifies
+# an evaluation startup to machine-wide session hooks, so they add no context
+# to the model. Identification only: every harness check still runs.
+EVAL_ENV = {"AGENT_EVAL_PROFILE": "claim-verification-eval"}
+
 EXIT_OK, EXIT_REFUSED, EXIT_STOPPED, EXIT_PAUSED = 0, 2, 3, 4
 
 # A series limited by --cases or --runs is a smoke test, never an evaluation.
@@ -146,7 +151,8 @@ async def execute(eval_id: str, case_id: str, run_index: int, attempt: int, conf
     execution_id = execution_id_for(eval_id, case_id, run_index, attempt)
     started_at = utc_now()
     outcome = await harness.run_case_execution(
-        case_id, execution_id, model=EVAL_MODEL, max_budget_usd=EVAL_MAX_BUDGET_USD
+        case_id, execution_id, model=EVAL_MODEL, max_budget_usd=EVAL_MAX_BUDGET_USD,
+        env=EVAL_ENV,
     )
     exc = outcome.error
     error_type = error_type_name(exc)

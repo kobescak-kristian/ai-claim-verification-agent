@@ -631,7 +631,7 @@ def runner(isolated, monkeypatch):
 
     class Runner:
         def __init__(self):
-            self.calls, self.script = [], []
+            self.calls, self.script, self.envs = [], [], []
 
         def run(self, *argv):
             return run_eval_v2.main(list(argv))
@@ -650,8 +650,9 @@ def runner(isolated, monkeypatch):
 
     r = Runner()
 
-    async def fake(case_id, run_id, model=None, max_budget_usd=None):
+    async def fake(case_id, run_id, model=None, max_budget_usd=None, env=None):
         r.calls.append(run_id)
+        r.envs.append(env)
         return _outcome(r.script.pop(0) if r.script else "ok", case_id, run_id)
 
     monkeypatch.setattr(run_eval_v2.harness, "run_case_execution", fake)
@@ -1053,3 +1054,109 @@ class TestPreInitMessages:
         category = score_v2.infra_category(score_v2.AUTH_GUARD_TYPE, str(error), None,
                                            score_v2.load_config())
         assert category == "auth" and category in run_eval_v2.STOP_CATEGORIES
+
+
+# --- Evaluation marker: set on the CLI process of v2 executions only ---
+
+import inspect  # noqa: E402
+import os  # noqa: E402
+from dataclasses import replace  # noqa: E402
+
+from claude_agent_sdk._internal.transport import subprocess_cli  # noqa: E402
+
+MARKER_NAME = "AGENT_EVAL_PROFILE"
+MARKER_VALUE = "claim-verification-eval"
+
+
+class TestEvalMarker:
+    def test_the_marker_is_the_only_variable_the_runner_sets(self):
+        assert run_eval_v2.EVAL_ENV == {MARKER_NAME: MARKER_VALUE}
+
+    def test_the_default_options_carry_no_extra_variable(self):
+        assert harness.build_options().env == {}
+
+    def test_options_keep_their_own_copy_of_env(self):
+        env = {MARKER_NAME: MARKER_VALUE}
+        options = harness.build_options(env=env)
+        env["OTHER"] = "x"
+        assert options.env == {MARKER_NAME: MARKER_VALUE}
+
+    def test_an_execution_passes_env_to_the_sdk_and_not_to_the_process(self, isolated, monkeypatch):
+        called = []
+        monkeypatch.delenv(MARKER_NAME, raising=False)
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), _result_message()],
+                                                          called=called))
+        outcome = asyncio.run(harness.run_case_execution(
+            "case_01", "test-run", env=run_eval_v2.EVAL_ENV))
+        assert outcome.error is None
+        assert called[0].env == {MARKER_NAME: MARKER_VALUE}
+        assert MARKER_NAME not in os.environ
+
+    def test_the_marker_changes_none_of_the_other_bounds(self):
+        plain, marked = harness.build_options(), harness.build_options(env=run_eval_v2.EVAL_ENV)
+        assert marked.setting_sources == [] and marked.tools == []
+        assert sorted(marked.allowed_tools) == sorted(QUALIFIED_TOOL_NAMES)
+        assert (marked.max_turns, marked.max_budget_usd) == (plain.max_turns, plain.max_budget_usd)
+        assert sorted(marked.hooks) == sorted(plain.hooks)
+
+    def test_the_single_case_path_used_by_v1_sends_no_marker(self, isolated, monkeypatch):
+        called = []
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), _result_message()],
+                                                          called=called))
+        asyncio.run(harness.run_case_result("case_01", "test-run"))
+        assert called[0].env == {}
+        assert "env" not in inspect.signature(harness.run_case_result).parameters
+
+    def test_the_strict_init_check_still_applies_with_the_marker(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(api_key_source="ANTHROPIC_API_KEY"), _result_message()]))
+        outcome = asyncio.run(harness.run_case_execution(
+            "case_01", "test-run", env=run_eval_v2.EVAL_ENV))
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.result is None and outcome.init is None
+
+    @pytest.mark.parametrize("name", harness.GUARDED_ENV_NAMES)
+    def test_a_guarded_name_in_env_is_refused_before_anything_starts(self, isolated, monkeypatch, name):
+        called = []
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message()], called=called))
+        outcome = asyncio.run(harness.run_case_execution(
+            "case_01", "test-run", env={name: FAKE_SECRET_VALUE}))
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert name in str(outcome.error) and FAKE_SECRET_VALUE not in str(outcome.error)
+        assert called == [] and not (isolated / "audit.db").exists()
+
+    def test_every_runner_execution_gets_the_marker_also_on_a_rerun(self, runner):
+        runner.script = ["ok", "overloaded"]
+        assert runner.run("--set", "dev", "--cases", "case_01",
+                          "--runs", "3") == run_eval_v2.EXIT_STOPPED
+        path, _ = runner.series()
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_OK
+        assert len(runner.envs) == 5
+        assert all(env == {MARKER_NAME: MARKER_VALUE} for env in runner.envs)
+
+    def test_the_results_record_keeps_its_shape(self, runner):
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_OK
+        assert MARKER_NAME not in runner.files()[0].read_text(encoding="utf-8")
+
+    def test_the_sdk_gives_the_cli_process_the_marker_and_the_sdk_entry_point(self, monkeypatch):
+        """The real SDK transport; only the process start is replaced, so no
+        CLI starts and no model is called."""
+        seen = {}
+
+        class Stop(Exception):
+            pass
+
+        async def fake_open_process(cmd, **kwargs):
+            seen.update(kwargs["env"])
+            raise Stop
+
+        monkeypatch.setattr(subprocess_cli.anyio, "open_process", fake_open_process)
+        monkeypatch.setenv("CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK", "1")
+        monkeypatch.setenv("CLAUDE_CODE_ENTRYPOINT", "cli")  # inherited value must not survive
+        monkeypatch.delenv(MARKER_NAME, raising=False)
+        options = replace(harness.build_options(env=run_eval_v2.EVAL_ENV), cli_path="stub-cli")
+        transport = subprocess_cli.SubprocessCLITransport(prompt="x", options=options)
+        with pytest.raises(Exception, match="Failed to start"):
+            asyncio.run(transport.connect())
+        assert seen[MARKER_NAME] == MARKER_VALUE
+        assert seen["CLAUDE_CODE_ENTRYPOINT"] == "sdk-py"
