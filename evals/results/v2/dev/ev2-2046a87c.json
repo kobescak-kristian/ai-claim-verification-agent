@@ -1,0 +1,2812 @@
+{
+  "version": 2,
+  "eval_id": "ev2-2046a87c",
+  "set": "dev",
+  "answer_key": "evals/answer_keys/dev.json",
+  "answer_key_sha256": "b950c66eeeb7235b62fe8d58fbe018a9225e39aa1d5aaefbf5685847f8da6aa1",
+  "config_sha256": "c45c590bfff944a7d70fe12a1413fd73d6fa395d03beac1b216cc6324c06c901",
+  "git_head": "2bd694ecc3fca7a10ffc205324fb1423ad3bf969",
+  "git_dirty": false,
+  "model": "claude-sonnet-4-6",
+  "max_budget_usd": 1.5,
+  "max_turns": 20,
+  "max_tool_calls": 60,
+  "runs_per_page": 3,
+  "subset": null,
+  "kind": "full_series",
+  "started_at": "2026-11-05T04:37:00.006902+00:00",
+  "state": "complete",
+  "pending": null,
+  "series_events": [
+    {
+      "time": "2026-11-05T04:56:11.707857+00:00",
+      "kind": "complete",
+      "detail": "result DEV ONLY — NOT ENOUGH CASES"
+    }
+  ],
+  "executions": [
+    {
+      "execution_id": "ev2-2046a87c-case_01-r1",
+      "case_id": "case_01",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "The SoundWave Pro X2 is priced at $129.99.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_2_retailer.html",
+          "evidence_note": "The retailer page lists the price as exactly $129.99, matching the claim."
+        },
+        {
+          "claim_text": "It features 30 hours of total battery life with the charging case.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet states \"up to 30 hours of total combined listening time including the charging case,\" directly confirming the claim. The press release (source_3) also corroborates this."
+        },
+        {
+          "claim_text": "Released on March 1, 2024.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_3_press_release.html",
+          "evidence_note": "The press release states availability \"starting March 1, 2024.\" The official spec sheet (source_1) also lists \"Release date: March 1, 2024.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three factual claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Evidence |\n|---|-------|---------|--------------|\n| 1 | Priced at **$129.99** | ✅ SUPPORTED | Retailer page lists exact price of $129.99 |\n| 2 | **30 hours** of total battery life with charging case | ✅ SUPPORTED | Official spec sheet & press release both confirm \"up to 30 hours of total combined listening time including the charging case\" |\n| 3 | Released on **March 1, 2024** | ✅ SUPPORTED | Press release states availability \"starting March 1, 2024\"; spec sheet also lists this as the release date |\n\nAll claims are **SUPPORTED** — no contradictions or unverifiable statements were found across the three source pages.",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.040519799999999995,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "ba8c1a8f-53b9-447f-951b-a7517447ac9f",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "ba8c1a8f-53b9-447f-951b-a7517447ac9f",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:37:00.019132+00:00",
+      "finished_at": "2026-11-05T04:37:30.912073+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_01-r2",
+      "case_id": "case_01",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "The SoundWave Pro X2 is priced at $129.99.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_2_retailer.html",
+          "evidence_note": "The retailer page lists the price explicitly as $129.99."
+        },
+        {
+          "claim_text": "It features 30 hours of total battery life with the charging case.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet states \"up to 30 hours of total combined listening time including the charging case,\" confirmed also by the press release."
+        },
+        {
+          "claim_text": "Released on March 1, 2024.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet lists the release date as March 1, 2024, corroborated by the press release stating availability starting March 1, 2024."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 8,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Source |\n|---|-------|---------|------------|\n| 1 | Priced at **$129.99** | ✅ SUPPORTED | `source_2_retailer.html` — exact price match |\n| 2 | **30 hours** of total battery life with charging case | ✅ SUPPORTED | `source_1_spec_sheet.html` + `source_3_press_release.html` — both confirm 30 hours combined |\n| 3 | Released on **March 1, 2024** | ✅ SUPPORTED | `source_1_spec_sheet.html` + `source_3_press_release.html` — both confirm that date |\n\nEvery factual claim on the target page is fully supported by the available sources — no contradictions or unverifiable claims were found.",
+        "errors": null
+      },
+      "num_turns": 8,
+      "total_cost_usd": 0.0263862,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "0122e2c9-be4f-4017-b80b-50ead3863fd0",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "0122e2c9-be4f-4017-b80b-50ead3863fd0",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 14,
+      "started_at": "2026-11-05T04:37:30.921690+00:00",
+      "finished_at": "2026-11-05T04:37:54.599955+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_01-r3",
+      "case_id": "case_01",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "The SoundWave Pro X2 is priced at $129.99.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_2_retailer.html",
+          "evidence_note": "Retailer page lists the price as exactly $129.99, matching the claim precisely."
+        },
+        {
+          "claim_text": "It features 30 hours of total battery life with the charging case.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_1_spec_sheet.html",
+          "evidence_note": "Official spec sheet states \"up to 30 hours of total combined listening time including the charging case,\" which matches the claim. The same figure is confirmed by source_3_press_release.html."
+        },
+        {
+          "claim_text": "Released on March 1, 2024.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_1_spec_sheet.html",
+          "evidence_note": "Official spec sheet lists \"Release date: March 1, 2024,\" and the press release corroborates \"available starting March 1, 2024.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three factual claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Source |\n|---|-------|---------|------------|\n| 1 | Priced at **$129.99** | ✅ SUPPORTED | `source_2_retailer.html` — exact price match |\n| 2 | **30 hours** of total battery life with the charging case | ✅ SUPPORTED | `source_1_spec_sheet.html` + `source_3_press_release.html` — both confirm \"up to 30 hours\" |\n| 3 | Released on **March 1, 2024** | ✅ SUPPORTED | `source_1_spec_sheet.html` + `source_3_press_release.html` — both confirm the date |\n\nNo contradictions or unverifiable claims were found. All facts on the target page align exactly with the authoritative sources (spec sheet, retailer, and press release).",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.0380793,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "6d09322c-01df-4ab2-9b16-8e590773d461",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "6d09322c-01df-4ab2-9b16-8e590773d461",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:37:54.610066+00:00",
+      "finished_at": "2026-11-05T04:38:26.032663+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_02-r1",
+      "case_id": "case_02",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Priced at $899.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_02/source_1_manufacturer_spec.html",
+          "evidence_note": "The manufacturer spec sheet lists the price as $999, not $899. The retailer source also confirms $999. Exact match required per numeric_claims policy."
+        },
+        {
+          "claim_text": "Comes with 16GB RAM.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_02/source_1_manufacturer_spec.html",
+          "evidence_note": "The manufacturer spec sheet confirms \"16GB LPDDR5 RAM\". The retailer and press release also independently confirm 16GB RAM."
+        },
+        {
+          "claim_text": "Ships with Windows 11 Home.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_02/source_1_manufacturer_spec.html",
+          "evidence_note": "The manufacturer spec sheet lists \"Windows 11 Home\" as the operating system, confirmed also by the press release."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 8,
+        "result_text": "All three claims have been verified. Here's a summary:\n\n| # | Claim | Verdict | Notes |\n|---|-------|---------|-------|\n| 1 | Priced at **$899** | ❌ CONTRADICTED | All authoritative sources (manufacturer spec + retailer) list the price as **$999** — a $100 discrepancy. |\n| 2 | Comes with **16GB RAM** | ✅ SUPPORTED | Confirmed by all three sources (manufacturer spec, retailer, press release). |\n| 3 | Ships with **Windows 11 Home** | ✅ SUPPORTED | Confirmed by the manufacturer spec sheet and the press release. |\n\n**Key finding:** The price claim on the target page is incorrect — it states $899 when every source consistently shows $999.",
+        "errors": null
+      },
+      "num_turns": 8,
+      "total_cost_usd": 0.032044199999999995,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "274d8c64-c565-4499-ac9a-f0abcae8c017",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "274d8c64-c565-4499-ac9a-f0abcae8c017",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 14,
+      "started_at": "2026-11-05T04:38:26.042665+00:00",
+      "finished_at": "2026-11-05T04:38:48.273252+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_02-r2",
+      "case_id": "case_02",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Priced at $899.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_02/source_1_manufacturer_spec.html",
+          "evidence_note": "The manufacturer spec sheet lists the price as $999, not $899. The retailer source also confirms $999. Exact match required per policy — $899 ≠ $999."
+        },
+        {
+          "claim_text": "Comes with 16GB RAM.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_02/source_1_manufacturer_spec.html",
+          "evidence_note": "The manufacturer spec sheet lists \"16GB LPDDR5 RAM\". The retailer and press release also independently confirm 16GB RAM."
+        },
+        {
+          "claim_text": "Ships with Windows 11 Home.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_02/source_1_manufacturer_spec.html",
+          "evidence_note": "The manufacturer spec sheet lists \"Windows 11 Home\" as the operating system. The press release also explicitly states \"ships with Windows 11 Home\"."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 8,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Notes |\n|---|-------|---------|-------|\n| 1 | Priced at **$899** | ❌ CONTRADICTED | All authoritative sources (manufacturer + retailer) list the price as **$999** |\n| 2 | Comes with **16GB RAM** | ✅ SUPPORTED | Confirmed by all three sources |\n| 3 | Ships with **Windows 11 Home** | ✅ SUPPORTED | Confirmed by manufacturer spec sheet and press release |\n\n**Key finding:** The price claim is incorrect — the target page states $899, but both the manufacturer spec sheet and retailer page clearly show the UltraBook Air 14 costs **$999**.",
+        "errors": null
+      },
+      "num_turns": 8,
+      "total_cost_usd": 0.0263025,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "72055236-6638-4aa5-949e-7e73a0247e5d",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "72055236-6638-4aa5-949e-7e73a0247e5d",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 14,
+      "started_at": "2026-11-05T04:38:48.284250+00:00",
+      "finished_at": "2026-11-05T04:39:10.552369+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_02-r3",
+      "case_id": "case_02",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Priced at $899.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_02/source_1_manufacturer_spec.html",
+          "evidence_note": "The manufacturer spec sheet lists the price as $999, not $899. The retailer (source_2) also confirms $999. Per the numeric_claims policy, exact match is required — $899 ≠ $999."
+        },
+        {
+          "claim_text": "Comes with 16GB RAM.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_02/source_1_manufacturer_spec.html",
+          "evidence_note": "Manufacturer spec sheet lists \"16GB LPDDR5 RAM\". Retailer (source_2) and press release (source_3) also confirm 16GB RAM. Claim is fully supported."
+        },
+        {
+          "claim_text": "Ships with Windows 11 Home.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_02/source_1_manufacturer_spec.html",
+          "evidence_note": "Manufacturer spec sheet lists \"Windows 11 Home\" as the OS. Press release (source_3) also explicitly states \"ships with Windows 11 Home\". Claim is fully supported."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Evidence |\n|---|-------|---------|----------|\n| 1 | Priced at **$899** | ❌ **CONTRADICTED** | All authoritative sources (manufacturer spec sheet & retailer) list the price as **$999**, not $899. Exact match required per policy. |\n| 2 | Comes with **16GB RAM** | ✅ **SUPPORTED** | Confirmed by all three sources — manufacturer spec (\"16GB LPDDR5 RAM\"), retailer (\"16GB RAM\"), and press release (\"16GB of RAM\"). |\n| 3 | Ships with **Windows 11 Home** | ✅ **SUPPORTED** | Confirmed by the manufacturer spec sheet (OS: Windows 11 Home) and explicitly stated in the press release (\"ships with Windows 11 Home\"). |",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.039744,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "4156608d-a6fd-40f5-b32e-8f3a9c285672",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "4156608d-a6fd-40f5-b32e-8f3a9c285672",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:39:10.565366+00:00",
+      "finished_at": "2026-11-05T04:39:41.882517+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_03-r1",
+      "case_id": "case_03",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Comes with 256GB of storage.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_03/source_1_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet explicitly states storage is 128GB, not 256GB. The retailer page also confirms 128GB. Exact numeric match required; 256GB ≠ 128GB."
+        },
+        {
+          "claim_text": "Has a 6.5-inch display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_03/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet lists \"Display: 6.5-inch OLED.\" Retailer page and press release also confirm a 6.5-inch display."
+        },
+        {
+          "claim_text": "Weighs 189 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_03/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet lists \"Weight: 189 grams.\" Press release also confirms \"weighs just 189 grams.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Notes |\n|---|-------|---------|-------|\n| 1 | Comes with **256GB** of storage | ❌ CONTRADICTED | All authoritative sources (spec sheet + retailer) state **128GB** |\n| 2 | Has a **6.5-inch** display | ✅ SUPPORTED | Confirmed by spec sheet, retailer, and press release |\n| 3 | Weighs **189 grams** | ✅ SUPPORTED | Confirmed by spec sheet and press release |\n\n**Key finding:** The storage claim is the only error — the target page overstates the storage capacity by double (256GB vs. the actual 128GB).",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.04664309999999999,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "49a3e370-a848-49d3-9df6-d5be28966829",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "49a3e370-a848-49d3-9df6-d5be28966829",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:39:41.895050+00:00",
+      "finished_at": "2026-11-05T04:40:14.056663+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_03-r2",
+      "case_id": "case_03",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Comes with 256GB of storage.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_03/source_1_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet lists storage as 128GB, not 256GB. The retailer page (source_2) also confirms the 128GB variant. Exact numeric match required; 256GB ≠ 128GB."
+        },
+        {
+          "claim_text": "Has a 6.5-inch display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_03/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet lists \"Display: 6.5-inch OLED,\" directly confirming the 6.5-inch display claim. Also corroborated by source_2 (retailer) and source_3 (press release)."
+        },
+        {
+          "claim_text": "Weighs 189 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_03/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet lists \"Weight: 189 grams,\" exactly matching the claim. Also corroborated by source_3 (press release): \"weighs just 189 grams.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Evidence |\n|---|-------|---------|--------------|\n| 1 | Comes with **256GB** of storage | ❌ **CONTRADICTED** | Spec sheet & retailer both list **128GB** — exact numeric mismatch |\n| 2 | Has a **6.5-inch** display | ✅ **SUPPORTED** | Confirmed by spec sheet, retailer, and press release |\n| 3 | Weighs **189 grams** | ✅ **SUPPORTED** | Confirmed by spec sheet and press release |\n\n**Notable issue:** The storage claim on the target page (256GB) is exactly double what every authoritative source states (128GB), suggesting a likely factual error on the target page.",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.0421191,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "425bd7f4-85a6-44ea-add9-ff98ee50038f",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "425bd7f4-85a6-44ea-add9-ff98ee50038f",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:40:14.068506+00:00",
+      "finished_at": "2026-11-05T04:40:46.447465+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_03-r3",
+      "case_id": "case_03",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Comes with 256GB of storage.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_03/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet (authoritative source) lists storage as 128GB, not 256GB. The retailer page also confirms the 128GB variant."
+        },
+        {
+          "claim_text": "Has a 6.5-inch display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_03/source_1_spec_sheet.html",
+          "evidence_note": "All three sources confirm a 6.5-inch display (spec sheet: \"6.5-inch OLED\"; retailer: \"6.5-inch display\"; press release: \"6.5-inch OLED display\")."
+        },
+        {
+          "claim_text": "Weighs 189 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_03/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet lists weight as 189 grams, confirmed also by the press release (\"weighs just 189 grams\")."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 8,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| Claim | Verdict | Notes |\n|---|---|---|\n| Comes with **256GB** of storage | ❌ CONTRADICTED | All authoritative sources (spec sheet + retailer) list storage as **128GB** |\n| Has a **6.5-inch** display | ✅ SUPPORTED | Confirmed by all three sources |\n| Weighs **189 grams** | ✅ SUPPORTED | Confirmed by the spec sheet and press release |\n\nThe only inaccuracy on the target page is the storage claim — the Nova Phone 12 ships with 128GB, not 256GB.",
+        "errors": null
+      },
+      "num_turns": 8,
+      "total_cost_usd": 0.0265332,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "e9f1d3dd-a67a-45af-ab7e-5314ba295e05",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "e9f1d3dd-a67a-45af-ab7e-5314ba295e05",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 14,
+      "started_at": "2026-11-05T04:40:46.476630+00:00",
+      "finished_at": "2026-11-05T04:41:14.992048+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_04-r1",
+      "case_id": "case_04",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Released on September 10, 2023.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_04/source_2_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet, press release, and retailer page all state the release date as September 24, 2023 — not September 10, 2023."
+        },
+        {
+          "claim_text": "Features a 24MP sensor.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_04/source_2_spec_sheet.html",
+          "evidence_note": "The spec sheet explicitly lists \"Sensor: 24MP,\" confirmed also by the press release and retailer page."
+        },
+        {
+          "claim_text": "Supports 4K video recording at 60fps.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_04/source_2_spec_sheet.html",
+          "evidence_note": "The spec sheet states \"Video: 4K at up to 60fps,\" consistent with the press release and retailer listing."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| Claim | Verdict | Note |\n|---|---|---|\n| Released on **September 10, 2023** | ❌ CONTRADICTED | All three sources (spec sheet, press release, retailer) consistently state the release date was **September 24, 2023** |\n| Features a **24MP sensor** | ✅ SUPPORTED | Confirmed by all three sources |\n| Supports **4K video recording at 60fps** | ✅ SUPPORTED | Confirmed by all three sources (\"4K at up to 60fps\") |\n\nThe only inaccuracy on the target page is the release date — it claims September 10 when every authoritative source agrees on September 24, 2023.",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.0449826,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "c7d231b7-cefe-4cb4-b1a4-9e52129cafc4",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "c7d231b7-cefe-4cb4-b1a4-9e52129cafc4",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:41:15.005528+00:00",
+      "finished_at": "2026-11-05T04:41:52.978116+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_04-r2",
+      "case_id": "case_04",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Released on September 10, 2023.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_04/source_1_press_release.html",
+          "evidence_note": "All three sources (press release, spec sheet, and retailer) consistently state the release date was September 24, 2023 — not September 10, 2023."
+        },
+        {
+          "claim_text": "Features a 24MP sensor.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_04/source_2_spec_sheet.html",
+          "evidence_note": "The spec sheet (authoritative) confirms a 24MP sensor, corroborated by the press release and retailer page."
+        },
+        {
+          "claim_text": "Supports 4K video recording at 60fps.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_04/source_2_spec_sheet.html",
+          "evidence_note": "The spec sheet confirms \"4K at up to 60fps\", corroborated by the press release and retailer page, all consistent with the claim."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 8,
+        "result_text": "All three claims have been verified. Here's a summary:\n\n| # | Claim | Verdict | Notes |\n|---|-------|---------|-------|\n| 1 | Released on **September 10, 2023** | ❌ CONTRADICTED | All three sources consistently state the release date was **September 24, 2023** |\n| 2 | Features a **24MP sensor** | ✅ SUPPORTED | Confirmed by spec sheet, press release, and retailer |\n| 3 | Supports **4K video recording at 60fps** | ✅ SUPPORTED | Confirmed by spec sheet, press release, and retailer |\n\n**Key finding:** The only error on the target page is the release date — it claims September 10 when every source agrees the correct date is September 24, 2023. The hardware specs (sensor resolution and video capability) are accurately reported.",
+        "errors": null
+      },
+      "num_turns": 8,
+      "total_cost_usd": 0.028552499999999998,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "f2a2278a-e52d-4778-87ea-7a2891cfc17c",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "f2a2278a-e52d-4778-87ea-7a2891cfc17c",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 14,
+      "started_at": "2026-11-05T04:41:52.998778+00:00",
+      "finished_at": "2026-11-05T04:42:26.279564+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_04-r3",
+      "case_id": "case_04",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Released on September 10, 2023.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_04/source_1_press_release.html",
+          "evidence_note": "All three sources (press release, spec sheet, and retailer) consistently state the release date as September 24, 2023, not September 10, 2023."
+        },
+        {
+          "claim_text": "Features a 24MP sensor.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_04/source_2_spec_sheet.html",
+          "evidence_note": "The spec sheet explicitly lists \"Sensor: 24MP.\" Confirmed by both the press release and retailer page as well."
+        },
+        {
+          "claim_text": "Supports 4K video recording at 60fps.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_04/source_2_spec_sheet.html",
+          "evidence_note": "The spec sheet states \"Video: 4K at up to 60fps.\" Confirmed by both the press release (\"4K video at 60fps\") and retailer page (\"4K60fps video\")."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 8,
+        "result_text": "All three claims have been verified. Here's a summary:\n\n| # | Claim | Verdict | Notes |\n|---|-------|---------|-------|\n| 1 | Released on **September 10, 2023** | ❌ CONTRADICTED | All three sources agree the release date is **September 24, 2023** |\n| 2 | Features a **24MP sensor** | ✅ SUPPORTED | Confirmed by all three sources |\n| 3 | Supports **4K video recording at 60fps** | ✅ SUPPORTED | Confirmed by all three sources |\n\nThe only error on the target page is the release date — it states September 10 when every source (press release, spec sheet, and retailer) consistently gives September 24, 2023.",
+        "errors": null
+      },
+      "num_turns": 8,
+      "total_cost_usd": 0.0281418,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "552466b1-9595-445f-a0f6-9271890d7e66",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "552466b1-9595-445f-a0f6-9271890d7e66",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 14,
+      "started_at": "2026-11-05T04:42:26.294685+00:00",
+      "finished_at": "2026-11-05T04:42:53.766465+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_05-r1",
+      "case_id": "case_05",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Comes with a 3-year manufacturer warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": "none",
+          "evidence_note": "No mention of warranty in any of the three sources (spec sheet, retailer, press release)."
+        },
+        {
+          "claim_text": "Has a 27-inch 4K display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_05/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet confirms \"27-inch, 3840x2160 (4K UHD)\"; also corroborated by the retailer page and press release."
+        },
+        {
+          "claim_text": "Supports HDR10.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_05/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet explicitly states \"HDR10 supported\"; also confirmed by the press release."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| Claim | Verdict | Note |\n|---|---|---|\n| Comes with a 3-year manufacturer warranty | **UNVERIFIABLE** | No source (spec sheet, retailer, or press release) mentions any warranty information. |\n| Has a 27-inch 4K display | **SUPPORTED** | Confirmed by all three sources — spec sheet lists \"27-inch, 3840×2160 (4K UHD)\", retailer page and press release both agree. |\n| Supports HDR10 | **SUPPORTED** | Spec sheet explicitly states \"HDR10 supported\"; also corroborated by the press release. |",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.0448659,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "a50f84f3-a0f1-43c4-8bf9-4bf87881511b",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "a50f84f3-a0f1-43c4-8bf9-4bf87881511b",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:42:53.784415+00:00",
+      "finished_at": "2026-11-05T04:43:38.378535+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_05-r2",
+      "case_id": "case_05",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Comes with a 3-year manufacturer warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": "none",
+          "evidence_note": "None of the three sources (spec sheet, retailer, press release) mention any warranty period for the ViewClear 27."
+        },
+        {
+          "claim_text": "Has a 27-inch 4K display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_05/source_1_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet explicitly lists \"Display: 27-inch, 3840x2160 (4K UHD)\", directly confirming a 27-inch 4K display."
+        },
+        {
+          "claim_text": "Supports HDR10.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_05/source_1_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet states \"HDR10 supported\", and the press release (source_3) also confirms \"HDR10 support\"."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Notes |\n|---|-------|---------|-------|\n| 1 | Comes with a 3-year manufacturer warranty | **UNVERIFIABLE** | No source (spec sheet, retailer, or press release) mentions any warranty. |\n| 2 | Has a 27-inch 4K display | **SUPPORTED** | Confirmed by the manufacturer spec sheet (\"27-inch, 3840×2160 4K UHD\") and corroborated by the retailer and press release. |\n| 3 | Supports HDR10 | **SUPPORTED** | Confirmed by both the manufacturer spec sheet (\"HDR10 supported\") and the press release. |",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.0434244,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "602b6070-5453-4849-b3e5-d5a069f30e8c",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "602b6070-5453-4849-b3e5-d5a069f30e8c",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:43:38.394460+00:00",
+      "finished_at": "2026-11-05T04:44:19.585634+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_05-r3",
+      "case_id": "case_05",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Comes with a 3-year manufacturer warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": "none",
+          "evidence_note": "No source (spec sheet, retailer, or press release) mentions a warranty of any kind for the ViewClear 27."
+        },
+        {
+          "claim_text": "Has a 27-inch 4K display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_05/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet explicitly lists \"27-inch, 3840x2160 (4K UHD)\" display; also confirmed by the retailer page and press release."
+        },
+        {
+          "claim_text": "Supports HDR10.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_05/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet states \"HDR10 supported\"; also confirmed by the press release (\"HDR10 support\")."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three claims from the target page have been verified. Here's a summary:\n\n| Claim | Verdict | Notes |\n|---|---|---|\n| Comes with a 3-year manufacturer warranty | **UNVERIFIABLE** | No source mentions any warranty for the ViewClear 27 |\n| Has a 27-inch 4K display | **SUPPORTED** | Confirmed by spec sheet (27-inch, 3840×2160 4K UHD), retailer page, and press release |\n| Supports HDR10 | **SUPPORTED** | Confirmed by spec sheet and press release |\n\n**Key finding:** The warranty claim cannot be verified — it is absent from all three sources (spec sheet, retailer listing, and press release). The display size/resolution and HDR10 support are solidly backed by multiple authoritative sources.",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.0383742,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "e4e8ddf9-fa8f-4d2d-938f-118477fa1384",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "e4e8ddf9-fa8f-4d2d-938f-118477fa1384",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:44:19.613657+00:00",
+      "finished_at": "2026-11-05T04:44:58.236510+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_06-r1",
+      "case_id": "case_06",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Currently in stock at all major retailers.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": "none",
+          "evidence_note": "No source page mentions stock availability or inventory status at any retailer."
+        },
+        {
+          "claim_text": "Weighs 540 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_06/source_1_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet lists \"Weight: 540 grams.\" exactly matching the claim. The retailer page (source_3) also confirms this weight."
+        },
+        {
+          "claim_text": "Waterproof rating of IPX7.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_06/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet lists \"Water resistance: IPX7.\" and the press release (source_2) also confirms \"IPX7 waterproof rating.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 8,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Reason |\n|---|-------|---------|--------|\n| 1 | Currently in stock at all major retailers | **UNVERIFIABLE** | No source mentions stock or inventory availability |\n| 2 | Weighs 540 grams | **SUPPORTED** | Confirmed by both the spec sheet and retailer listing |\n| 3 | Waterproof rating of IPX7 | **SUPPORTED** | Confirmed by both the spec sheet and the press release |",
+        "errors": null
+      },
+      "num_turns": 8,
+      "total_cost_usd": 0.0309861,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "7e782c28-abd7-49bd-b810-df87e2ba7223",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "7e782c28-abd7-49bd-b810-df87e2ba7223",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 14,
+      "started_at": "2026-11-05T04:44:58.252376+00:00",
+      "finished_at": "2026-11-05T04:45:29.962687+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_06-r2",
+      "case_id": "case_06",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Currently in stock at all major retailers.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": "none",
+          "evidence_note": "None of the three source pages (spec sheet, press release, retailer listing) mention stock availability at any retailer."
+        },
+        {
+          "claim_text": "Weighs 540 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_06/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet lists \"Weight: 540 grams.\" The retailer listing (source_3) independently confirms the same figure."
+        },
+        {
+          "claim_text": "Waterproof rating of IPX7.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_06/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet states \"Water resistance: IPX7.\" The press release (source_2) also explicitly confirms \"IPX7 waterproof rating.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 8,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Reason |\n|---|-------|---------|--------|\n| 1 | Currently in stock at all major retailers | **UNVERIFIABLE** | No source page mentions stock or availability at any retailer. |\n| 2 | Weighs 540 grams | **SUPPORTED** | Confirmed by both the spec sheet and the retailer listing. |\n| 3 | Waterproof rating of IPX7 | **SUPPORTED** | Confirmed by both the spec sheet and the press release. |",
+        "errors": null
+      },
+      "num_turns": 8,
+      "total_cost_usd": 0.0258804,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "8ba560b9-3b53-4492-ba3d-4cac61ce98bf",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "8ba560b9-3b53-4492-ba3d-4cac61ce98bf",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 14,
+      "started_at": "2026-11-05T04:45:29.980752+00:00",
+      "finished_at": "2026-11-05T04:46:01.525953+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_06-r3",
+      "case_id": "case_06",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Currently in stock at all major retailers.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": "none",
+          "evidence_note": "No source page mentions stock availability or retail availability status."
+        },
+        {
+          "claim_text": "Weighs 540 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_06/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet lists \"Weight: 540 grams.\" exactly; the retailer page (source_3) independently confirms the same figure."
+        },
+        {
+          "claim_text": "Waterproof rating of IPX7.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_06/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet states \"Water resistance: IPX7.\" The press release (source_2) also explicitly confirms \"IPX7 waterproof rating.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 8,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Reason |\n|---|-------|---------|--------|\n| 1 | Currently in stock at all major retailers. | **UNVERIFIABLE** | No source mentions stock or retail availability. |\n| 2 | Weighs 540 grams. | **SUPPORTED** | Confirmed by both the spec sheet and the retailer listing. |\n| 3 | Waterproof rating of IPX7. | **SUPPORTED** | Confirmed by the spec sheet and independently by the press release. |",
+        "errors": null
+      },
+      "num_turns": 8,
+      "total_cost_usd": 0.023410800000000002,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "f181b1dc-55b2-45d0-8844-1473c81b5b70",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "f181b1dc-55b2-45d0-8844-1473c81b5b70",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 14,
+      "started_at": "2026-11-05T04:46:01.541534+00:00",
+      "finished_at": "2026-11-05T04:46:26.023672+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_07-r1",
+      "case_id": "case_07",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Battery life of 12 hours per charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_07/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet states 11.5 hours of playback per charge, not 12 hours. The retailer page also confirms 11.5 hours. Exact numeric match is required; 11.5 ≠ 12."
+        },
+        {
+          "claim_text": "Bluetooth 5.3 connectivity.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_07/source_1_spec_sheet.html",
+          "evidence_note": "All three sources (spec sheet, retailer, and press release) confirm Bluetooth 5.3 support."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 7,
+        "result_text": "All claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Notes |\n|---|-------|---------|-------|\n| 1 | Battery life of **12 hours** per charge | ❌ CONTRADICTED | All sources (spec sheet & retailer) consistently state **11.5 hours** — exact numeric match required; 11.5 ≠ 12 |\n| 2 | **Bluetooth 5.3** connectivity | ✅ SUPPORTED | Confirmed by all three sources: spec sheet, retailer, and press release |",
+        "errors": null
+      },
+      "num_turns": 7,
+      "total_cost_usd": 0.0274002,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "3a0644dd-9185-48cf-ad4f-2755e7d1b896",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "3a0644dd-9185-48cf-ad4f-2755e7d1b896",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 12,
+      "started_at": "2026-11-05T04:46:26.063931+00:00",
+      "finished_at": "2026-11-05T04:46:58.361176+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_07-r2",
+      "case_id": "case_07",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Battery life of 12 hours per charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_07/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet states 11.5 hours of playback per charge, not 12 hours. The retailer page also confirms 11.5 hours. Exact numeric match is required; 11.5 ≠ 12."
+        },
+        {
+          "claim_text": "Bluetooth 5.3 connectivity.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_07/source_1_spec_sheet.html",
+          "evidence_note": "All three sources (spec sheet, retailer, and press release) confirm Bluetooth 5.3 connectivity."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 7,
+        "result_text": "Both claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Reason |\n|---|-------|---------|--------|\n| 1 | Battery life of **12 hours** per charge | ❌ CONTRADICTED | All sources (spec sheet & retailer) consistently state **11.5 hours** — an exact numeric match is required, so 11.5 ≠ 12 |\n| 2 | **Bluetooth 5.3** connectivity | ✅ SUPPORTED | Confirmed by all three sources (spec sheet, retailer, and press release) |",
+        "errors": null
+      },
+      "num_turns": 7,
+      "total_cost_usd": 0.0217515,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "35a674bf-3802-4d22-8fcc-e0b803bb6685",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "35a674bf-3802-4d22-8fcc-e0b803bb6685",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 12,
+      "started_at": "2026-11-05T04:46:58.400915+00:00",
+      "finished_at": "2026-11-05T04:47:29.123832+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_07-r3",
+      "case_id": "case_07",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Battery life of 12 hours per charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_07/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet states 11.5 hours of playback per charge, confirmed also by the retailer (11.5 hours). The target page's claim of 12 hours does not match; per numeric exactness policy, 11.5 ≠ 12."
+        },
+        {
+          "claim_text": "Bluetooth 5.3 connectivity.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_07/source_1_spec_sheet.html",
+          "evidence_note": "All three sources (spec sheet, retailer, and press release) confirm Bluetooth 5.3 for the AeroBuds 3."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 7,
+        "result_text": "All claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Notes |\n|---|-------|---------|-------|\n| 1 | Battery life of **12 hours** per charge | ❌ **CONTRADICTED** | All authoritative sources (spec sheet + retailer) consistently state **11.5 hours**. Per the numeric exactness policy, 11.5 ≠ 12. |\n| 2 | **Bluetooth 5.3** connectivity | ✅ **SUPPORTED** | Confirmed by all three sources: spec sheet, retailer, and press release. |",
+        "errors": null
+      },
+      "num_turns": 7,
+      "total_cost_usd": 0.021027,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "93d5a92f-5103-49c6-b785-96640345e5dd",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "93d5a92f-5103-49c6-b785-96640345e5dd",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 12,
+      "started_at": "2026-11-05T04:47:29.201238+00:00",
+      "finished_at": "2026-11-05T04:48:06.550181+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_08-r1",
+      "case_id": "case_08",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Starts at $499 for the base model.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_08/source_2_spec_sheet.html",
+          "evidence_note": "The spec sheet explicitly states \"Base configuration price: $499.\" Corroborated by the retailer page (\"four hundred and ninety-nine dollars\") and the press release."
+        },
+        {
+          "claim_text": "Has a 10.9-inch display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_08/source_2_spec_sheet.html",
+          "evidence_note": "The spec sheet lists \"Display: 10.9-inch Liquid Retina.\" Corroborated by the retailer page (\"Screen measures 10.9 inches diagonally\") and the press release (\"sports a 10.9-inch display\")."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 9,
+        "result_text": "All claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Evidence |\n|---|-------|---------|--------------|\n| 1 | Starts at **$499** for the base model | ✅ SUPPORTED | Spec sheet: \"Base configuration price: $499\" — also confirmed by retailer and press release |\n| 2 | Has a **10.9-inch display** | ✅ SUPPORTED | Spec sheet: \"Display: 10.9-inch Liquid Retina\" — also confirmed by retailer and press release |\n\nBoth claims are unanimously supported across all three source pages (retailer, spec sheet, and press release), with the authoritative spec sheet serving as the primary evidence source.",
+        "errors": null
+      },
+      "num_turns": 9,
+      "total_cost_usd": 0.0385962,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "1c0e3d5f-a293-441d-ae66-6f054992fa51",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "1c0e3d5f-a293-441d-ae66-6f054992fa51",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 16,
+      "started_at": "2026-11-05T04:48:06.592314+00:00",
+      "finished_at": "2026-11-05T04:48:44.051690+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_08-r2",
+      "case_id": "case_08",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Starts at $499 for the base model.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_08/source_2_spec_sheet.html",
+          "evidence_note": "Spec sheet explicitly states \"Base configuration price: $499\", confirmed also by retailer ($499) and press release."
+        },
+        {
+          "claim_text": "Has a 10.9-inch display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_08/source_2_spec_sheet.html",
+          "evidence_note": "Spec sheet lists \"Display: 10.9-inch Liquid Retina\"; retailer and press release both independently confirm a 10.9-inch screen."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 9,
+        "result_text": "All claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Evidence |\n|---|-------|---------|--------------|\n| 1 | Starts at **$499** for the base model | ✅ SUPPORTED | Spec sheet: \"Base configuration price: $499\"; corroborated by retailer and press release |\n| 2 | Has a **10.9-inch** display | ✅ SUPPORTED | Spec sheet: \"Display: 10.9-inch Liquid Retina\"; corroborated by retailer and press release |\n\nBoth claims are **fully supported** across all three source pages (retailer, spec sheet, and press release), with the authoritative spec sheet providing the primary confirmation.",
+        "errors": null
+      },
+      "num_turns": 9,
+      "total_cost_usd": 0.0318513,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "6489c0af-67c4-4868-a9c7-0e6c5662b8bb",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "6489c0af-67c4-4868-a9c7-0e6c5662b8bb",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 16,
+      "started_at": "2026-11-05T04:48:44.091966+00:00",
+      "finished_at": "2026-11-05T04:49:22.097496+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_08-r3",
+      "case_id": "case_08",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Starts at $499 for the base model.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_08/source_2_spec_sheet.html",
+          "evidence_note": "The spec sheet states \"Base configuration price: $499.\" The retailer page also confirms \"four hundred and ninety-nine dollars\" for the entry-level configuration."
+        },
+        {
+          "claim_text": "Has a 10.9-inch display.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_08/source_2_spec_sheet.html",
+          "evidence_note": "The spec sheet lists \"Display: 10.9-inch Liquid Retina.\" Corroborated by the retailer (\"Screen measures 10.9 inches diagonally\") and the press release (\"sports a 10.9-inch display\")."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 7,
+        "result_text": "All claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Evidence |\n|---|-------|---------|--------------|\n| 1 | Starts at **$499** for the base model | ✅ SUPPORTED | Spec sheet: \"Base configuration price: $499\"; Retailer: \"four hundred and ninety-nine dollars\" |\n| 2 | Has a **10.9-inch** display | ✅ SUPPORTED | Spec sheet: \"10.9-inch Liquid Retina\"; confirmed by retailer and press release |\n\nBoth claims are **fully supported** across all three sources (retailer, spec sheet, and press release), with the authoritative spec sheet being the primary confirming source for each.",
+        "errors": null
+      },
+      "num_turns": 7,
+      "total_cost_usd": 0.0232206,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "982e4944-8c6c-465a-a082-21cc2ee2d243",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "982e4944-8c6c-465a-a082-21cc2ee2d243",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 12,
+      "started_at": "2026-11-05T04:49:22.124085+00:00",
+      "finished_at": "2026-11-05T04:49:52.158422+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_09-r1",
+      "case_id": "case_09",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Supports Wi-Fi 6 (802.11ax).",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_09/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet explicitly lists \"Wireless standard: Wi-Fi 6 (802.11ax)\", an exact match to the claim."
+        },
+        {
+          "claim_text": "Priced at $249.99.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_09/source_2_manufacturer_price_page.html",
+          "evidence_note": "The manufacturer's price page lists the MSRP as $279.99, not $249.99. The retailer source also confirms $279.99."
+        },
+        {
+          "claim_text": "Includes a 2-year warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": "none",
+          "evidence_note": "No source across the spec sheet, pricing page, retailer, or press release mentions warranty terms of any kind."
+        },
+        {
+          "claim_text": "Has 8 LAN ports.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_09/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet states \"LAN ports: 4x Gigabit Ethernet\", and the press release also confirms \"4 Gigabit LAN ports\" — both directly contradict the claimed 8 ports."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 14,
+        "result_text": "All four claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Evidence |\n|---|-------|---------|--------------|\n| 1 | Supports Wi-Fi 6 (802.11ax) | ✅ **SUPPORTED** | Spec sheet explicitly lists \"Wireless standard: Wi-Fi 6 (802.11ax)\" |\n| 2 | Priced at $249.99 | ❌ **CONTRADICTED** | Manufacturer price page and retailer both list the price as **$279.99** |\n| 3 | Includes a 2-year warranty | ⚠️ **UNVERIFIABLE** | No source mentions warranty terms at all |\n| 4 | Has 8 LAN ports | ❌ **CONTRADICTED** | Spec sheet states **4x** Gigabit Ethernet LAN ports; press release also confirms 4 |\n\n**Key takeaways:**\n- The Wi-Fi standard claim is accurate.\n- The price is overstated by $30 — sources consistently show $279.99, not $249.99.\n- The LAN port count is doubled in the target page — the device has 4 ports, not 8.\n- Warranty information cannot be confirmed or denied from any available source.",
+        "errors": null
+      },
+      "num_turns": 14,
+      "total_cost_usd": 0.0597897,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "822d8209-fb48-4b1f-966f-5b5eb007f94d",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "822d8209-fb48-4b1f-966f-5b5eb007f94d",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 26,
+      "started_at": "2026-11-05T04:49:52.175116+00:00",
+      "finished_at": "2026-11-05T04:50:31.145184+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_09-r2",
+      "case_id": "case_09",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Supports Wi-Fi 6 (802.11ax).",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_09/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet explicitly lists \"Wireless standard: Wi-Fi 6 (802.11ax).\" Also confirmed by the retailer page and press release."
+        },
+        {
+          "claim_text": "Priced at $249.99.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_09/source_2_manufacturer_price_page.html",
+          "evidence_note": "The manufacturer's price page lists the MSRP as $279.99, not $249.99. The retailer page (source 3) also lists $279.99."
+        },
+        {
+          "claim_text": "Includes a 2-year warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": "none",
+          "evidence_note": "No source page mentions any warranty terms for the NetFast AX6000."
+        },
+        {
+          "claim_text": "Has 8 LAN ports.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_09/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet states \"LAN ports: 4x Gigabit Ethernet,\" not 8. The press release (source 4) also confirms \"4 Gigabit LAN ports.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 10,
+        "result_text": "All four claims from the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Evidence |\n|---|-------|---------|--------------|\n| 1 | Supports Wi-Fi 6 (802.11ax) | ✅ **SUPPORTED** | Spec sheet, retailer, and press release all confirm Wi-Fi 6 (802.11ax) |\n| 2 | Priced at $249.99 | ❌ **CONTRADICTED** | Manufacturer page and retailer both list the price as **$279.99** |\n| 3 | Includes a 2-year warranty | ⚠️ **UNVERIFIABLE** | No source mentions warranty terms at all |\n| 4 | Has 8 LAN ports | ❌ **CONTRADICTED** | Spec sheet and press release both confirm only **4** Gigabit LAN ports |",
+        "errors": null
+      },
+      "num_turns": 10,
+      "total_cost_usd": 0.0350667,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "c9163c0e-7885-4e68-bc38-ec1eb3e37cfd",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "c9163c0e-7885-4e68-bc38-ec1eb3e37cfd",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 18,
+      "started_at": "2026-11-05T04:50:31.171763+00:00",
+      "finished_at": "2026-11-05T04:51:03.401972+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_09-r3",
+      "case_id": "case_09",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Supports Wi-Fi 6 (802.11ax).",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_09/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet explicitly states \"Wireless standard: Wi-Fi 6 (802.11ax).\" — exact match."
+        },
+        {
+          "claim_text": "Priced at $249.99.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_09/source_2_manufacturer_price_page.html",
+          "evidence_note": "The manufacturer's price page lists MSRP as $279.99, not $249.99. The retailer page also shows $279.99. Exact numeric match required; claim is incorrect."
+        },
+        {
+          "claim_text": "Includes a 2-year warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_source": "none",
+          "evidence_note": "No source page (spec sheet, pricing, retailer, or press release) mentions any warranty information for the NetFast AX6000."
+        },
+        {
+          "claim_text": "Has 8 LAN ports.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_09/source_1_spec_sheet.html",
+          "evidence_note": "The spec sheet states \"LAN ports: 4x Gigabit Ethernet.\" The press release also confirms \"4 Gigabit LAN ports.\" The claim of 8 LAN ports directly conflicts with the authoritative sources."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 14,
+        "result_text": "All four claims on the target page have been verified. Here's a summary of the findings:\n\n| # | Claim | Verdict | Evidence |\n|---|-------|---------|----------|\n| 1 | Supports Wi-Fi 6 (802.11ax) | ✅ **SUPPORTED** | Spec sheet explicitly states \"Wireless standard: Wi-Fi 6 (802.11ax)\" |\n| 2 | Priced at $249.99 | ❌ **CONTRADICTED** | Manufacturer price page and retailer both list the price as **$279.99**, not $249.99 |\n| 3 | Includes a 2-year warranty | ⚠️ **UNVERIFIABLE** | No source mentions warranty information at all |\n| 4 | Has 8 LAN ports | ❌ **CONTRADICTED** | Spec sheet and press release both confirm **4** Gigabit LAN ports, not 8 |\n\n**Key takeaways:** The target page contains two factual errors — the price is overstated by $30 (claiming $249.99 vs. the actual $279.99) and the LAN port count is doubled (claiming 8 vs. the actual 4). The Wi-Fi 6 claim is accurate, and the warranty claim cannot be confirmed or denied by any available source.",
+        "errors": null
+      },
+      "num_turns": 14,
+      "total_cost_usd": 0.052054500000000004,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "86ad5a20-66ec-43cb-9794-5e027c03954b",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "86ad5a20-66ec-43cb-9794-5e027c03954b",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 26,
+      "started_at": "2026-11-05T04:51:03.420042+00:00",
+      "finished_at": "2026-11-05T04:51:40.615866+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_10-r1",
+      "case_id": "case_10",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Uses hot-swappable mechanical switches.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet confirms \"hot-swappable, 3-pin and 5-pin compatible\" switches; also confirmed by source_2_retailer and source_3_press_release."
+        },
+        {
+          "claim_text": "Connects via USB-C and Bluetooth 5.0.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet states \"USB-C wired, Bluetooth 5.0 wireless\"; also confirmed by source_3_press_release."
+        },
+        {
+          "claim_text": "Priced at $89.99.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_2_retailer.html",
+          "evidence_note": "Retailer lists price as $89.99; manufacturer FAQ also confirms \"$89.99 MSRP\"."
+        },
+        {
+          "claim_text": "Weighs approximately 950 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet lists weight as 950 grams; manufacturer FAQ also confirms \"approximately 950 grams\"."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 10,
+        "result_text": "All four claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Source |\n|---|-------|---------|------------|\n| 1 | Uses hot-swappable mechanical switches | ✅ SUPPORTED | Spec sheet, retailer, press release |\n| 2 | Connects via USB-C and Bluetooth 5.0 | ✅ SUPPORTED | Spec sheet, press release |\n| 3 | Priced at $89.99 | ✅ SUPPORTED | Retailer, manufacturer FAQ |\n| 4 | Weighs approximately 950 grams | ✅ SUPPORTED | Spec sheet, manufacturer FAQ |\n\nEvery claim on the target page is **fully supported** — all four facts are consistently confirmed across multiple authoritative sources (spec sheet, retailer listing, press release, and manufacturer FAQ), with no contradictions.",
+        "errors": null
+      },
+      "num_turns": 10,
+      "total_cost_usd": 0.039759600000000006,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "aa00cdf2-8bb6-4ce1-a7ed-f03b0b77a87a",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "aa00cdf2-8bb6-4ce1-a7ed-f03b0b77a87a",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 18,
+      "started_at": "2026-11-05T04:51:40.636767+00:00",
+      "finished_at": "2026-11-05T04:52:09.008866+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_10-r2",
+      "case_id": "case_10",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Uses hot-swappable mechanical switches.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet lists \"hot-swappable, 3-pin and 5-pin compatible\" switches. Corroborated by source_2_retailer (\"Hot-swappable switch sockets\") and source_3_press_release (\"hot-swappable switches\")."
+        },
+        {
+          "claim_text": "Connects via USB-C and Bluetooth 5.0.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet states \"USB-C wired, Bluetooth 5.0 wireless.\" Corroborated by source_3_press_release (\"dual connectivity via USB-C and Bluetooth 5.0\")."
+        },
+        {
+          "claim_text": "Priced at $89.99.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_2_retailer.html",
+          "evidence_note": "Retailer lists price as $89.99. Corroborated by source_4_manufacturer_faq (\"$89.99 MSRP\")."
+        },
+        {
+          "claim_text": "Weighs approximately 950 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet lists weight as 950 grams. Corroborated by source_4_manufacturer_faq (\"Approximately 950 grams\")."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 10,
+        "result_text": "All four claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Source |\n|---|-------|---------|------------|\n| 1 | Uses hot-swappable mechanical switches | ✅ SUPPORTED | Spec sheet, retailer, press release |\n| 2 | Connects via USB-C and Bluetooth 5.0 | ✅ SUPPORTED | Spec sheet, press release |\n| 3 | Priced at $89.99 | ✅ SUPPORTED | Retailer, manufacturer FAQ |\n| 4 | Weighs approximately 950 grams | ✅ SUPPORTED | Spec sheet, manufacturer FAQ |\n\nEvery claim on the target page is **fully supported** — all four are confirmed by multiple authoritative sources (spec sheet, retailer, press release, and/or manufacturer FAQ), with no contradictions found.",
+        "errors": null
+      },
+      "num_turns": 10,
+      "total_cost_usd": 0.0384786,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "8e533780-b4d2-4920-8d68-5285e2e4e6ca",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "8e533780-b4d2-4920-8d68-5285e2e4e6ca",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 18,
+      "started_at": "2026-11-05T04:52:09.028604+00:00",
+      "finished_at": "2026-11-05T04:52:34.894560+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_10-r3",
+      "case_id": "case_10",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Uses hot-swappable mechanical switches.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet confirms \"hot-swappable, 3-pin and 5-pin compatible\" switches; also confirmed by the retailer and press release."
+        },
+        {
+          "claim_text": "Connects via USB-C and Bluetooth 5.0.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet lists \"USB-C wired, Bluetooth 5.0 wireless\"; also confirmed by press release."
+        },
+        {
+          "claim_text": "Priced at $89.99.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_2_retailer.html",
+          "evidence_note": "Retailer lists price as $89.99; manufacturer FAQ also confirms \"$89.99 MSRP\"."
+        },
+        {
+          "claim_text": "Weighs approximately 950 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_10/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet states weight of 950 grams; manufacturer FAQ also confirms \"approximately 950 grams\"."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 10,
+        "result_text": "All four claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Source |\n|---|-------|---------|------------|\n| 1 | Uses hot-swappable mechanical switches | ✅ SUPPORTED | Spec sheet, retailer, press release |\n| 2 | Connects via USB-C and Bluetooth 5.0 | ✅ SUPPORTED | Spec sheet, press release |\n| 3 | Priced at $89.99 | ✅ SUPPORTED | Retailer, manufacturer FAQ |\n| 4 | Weighs approximately 950 grams | ✅ SUPPORTED | Spec sheet, manufacturer FAQ |\n\n**Result: All 4 claims are SUPPORTED.** Every factual claim on the target page is confirmed by at least one authoritative source, with most claims corroborated by multiple sources.",
+        "errors": null
+      },
+      "num_turns": 10,
+      "total_cost_usd": 0.0335814,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "acecd40e-6da5-4ed1-bead-a8154fc2dc07",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "acecd40e-6da5-4ed1-bead-a8154fc2dc07",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 18,
+      "started_at": "2026-11-05T04:52:34.913962+00:00",
+      "finished_at": "2026-11-05T04:53:00.976963+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_11-r1",
+      "case_id": "case_11",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Currently in stock and shipping immediately.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_11/source_3_retailer.html",
+          "evidence_note": "The retailer explicitly lists the product status as \"Discontinued - Out of Stock,\" directly contradicting the claim of being in stock and shipping immediately. The manufacturer notice (source_1) also confirms the model is discontinued."
+        },
+        {
+          "claim_text": "Has 12GB of GDDR6X memory.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_11/source_2_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet lists \"Memory: 12GB GDDR6X,\" exactly matching the claim. The retailer page also corroborates this."
+        },
+        {
+          "claim_text": "TDP rated at 200 watts.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_11/source_2_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet lists \"TDP: 200W,\" exactly matching the claim of 200 watts. The retailer page also lists \"200W TDP.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three claims have been verified. Here's a summary of the findings:\n\n| # | Claim | Verdict | Key Evidence |\n|---|-------|---------|--------------|\n| 1 | Currently in stock and shipping immediately. | ❌ **CONTRADICTED** | Retailer lists status as *\"Discontinued – Out of Stock\"*; manufacturer notice confirms discontinuation. |\n| 2 | Has 12GB of GDDR6X memory. | ✅ **SUPPORTED** | Manufacturer spec sheet states *\"Memory: 12GB GDDR6X\"*; corroborated by the retailer page. |\n| 3 | TDP rated at 200 watts. | ✅ **SUPPORTED** | Manufacturer spec sheet states *\"TDP: 200W\"*; corroborated by the retailer page. |\n\n**Bottom line:** The hardware specs (memory and TDP) are accurate, but the availability claim is false — the GraphixPro RTX 4070 is discontinued and out of stock according to both the manufacturer and the retailer.",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.0490365,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "97a25fde-ae65-4f9b-9a11-83401c326b8f",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "97a25fde-ae65-4f9b-9a11-83401c326b8f",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:53:00.996987+00:00",
+      "finished_at": "2026-11-05T04:53:33.214909+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_11-r2",
+      "case_id": "case_11",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Currently in stock and shipping immediately.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_11/source_1_manufacturer_notice.html",
+          "evidence_note": "The manufacturer notice states the model has been discontinued and is no longer in production. The retailer page (source_3) also confirms \"Discontinued - Out of Stock,\" directly contradicting the claim of being in stock and shipping immediately."
+        },
+        {
+          "claim_text": "Has 12GB of GDDR6X memory.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_11/source_2_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet explicitly lists \"Memory: 12GB GDDR6X,\" exactly matching the claim. The retailer page also corroborates this."
+        },
+        {
+          "claim_text": "TDP rated at 200 watts.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_11/source_2_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet lists \"TDP: 200W,\" which matches the claim of 200 watts exactly. The retailer page also confirms \"200W TDP.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three claims have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Evidence |\n|---|-------|---------|--------------|\n| 1 | Currently in stock and shipping immediately | ❌ **CONTRADICTED** | Manufacturer notice says the model is **discontinued and no longer in production**; retailer confirms **\"Discontinued - Out of Stock\"** |\n| 2 | Has 12GB of GDDR6X memory | ✅ **SUPPORTED** | Manufacturer spec sheet lists **\"Memory: 12GB GDDR6X\"** exactly |\n| 3 | TDP rated at 200 watts | ✅ **SUPPORTED** | Manufacturer spec sheet lists **\"TDP: 200W\"** exactly |\n\nThe technical specifications (memory and TDP) are accurate, but the availability claim is false — the GraphixPro RTX 4070 is discontinued and out of stock according to both the manufacturer notice and the retailer page.",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.044726699999999994,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "7544498a-ce43-4613-82a5-9832a24a93d2",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "7544498a-ce43-4613-82a5-9832a24a93d2",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:53:33.235913+00:00",
+      "finished_at": "2026-11-05T04:54:10.240217+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_11-r3",
+      "case_id": "case_11",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Currently in stock and shipping immediately.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_11/source_3_retailer.html",
+          "evidence_note": "The retailer page explicitly lists the product status as \"Discontinued - Out of Stock,\" directly contradicting the claim of being in stock and shipping immediately. The manufacturer notice (source_1) also confirms the model has been discontinued."
+        },
+        {
+          "claim_text": "Has 12GB of GDDR6X memory.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_11/source_2_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet lists \"Memory: 12GB GDDR6X,\" exactly matching the claim. The retailer page also corroborates this."
+        },
+        {
+          "claim_text": "TDP rated at 200 watts.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_11/source_2_spec_sheet.html",
+          "evidence_note": "The manufacturer spec sheet lists \"TDP: 200W,\" which matches the claim of 200 watts exactly. The retailer page also lists \"200W TDP.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11,
+        "result_text": "All three claims have been verified and logged. Here's a summary:\n\n| # | Claim | Verdict | Key Evidence |\n|---|-------|---------|-------------|\n| 1 | Currently in stock and shipping immediately | ❌ **CONTRADICTED** | Retailer page lists status as *\"Discontinued - Out of Stock\"*; manufacturer notice confirms discontinuation |\n| 2 | Has 12GB of GDDR6X memory | ✅ **SUPPORTED** | Manufacturer spec sheet lists *\"Memory: 12GB GDDR6X\"* (exact match) |\n| 3 | TDP rated at 200 watts | ✅ **SUPPORTED** | Manufacturer spec sheet lists *\"TDP: 200W\"* (exact match) |\n\n**Key takeaway:** The technical specifications (memory and TDP) are accurate, but the availability claim is false — the GraphixPro RTX 4070 is discontinued and out of stock according to both the manufacturer notice and the retailer page.",
+        "errors": null
+      },
+      "num_turns": 11,
+      "total_cost_usd": 0.0442434,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "1e9e8a52-0e47-42b5-be1f-f18c80e4893b",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "1e9e8a52-0e47-42b5-be1f-f18c80e4893b",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 20,
+      "started_at": "2026-11-05T04:54:10.260271+00:00",
+      "finished_at": "2026-11-05T04:54:42.669379+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_12-r1",
+      "case_id": "case_12",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Battery lasts up to 7 days on a single charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_12/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet states \"up to 5 days of typical use per charge,\" not 7 days. The retailer page also confirms 5 days. The forum post mentioning 7 days is unverified hearsay from a user who admits they haven't tested it; per comparison policy, authoritative sources (spec sheet, retailer) outrank forum content."
+        },
+        {
+          "claim_text": "Water resistant up to 50 meters (5 ATM).",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_12/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet explicitly states \"Water resistance: 5 ATM (50 meters),\" which exactly matches the claim. The retailer page also confirms \"5 ATM water resistance.\""
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 9,
+        "result_text": "Both claims on the target page have been verified. Here's a summary:\n\n| Claim | Verdict | Reasoning |\n|---|---|---|\n| Battery lasts up to **7 days** on a single charge | ❌ **CONTRADICTED** | The official spec sheet and retailer both state **5 days**. The forum post suggesting 7 days is unverified hearsay — per policy, authoritative sources outrank forum content. |\n| Water resistant up to **50 meters (5 ATM)** | ✅ **SUPPORTED** | The official spec sheet explicitly confirms **5 ATM (50 meters)**, matched also by the retailer page. |",
+        "errors": null
+      },
+      "num_turns": 9,
+      "total_cost_usd": 0.0445713,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "7642d512-ba2d-4dbb-b914-4d423dd0165c",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "7642d512-ba2d-4dbb-b914-4d423dd0165c",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 16,
+      "started_at": "2026-11-05T04:54:42.695164+00:00",
+      "finished_at": "2026-11-05T04:55:11.886077+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_12-r2",
+      "case_id": "case_12",
+      "run_index": 2,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Battery lasts up to 7 days on a single charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_12/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet states battery life is \"up to 5 days of typical use per charge\", not 7 days. The retailer page (source 2) also confirms 5 days. The forum post mentioning 7 days is unverified hearsay and is outranked by the authoritative spec sheet and retailer per comparison policy."
+        },
+        {
+          "claim_text": "Water resistant up to 50 meters (5 ATM).",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_12/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet explicitly states \"Water resistance: 5 ATM (50 meters)\", which exactly matches the claim. The retailer page (source 2) also confirms \"5 ATM water resistance\"."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 9,
+        "result_text": "All claims have been verified. Here's a summary:\n\n| # | Claim | Verdict | Reason |\n|---|-------|---------|--------|\n| 1 | Battery lasts up to **7 days** on a single charge | ❌ CONTRADICTED | Both the official spec sheet and retailer page state **5 days**. The forum post mentioning 7 days is unverified hearsay and is outranked by authoritative sources. |\n| 2 | Water resistant up to **50 meters (5 ATM)** | ✅ SUPPORTED | The official spec sheet explicitly states \"5 ATM (50 meters)\", an exact match. |",
+        "errors": null
+      },
+      "num_turns": 9,
+      "total_cost_usd": 0.039303599999999994,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "b74b6d87-7289-4163-8ea9-5697e884c35b",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "b74b6d87-7289-4163-8ea9-5697e884c35b",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 16,
+      "started_at": "2026-11-05T04:55:11.907416+00:00",
+      "finished_at": "2026-11-05T04:55:42.160904+00:00"
+    },
+    {
+      "execution_id": "ev2-2046a87c-case_12-r3",
+      "case_id": "case_12",
+      "run_index": 3,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "Battery lasts up to 7 days on a single charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_source": "case_12/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet (and the retailer page) both state the battery lasts up to 5 days per charge, not 7. The forum post mentions 7 days but is unverified hearsay from a user who hasn't tested it. Per comparison policy, the authoritative spec sheet outranks forum content, so the claim of 7 days is contradicted."
+        },
+        {
+          "claim_text": "Water resistant up to 50 meters (5 ATM).",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_12/source_1_spec_sheet.html",
+          "evidence_note": "The official spec sheet explicitly lists \"Water resistance: 5 ATM (50 meters)\", which exactly matches the claim. The retailer page also confirms \"5 ATM water resistance\"."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 9,
+        "result_text": "Both claims have been verified and logged. Here's a summary:\n\n| # | Claim | Verdict | Reasoning |\n|---|-------|---------|-----------|\n| 1 | Battery lasts up to **7 days** on a single charge. | ❌ **CONTRADICTED** | The official spec sheet and retailer both state **5 days** per charge. The forum post mentioning 7 days is unverified hearsay; per comparison policy, authoritative sources outrank forum/user content. |\n| 2 | Water resistant up to **50 meters (5 ATM)**. | ✅ **SUPPORTED** | The spec sheet explicitly states \"5 ATM (50 meters)\", an exact match. The retailer page also confirms \"5 ATM water resistance.\" |",
+        "errors": null
+      },
+      "num_turns": 9,
+      "total_cost_usd": 0.040523699999999996,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "da40bb5c-6da5-4e39-9c8c-b294af4a45e9",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "da40bb5c-6da5-4e39-9c8c-b294af4a45e9",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 16,
+      "started_at": "2026-11-05T04:55:42.181904+00:00",
+      "finished_at": "2026-11-05T04:56:11.647258+00:00"
+    }
+  ],
+  "updated_at": "2026-11-05T04:56:11.708863+00:00",
+  "summary": {
+    "kind": "full_series",
+    "result": "DEV ONLY — NOT ENOUGH CASES",
+    "gates": {
+      "gate_1_page_reliability": {
+        "passing_pages": 12,
+        "pages": 12,
+        "required": 59,
+        "met": false
+      },
+      "gate_2_unnecessary_unverifiable": {
+        "numerator": 0,
+        "denominator": 96,
+        "rate": 0.0,
+        "max": 0.05,
+        "met": true
+      },
+      "gate_3_useful_verification": {
+        "numerator": 96,
+        "denominator": 96,
+        "rate": 1.0,
+        "min": 0.8,
+        "met": true
+      }
+    },
+    "record_problems": [],
+    "attempt_problems": []
+  }
+}

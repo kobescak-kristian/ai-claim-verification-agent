@@ -92,3 +92,25 @@ Cases that hit `max_turns` or the budget ceiling: **none**.
   (claude-haiku-4-5, 2026-07-06, ran 20 minutes before the official
   run; same per-claim verdicts, gate PASS). This is the run named in
   Known Limitations.
+
+## Standard eval v2: development runs (DEV ONLY)
+
+These runs are development and smoke evidence. **None is an official
+evaluation result**, and nothing above this section comes from them. The
+official v2 gate has not run. Gate 1 needs 59 passing pages, so the 12-page
+development set cannot meet it, whatever its score.
+
+| Run | Date (UTC) | Commit | Type | Executions | Outcome | Label |
+|---|---|---|---|---|---|---|
+| `ev2-8c95e58c` | 2026-11-04 | `02ea27f` | Smoke test | 1 | Stopped: a session hook message arrived before the start-up message. No result, no findings | DEV ONLY, INVALID RUN |
+| `ev2-08510ead` | 2026-11-05 | `142485a` | Smoke test | 1 | Stopped: the start-up message showed tools beyond the 4 approved. No result, no findings | DEV ONLY, INVALID RUN |
+| `ev2-5486b40d` | 2026-11-05 | `2bd694e` | Smoke test | 1 | Completed: 1/1 page, 0/3 unnecessary UNVERIFIABLE, 3/3 useful verification, $0.0405 | DEV ONLY — NOT ENOUGH CASES |
+| `ev2-2046a87c` | 2026-11-05 | `2bd694e` | Development series | 36 | Completed: 12/12 pages, 0/96 unnecessary UNVERIFIABLE, 96/96 useful verification, $1.3120 | DEV ONLY — NOT ENOUGH CASES |
+
+Dollar figures are SDK API-equivalent, not a charge.
+
+The 12 development cases are visible, synthetic and were used while the
+system was built. A perfect score here says the runner and setup work. It
+does not predict the result on the hold-out cases.
+
+Source of every number in this section: `evals/results/v2/dev/`.
