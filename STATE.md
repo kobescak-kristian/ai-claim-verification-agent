@@ -76,6 +76,13 @@ repo's validator — closing the residual recorded here on
 
 README gains an "In plain words" paragraph under the title (v1.0.4). `evals/EVAL_RESULTS.md`: the Known Limitations note that called the path-scoping and answer-key checks manual now says `tests/test_bounds.py` has run them as regression tests since 2026-07-06 (dated correction mark); the two references to the retired `SPEC.md` now point to the README and `evals/ground_truth.json`. No eval number, threshold or test changed.
 
+## Standard eval v2 (in preparation, 2026-11-05)
+
+A second evaluation is being prepared on a local branch: 61 sealed synthetic pages, 3 runs each, gate `evals/eval_config_v2.yaml`. The official series has not run and the hold-out pages are not added, so official reliability is unproven. Development evidence, DEV ONLY (`evals/EVAL_RESULTS.md`): run `ev2-2046a87c`, 36/36 executions completed, 12/12 pages, 96/96 useful verification, 0/96 unnecessary UNVERIFIABLE. The gate was amended on 2026-11-05 so a subscription limit stops the series instead of failing pages; the dev records keep the gate they ran under, `615302b`.
+
 ## Open loops
 - Demo assets (recording/GIF): in-scope, not shipped until they
   exist (adr/0002); not a publication precondition.
+- Standard eval v2: hold-out, preflight and official series outstanding.
+  A live PostToolUseFailure row has never been seen; Kristian rules on
+  that check at preflight.

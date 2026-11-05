@@ -557,7 +557,8 @@ from evals import run_eval_v2  # noqa: E402
 DEV_KEY = json.loads((ANSWER_KEYS_DIR / "dev.json").read_text(encoding="utf-8"))
 DEV_CLAIMS = {c["case_id"]: c["claims"] for c in DEV_KEY["cases"]}
 OVERLOADED = "Claude Code returned an error result: API Error: 529 Overloaded"
-USAGE_TEXT = "You have hit your usage limit. Please try again later."
+USAGE_TEXT = "You've hit your session limit · resets 3pm (UTC)"
+TRANSIENT_TEXT = "API Error: Server is temporarily limiting requests (not your usage limit) · Rate limited"
 
 
 def _hook(event, tool, tool_use_id, tool_input, response=None):
@@ -593,9 +594,10 @@ def _write_perfect_audit(case_id, run_id, findings):
         _hook("PostToolUse", log, f"{run_id}-t{i}", f, f"Logged: {f['verdict']}")
 
 
-def _sdk_result(is_error=False, text="done"):
+def _sdk_result(is_error=False, text="done", status=None):
     return ResultMessage(subtype="success", duration_ms=1, duration_api_ms=1, is_error=is_error,
-                         num_turns=3, session_id="s-1", total_cost_usd=0.01, result=text)
+                         num_turns=3, session_id="s-1", total_cost_usd=0.01, result=text,
+                         api_error_status=status)
 
 
 def _outcome(spec, case_id, run_id):
@@ -608,7 +610,11 @@ def _outcome(spec, case_id, run_id):
         return harness.ExecutionOutcome(error=Exception(OVERLOADED),
                                         error_origin=harness.SDK_CALL_ORIGIN, init=init)
     if spec == "usage":
-        return harness.ExecutionOutcome(result=_sdk_result(is_error=True, text=USAGE_TEXT), init=init)
+        return harness.ExecutionOutcome(result=_sdk_result(is_error=True, text=USAGE_TEXT, status=429), init=init)
+    if spec == "transient":
+        return harness.ExecutionOutcome(result=_sdk_result(is_error=True, text=TRANSIENT_TEXT, status=429), init=init)
+    if spec == "unknown_429":
+        return harness.ExecutionOutcome(result=_sdk_result(is_error=True, text="raw text", status=429), init=init)
     findings = _perfect_findings(case_id)
     _write_perfect_audit(case_id, run_id, findings)
     if spec == "ok":
@@ -734,7 +740,8 @@ class TestRunnerV2Records:
         (e,) = series["executions"]
         assert e["execution_id"] == f"{series['eval_id']}-case_01-r1"
         assert runner.calls == [e["execution_id"]]
-        assert set(e["result"]) == {"subtype", "is_error", "num_turns", "result_text", "errors"}
+        assert set(e["result"]) == {"subtype", "is_error", "num_turns", "result_text", "errors",
+                                    "api_error_status"}
         assert e["result"]["is_error"] is False
         assert e["error_type"] is None and e["error"] is None
         assert e["num_turns"] == 3 and e["total_cost_usd"] == 0.01
@@ -786,8 +793,48 @@ class TestRunnerV2StopPauseRerun:
         runner.script = ["ok", "usage"]
         assert runner.run("--set", "dev") == run_eval_v2.EXIT_STOPPED
         assert len(runner.calls) == 2
-        e = runner.series()[1]["executions"][-1]
-        assert e["infra_category"] == "usage_or_rate_limit"
+        _, series = runner.series()
+        e = series["executions"][-1]
+        assert e["status"] == score_v2.INVALID_RUN and e["infra_category"] == "subscription_limit"
+        assert e["result"]["api_error_status"] == 429
+        detail = series["series_events"][-1]["detail"]
+        assert detail.startswith("stop rule: subscription_limit") and "reset" in detail
+
+    def test_unrecognized_429_stops_the_series_under_the_stop_rule(self, runner):
+        runner.script = ["unknown_429"]
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_STOPPED
+        _, series = runner.series()
+        assert series["executions"][-1]["infra_category"] == "unrecognized_429"
+        assert series["series_events"][-1]["detail"].startswith("stop rule: unrecognized_429")
+
+    def test_transient_rate_limit_stops_as_an_invalid_run_and_resume_reruns_the_page(self, runner):
+        runner.script = ["transient"]
+        assert runner.run("--set", "dev", "--cases", "case_01", "--runs", "1") == run_eval_v2.EXIT_STOPPED
+        path, series = runner.series()
+        assert series["executions"][-1]["infra_category"] == "transient_rate_limit"
+        assert series["series_events"][-1]["detail"].startswith("INVALID RUN (transient_rate_limit)")
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_OK
+        assert runner.calls[-1].endswith("-a2")
+
+    def test_a_good_run_records_a_null_api_error_status(self, runner):
+        assert runner.run("--set", "dev", "--cases", "case_01", "--runs", "1") == run_eval_v2.EXIT_OK
+        assert runner.series()[1]["executions"][0]["result"]["api_error_status"] is None
+
+    @pytest.mark.parametrize("text,category", [
+        (USAGE_TEXT, "subscription_limit"),
+        (TRANSIENT_TEXT, "transient_rate_limit"),
+        ("raw text", "unrecognized_429"),
+    ])
+    def test_cli_error_result_then_sdk_raise_through_the_real_harness(self, isolated, monkeypatch, text, category):
+        """The stream the CLI and SDK produce: an error result, then the
+        SDK's exception. This proves the handling, not the real CLI hand-off."""
+        crash = Exception("Claude Code returned an error result: success")
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(), _sdk_result(is_error=True, text=text, status=429)], raise_after=crash))
+        record = asyncio.run(run_eval_v2.execute("ev2-x", "case_01", 1, 1, score_v2.load_config()))
+        assert record["status"] == score_v2.INVALID_RUN and record["infra_category"] == category
+        assert record["error_origin"] == harness.SDK_CALL_ORIGIN
+        assert record["result"]["result_text"] == text and record["result"]["api_error_status"] == 429
 
     def test_invalid_run_stops_the_page_and_resume_reruns_it_as_a_new_attempt(self, runner):
         runner.script = ["ok", "overloaded"]

@@ -202,21 +202,24 @@ def infra_category(
     error_origin: str | None = None,
 ) -> str | None:
     """Name of the infra category of a failed run, or None (agent failure).
-    Order: agent-failure subtypes, then cap patterns, then pattern groups,
-    then type rules (eval_config_v2.yaml infra_errors)."""
+    Order: agent-failure subtypes, then cap patterns (skipped for a CLI API
+    error with status 429), then pattern groups, then type rules
+    (eval_config_v2.yaml infra_errors)."""
     infra = config["infra_errors"]
     if result is not None and result.get("subtype") in infra["agent_failure_subtypes"]:
         return None
     text = classified_text(error_type, error_text, result)
-    for pattern in infra["cap_patterns_agent_failure"]:
-        if re.search(pattern, text):
-            return None
+    api_429 = result is not None and result.get("is_error") is True and result.get("api_error_status") == 429
+    if not api_429:
+        for pattern in infra["cap_patterns_agent_failure"]:
+            if re.search(pattern, text):
+                return None
     for name, pattern in infra["patterns"].items():
         if re.search(pattern, text):
             return name
     if _cli_crash(error_type, error_text, error_origin, result, config):
         return "cli_process"
-    return None
+    return "unrecognized_429" if api_429 else None
 
 
 def load_audit_rows(db_path: Path, run_id: str) -> list[dict]:

@@ -487,10 +487,10 @@ CLI_JSON = "claude_agent_sdk._errors.CLIJSONDecodeError"
 AUTH_GUARD = "agent.harness.AuthGuardError"
 
 
-def error_result(text: str, subtype: str = "success", errors=None) -> dict:
+def error_result(text: str, subtype: str = "success", errors=None, status=None) -> dict:
     """An is_error result as the CLI reports an API error."""
     return {"subtype": subtype, "is_error": True, "num_turns": 1, "result_text": text,
-            "errors": errors or []}
+            "errors": errors or [], "api_error_status": status}
 
 
 class TestClassification:
@@ -508,12 +508,23 @@ class TestClassification:
         ("Authentication error · This may be a temporary network issue, please try again", "auth"),
         ('API Error: 401 {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}',
          "auth"),
-        ('API Error: 429 {"type":"rate_limit_error"}', "usage_or_rate_limit"),
-        ("Claude AI usage limit reached", "usage_or_rate_limit"),
-        ("You're out of usage credits. /model to switch models.", "usage_or_rate_limit"),
-        ("You've hit your monthly spend limit. Run /usage-credits to manage your limit", "usage_or_rate_limit"),
-        ("Credit balance is too low", "usage_or_rate_limit"),
-        ("Server is temporarily limiting requests (not your usage limit)", "usage_or_rate_limit"),
+        ('API Error: 429 {"type":"rate_limit_error"}', "transient_rate_limit"),
+        ("Request rejected (429)", "transient_rate_limit"),
+        ("Server is temporarily limiting requests (not your usage limit)", "transient_rate_limit"),
+        ("API Error: Server is temporarily limiting requests (not your usage limit) · Rate limited",
+         "transient_rate_limit"),
+        ("Claude AI usage limit reached", "subscription_limit"),
+        ("You're out of usage credits. /model to switch models.", "subscription_limit"),
+        ("You've hit your monthly spend limit. Run /usage-credits to manage your limit", "subscription_limit"),
+        ("Credit balance is too low", "subscription_limit"),
+        # The CLI builds these from "You've hit your " plus the limit name.
+        ("You've hit your session limit · resets 3pm (UTC)", "subscription_limit"),
+        ("You've hit your weekly limit · resets Nov 9, 3pm (UTC)", "subscription_limit"),
+        ("You've hit your Sonnet limit · resets 3pm (UTC)", "subscription_limit"),
+        ("You've hit your Opus limit · resets 3pm (UTC)", "subscription_limit"),
+        ("You've hit your Fable 5 limit · resets 3pm (UTC)", "subscription_limit"),
+        ("You've hit your usage limit · resets 3pm (UTC)", "subscription_limit"),
+        ("You've hit your limit · resets 3pm (UTC)", "subscription_limit"),
         ("API Error: 529 overloaded_error", "overloaded_or_5xx"),
         ("Repeated 529 Overloaded errors", "overloaded_or_5xx"),
         ("API Error: 500 Internal server error", "overloaded_or_5xx"),
@@ -537,7 +548,60 @@ class TestClassification:
     def test_errors_list_is_classified(self):
         out = self._classify(SDK_RESULT_ERROR, "Claude Code returned an error result: Credit balance is too low",
                              error_result("", errors=["Credit balance is too low"]))
-        assert out["infra_category"] == "usage_or_rate_limit"
+        assert out["infra_category"] == "subscription_limit"
+
+    def test_limit_text_is_classified_when_the_sdk_raises(self):
+        """The SDK's exception says only 'success'; the kept result decides."""
+        out = self._classify(SDK_RESULT_ERROR, "Claude Code returned an error result: success",
+                             error_result("You've hit your session limit · resets 3pm (UTC)", status=429))
+        assert out["status"] == INVALID_RUN and out["infra_category"] == "subscription_limit"
+
+    def test_transient_text_is_never_read_as_a_subscription_limit(self):
+        """It contains 'usage limit', so its group must be tried first."""
+        names = list(CONFIG["infra_errors"]["patterns"])
+        assert names.index("transient_rate_limit") < names.index("subscription_limit")
+        text = "API Error: Server is temporarily limiting requests (not your usage limit) · Rate limited"
+        out = self._classify(result=error_result(text, status=429))
+        assert out["infra_category"] == "transient_rate_limit"
+
+    @pytest.mark.parametrize("text", ["", "A raw API message with no known phrase"])
+    def test_status_429_without_a_known_text_is_unrecognized(self, text):
+        out = self._classify(result=error_result(text, status=429))
+        assert out["status"] == INVALID_RUN and out["infra_category"] == "unrecognized_429"
+
+    @pytest.mark.parametrize("text", ["Your organization budget is exhausted", "Monthly turn limit exceeded"])
+    def test_status_429_skips_the_cap_patterns(self, text):
+        out = self._classify(result=error_result(text, status=429))
+        assert out["status"] == INVALID_RUN and out["infra_category"] == "unrecognized_429"
+
+    def test_a_cap_subtype_still_decides_with_status_429(self):
+        out = self._classify(result=error_result("Your organization budget is exhausted",
+                                                 subtype="error_max_budget_usd", status=429))
+        assert out["status"] == AGENT_FAILURE and out["infra_category"] is None
+
+    @pytest.mark.parametrize("result", [
+        error_result("A raw API message with no known phrase", status=500),
+        error_result("A raw API message with no known phrase"),
+        {**error_result("A raw API message with no known phrase", status=429), "is_error": False,
+         "subtype": "error_during_execution"},
+    ])
+    def test_only_a_cli_api_error_with_status_429_is_unrecognized_429(self, result):
+        out = self._classify(result=result)
+        assert out["status"] == AGENT_FAILURE and out["infra_category"] is None
+
+    def test_a_quoted_limit_phrase_inside_a_line_does_not_match(self):
+        """The prefix is anchored, like the CLI's own startsWith check."""
+        out = self._classify(result=error_result("The page said: You've hit your session limit"))
+        assert out["status"] == AGENT_FAILURE and out["infra_category"] is None
+
+    @pytest.mark.parametrize("error_type,text", [
+        ("builtins.RuntimeError", "You've hit your session limit · resets 3pm (UTC)"),
+        ("builtins.Exception", "You've hit your session limit · resets 3pm (UTC)"),
+        ("builtins.ValueError", "Server is temporarily limiting requests (not your usage limit)"),
+    ])
+    def test_limit_text_in_an_agent_exception_is_not_classified(self, error_type, text):
+        out = self._classify(error_type, text)
+        assert out["status"] == AGENT_FAILURE and out["infra_category"] is None
 
     @pytest.mark.parametrize("error_type,text,result,category", [
         (CLI_NOT_FOUND, "Claude Code not found", None, "cli_spawn"),
@@ -581,6 +645,12 @@ class TestClassification:
         result = {"subtype": "success", "is_error": False, "num_turns": 3,
                   "result_text": "Not logged in? API Error: 529. Usage limit reached."}
         out = self._classify(result=result)  # fails completion: no findings, no audit
+        assert out["status"] == AGENT_FAILURE and out["infra_category"] is None
+
+    def test_limit_text_in_a_success_result_is_never_matched(self):
+        result = {"subtype": "success", "is_error": False, "num_turns": 3, "api_error_status": None,
+                  "result_text": "You've hit your session limit · resets 3pm (UTC)"}
+        out = self._classify(result=result)
         assert out["status"] == AGENT_FAILURE and out["infra_category"] is None
 
 

@@ -12,8 +12,9 @@ approved plan's auth and billing rules):
 - every execution has its own id, '<eval_id>-<case>-r<n>' plus '-a<k>' from
   attempt 2; the same id is the audit run_id, and only that id's audit rows
   are used to classify it.
-- stops the series on the first auth or usage/rate-limit error and never
-  falls back to another auth route.
+- stops the series on the first auth, subscription limit or unrecognized
+  429 error and never falls back to another auth route. It never waits or
+  retries by itself.
 - any other INVALID RUN stops the page and the series; on --resume the page
   reruns all its runs as a new attempt and every earlier record of the page
   is marked superseded (Kristian's decision 2A: a redone preflight comes
@@ -60,7 +61,7 @@ from agent.config import EVAL_MAX_BUDGET_USD, EVAL_MODEL, MAX_TOOL_CALLS, MAX_TU
 from evals import score_v2  # noqa: E402
 
 RESULTS_ROOT = REPO_ROOT / "evals" / "results" / "v2"
-STOP_CATEGORIES = ("auth", "usage_or_rate_limit")
+STOP_CATEGORIES = ("auth", "subscription_limit", "unrecognized_429")
 UNCLASSIFIED_PAUSE_AFTER = 2
 CLAUDE_CODE_ENV = "CLAUDECODE"
 
@@ -129,6 +130,7 @@ def result_record(result) -> dict | None:
         "num_turns": result.num_turns,
         "result_text": result.result,
         "errors": [str(e) for e in errors] if isinstance(errors, list) else None,
+        "api_error_status": result.api_error_status,
     }
 
 
@@ -287,6 +289,9 @@ async def run_series(series: dict, key: dict, config: dict, out_path: Path) -> i
                 if category in STOP_CATEGORIES:
                     reason = (f"stop rule: {category} error in {execution_id}; "
                               "the runner never falls back to another auth route")
+                    if category != "auth":
+                        reason += ("; read the raw text in the record, wait for any reset it "
+                                   "names, and redo the preflight before --resume")
                 else:
                     reason = (f"INVALID RUN ({category}) in {execution_id}; page {case_id} stops; "
                               f"after a redone preflight, --resume reruns it as attempt {attempt + 1}")

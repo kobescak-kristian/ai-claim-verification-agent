@@ -16,10 +16,19 @@
 # process crash, empty exception messages, a line-ending-independent
 # answer-key hash, and NOT SCORED observations from INVALID RUN
 # executions. No threshold, dataset or other policy changed.
+#
+# Third amendment 2026-11-05, before any official result, by Kristian's
+# decision on the second red team: the CLI's subscription limit texts,
+# transient rate limits told apart from subscription limits, and
+# api_error_status kept as evidence. It applies only to runs started after
+# it. The dev records stay as recorded and keep the gate they ran under:
+# this file at commit 615302b, config_sha256
+# c45c590bfff944a7d70fe12a1413fd73d6fa395d03beac1b216cc6324c06c901.
+# No threshold, dataset, page rule or other policy changed.
 
 version: 2
 created: "2026-11-04"
-amended: "2026-11-04"
+amended: "2026-11-05"
 
 eval_level:
   proposed: "Eval level: Proposed Standard (a wrong verdict costs an editor rework; a human editor signs off before anything is published)"
@@ -115,7 +124,7 @@ execution_record:
   evidence_fields:
     error_type: "string 'module.qualname' of the exception, or null when none was raised"
     error: "string, the exception text (may be empty), or null when none was raised"
-    result: "object with subtype, is_error, num_turns, result_text and errors, kept even when the SDK raised, or null when no ResultMessage arrived"
+    result: "object with subtype, is_error, num_turns, result_text, errors and api_error_status (the HTTP status of a CLI API error, else null), kept even when the SDK raised, or null when no ResultMessage arrived"
     error_origin: "optional; 'sdk_call' only when the harness caught the exception at the SDK call boundary (raised while iterating the SDK's query()); anything else or absent means the origin is not established"
   also_recorded: "total_cost_usd and num_turns at the top level, and the init check"
   malformed: "a record with a missing or wrongly typed required field or evidence field, an unknown status, a duplicate execution_id, an execution_id that does not end with its own '-r<run_index>' (and '-a<attempt>' from attempt 2), or a case_id that is not in the key is a test-infrastructure fault: it is left out of scoring and the official result is INVALID RUN; it is listed in the report"
@@ -145,7 +154,7 @@ evidence:
 
 # --- Infrastructure vs agent failure ---
 infra_errors:
-  rule: "a failed run is INVALID RUN (test machinery, no quality result) only when (1) its result subtype is not an agent_failure_subtype, (2) its classified text matches no cap pattern, and (3) its classified text matches a pattern group below, or a type rule applies. Anything else that fails inside a run is an agent failure (rule E); an unclassified error is never INVALID RUN. The raw error text is always kept."
+  rule: "a failed run is INVALID RUN (test machinery, no quality result) only when (1) its result subtype is not an agent_failure_subtype, (2) its classified text matches no cap pattern, unless the result is a CLI API error with api_error_status 429, and (3) its classified text matches a pattern group below, or a type rule applies. Anything else that fails inside a run is an agent failure (rule E); an unclassified error is never INVALID RUN. The raw error text is always kept."
   agent_failure_subtypes: [error_max_turns, error_max_budget_usd]
   classified_text: "the exception text (prefixed with its class name) when the exception has SDK or CLI origin, together with the result text and the result errors when the result is not a success (subtype other than 'success', or is_error true). A success result's text is the agent's own answer and is never matched; an exception from runner or agent code is never matched."
   sdk_origin:
@@ -157,16 +166,19 @@ infra_errors:
     - "(?i)max[_ ]turns|maximum number of turns|maximum turn|turn limit"
   patterns:
     auth: "(?i)not logged in|please run /login|invalid api key|authentication_error|authentication error|oauth token (?:has )?(?:expired|revoked)|disabled claude subscription access|api error: 40[13]\\b|AuthGuardError"
-    usage_or_rate_limit: "(?i)rate_limit_error|api error: 429\\b|request rejected \\(429\\)|temporarily limiting requests|usage limit|out of usage credits|usage credits required|spend limit|credit balance (?:is )?too low|billing_error"
+    transient_rate_limit: "(?i)rate_limit_error|api error: 429\\b|request rejected \\(429\\)|temporarily limiting requests"
+    subscription_limit: "(?m)^You've hit your |(?i:usage limit|out of usage credits|usage credits required|spend limit|credit balance (?:is )?too low|billing_error)"
     overloaded_or_5xx: "(?i)overloaded|api error: 5\\d\\d\\b|api error \\(status 5\\d\\d|experiencing high load|internal server error|service unavailable|bad gateway|gateway timeout|\"type\": ?\"api_error\""
     network: "(?i)request timed out|streaming timeout|connection error|unable to connect to api|ssl (?:error|certificate)|certificate (?:verification failed|has expired|has been revoked)|ECONNRESET|ECONNREFUSED|ETIMEDOUT"
     cli_spawn: "(?i)CLINotFoundError|CLIConnectionError|claude code not found"
   type_rules:
     cli_process: "the CLI process ended before any result (no ResultMessage): either error_type claude_agent_sdk ProcessError, or error_type builtins.Exception with error_origin 'sdk_call' whose whole text matches cli_crash_signature (the SDK re-raises a mid-run ProcessError as a plain Exception). The text alone, without the established origin, is not enough: that stays an agent failure (rule E)."
+    api_status_429: "is_error true and api_error_status 429, with no pattern group matched: category unrecognized_429. The CLI sets both fields only on its own API error message, so this is never agent output. The cause is not claimed; a person reads the raw text."
   cli_crash_signature: "\\ACommand failed with exit code (-?\\d+) \\(exit code: \\1\\)\\nError output: Check stderr output for details\\Z"
   limitation: "other SDK errors that the SDK re-raises mid-run as a plain Exception without the error-result prefix are not classified as infrastructure; they stay agent failures (rule E), bounded by unclassified_pause"
   pattern_source: "phrases taken from the texts of the bundled CLI 2.1.191 and the SDK 0.2.110 error classes; the fixture tests quote them"
-  stop_rule: "the runner stops the series on the first auth or usage/rate-limit error and never falls back to another auth route"
+  pattern_order: "groups are tried in the order listed and the first match wins; transient_rate_limit comes before subscription_limit because the CLI's transient text contains 'not your usage limit'"
+  stop_rule: "the runner stops the series on the first auth, subscription_limit or unrecognized_429 error and never falls back to another auth route; a transient_rate_limit is an INVALID RUN, which also stops the series under invalid_run_restart"
   unclassified_pause: "the runner pauses the series after 2 unclassified exceptions in a row (exceptions that match no pattern group and no type rule). Those runs stay scored agent failures (rule E) and are never reclassified as INVALID RUN. A resume continues the same attempt with the next run; no execution is superseded or replaced."
 
 invalid_run_restart:
