@@ -114,9 +114,10 @@ def lifecycle_event(message) -> dict | None:
             "exit_code": data.get("exit_code"), "outcome": data.get("outcome")}
 
 
-def check_init(message) -> dict:
+def check_init(message, expected_model: str | None = None) -> dict:
     """Validate the CLI's first message after any lifecycle hook messages.
-    Returns the recorded INIT_FIELDS or raises AuthGuardError."""
+    Returns the recorded INIT_FIELDS or raises AuthGuardError. With
+    expected_model, the init model must be exactly that model."""
     if not (isinstance(message, SystemMessage) and message.subtype == "init"):
         raise AuthGuardError(
             "AuthGuardError: the first message was not the init message: "
@@ -135,6 +136,10 @@ def check_init(message) -> dict:
         raise AuthGuardError(
             f"AuthGuardError: init tools are {tools_seen!r}, expected exactly "
             f"{sorted(QUALIFIED_TOOL_NAMES)!r}"
+        )
+    if expected_model is not None and recorded["model"] != expected_model:
+        raise AuthGuardError(
+            f"AuthGuardError: init model is {recorded['model']!r}, expected {expected_model!r}"
         )
     return recorded
 
@@ -285,7 +290,7 @@ async def run_case_execution(
                         raise AuthGuardError(
                             f"AuthGuardError: {len(open_hooks)} lifecycle hook(s) started "
                             "before init without a response")
-                    outcome.init = last_init = check_init(message)
+                    outcome.init = last_init = check_init(message, expected_model=model)
                 if isinstance(message, ResultMessage):
                     outcome.result = message
             except Exception as exc:  # harness check, not the SDK
@@ -299,6 +304,8 @@ async def run_case_execution(
             except Exception as exc:  # closing, not iterating: origin not established
                 if outcome.error is None:
                     outcome.error = exc
+    if before_init and outcome.error is None:
+        outcome.error = AuthGuardError("AuthGuardError: the stream ended with no init message")
     outcome.findings = list(tools.findings)
     return outcome
 

@@ -65,10 +65,16 @@ STOP_CATEGORIES = ("auth", "subscription_limit", "unrecognized_429")
 UNCLASSIFIED_PAUSE_AFTER = 2
 CLAUDE_CODE_ENV = "CLAUDECODE"
 
-# Set on the CLI process of every v2 execution, and only there. It identifies
-# an evaluation startup to machine-wide session hooks, so they add no context
-# to the model. Identification only: every harness check still runs.
-EVAL_ENV = {"AGENT_EVAL_PROFILE": "claim-verification-eval"}
+# Set on the CLI process of every v2 execution, and only there. The marker
+# identifies an evaluation startup to machine-wide session hooks, so they add
+# no context to the model; it is identification only, every harness check
+# still runs. The second variable keeps the CLI's auto-memory file out of the
+# model's context, which setting_sources=[] does not do.
+EVAL_ENV = {"AGENT_EVAL_PROFILE": "claim-verification-eval",
+            "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"}
+
+# An untracked file here can change a run, so it counts as a dirty tree.
+UNTRACKED_GUARDED_PATHS = ("evals/dataset/", "evals/answer_keys/", "agent/")
 
 EXIT_OK, EXIT_REFUSED, EXIT_STOPPED, EXIT_PAUSED = 0, 2, 3, 4
 
@@ -86,14 +92,20 @@ def utc_now() -> str:
 
 
 def git_state() -> tuple[str | None, bool | None]:
-    """(HEAD commit, tracked tree dirty) or (None, None) without git."""
+    """(HEAD commit, tree dirty) or (None, None) without git. Dirty means a
+    tracked change, or an untracked file that git does not ignore under
+    UNTRACKED_GUARDED_PATHS."""
     try:
         head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT,
                               capture_output=True, text=True, check=True).stdout.strip()
         dirty = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no"],
                                cwd=REPO_ROOT, capture_output=True, text=True,
                                check=True).stdout.strip() != ""
-        return head, dirty
+        untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "--",
+                                    *UNTRACKED_GUARDED_PATHS],
+                                   cwd=REPO_ROOT, capture_output=True, text=True,
+                                   check=True).stdout.strip() != ""
+        return head, dirty or untracked
     except (OSError, subprocess.CalledProcessError):
         return None, None
 
@@ -358,7 +370,8 @@ def prepare(args, environ) -> tuple[dict, dict, dict, Path]:
     config_hash = score_v2.key_sha256(score_v2.CONFIG_PATH)
     head, dirty = git_state()
     if official and (head is None or dirty):
-        raise Refused("the official set needs a clean, committed tree (git HEAD known, no tracked changes)")
+        raise Refused("the official set needs a clean, committed tree (git HEAD known, no tracked "
+                      "changes, no untracked files under " + ", ".join(UNTRACKED_GUARDED_PATHS) + ")")
 
     if args.recover and not args.resume:
         raise Refused("--recover needs --resume <results file>")

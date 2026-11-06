@@ -17,6 +17,7 @@ Run against a real audit.db produced by run_case.py or run_eval.py:
 import asyncio
 import json
 import sqlite3
+import subprocess
 import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
@@ -310,14 +311,14 @@ from evals import score_v2  # noqa: E402
 FAKE_SECRET_VALUE = "sk-fake-value-never-printed"
 
 
-def _init_message(api_key_source="none", tools=None):
+def _init_message(api_key_source="none", tools=None, model="claude-haiku-4-5-20251001"):
     data = {
         "type": "system",
         "subtype": "init",
         "apiKeySource": api_key_source,
         "tools": list(QUALIFIED_TOOL_NAMES) if tools is None else tools,
         "mcp_servers": [{"name": "claimverify", "status": "connected"}],
-        "model": "claude-haiku-4-5-20251001",
+        "model": model,
         "cwd": "/machine/local/path",
         "session_id": "s-1",
     }
@@ -449,6 +450,47 @@ class TestHarnessExecution:
         assert outcome.result is result
         assert outcome.error is crash
         assert outcome.error_origin == harness.SDK_CALL_ORIGIN
+
+    def test_a_stream_with_no_message_is_refused(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query([]))
+        outcome = self._run()
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "no init message" in str(outcome.error)
+        assert outcome.init is None and outcome.result is None
+        category = score_v2.infra_category(score_v2.AUTH_GUARD_TYPE, str(outcome.error), None,
+                                           score_v2.load_config())
+        assert category == "auth"
+
+    def test_a_stream_of_only_lifecycle_messages_is_refused(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_hook_message("hook_started"), _hook_message("hook_response")]))
+        outcome = self._run()
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "no init message" in str(outcome.error)
+
+    def test_an_sdk_error_before_init_is_not_replaced_by_the_no_init_refusal(self, isolated, monkeypatch):
+        crash = RuntimeError("boom")
+        monkeypatch.setattr(harness, "query", _fake_query([], raise_after=crash))
+        assert self._run().error is crash
+
+    def test_a_wrong_init_model_is_refused(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(model="claude-other"), _result_message()]))
+        outcome = asyncio.run(harness.run_case_execution("case_01", "test-run",
+                                                         model="claude-sonnet-4-6"))
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "init model is 'claude-other'" in str(outcome.error)
+        assert outcome.init is None and outcome.result is None
+
+    def test_the_init_model_must_equal_the_requested_model(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(model="claude-sonnet-4-6"), _result_message()]))
+        outcome = asyncio.run(harness.run_case_execution("case_01", "test-run",
+                                                         model="claude-sonnet-4-6"))
+        assert outcome.error is None and outcome.init["model"] == "claude-sonnet-4-6"
+
+    def test_check_init_without_an_expected_model_does_not_compare_it(self):
+        assert harness.check_init(_init_message(model="anything"))["model"] == "anything"
 
     def test_sdk_error_before_any_message_sets_origin(self, isolated, monkeypatch):
         crash = RuntimeError("")
@@ -778,6 +820,54 @@ class TestRunnerV2Records:
         assert e["status"] == score_v2.COMPLETED and e["audit_rows"] == 8
 
 
+class TestRunnerV2CleanTree:
+    @pytest.fixture
+    def repo(self, tmp_path, monkeypatch):
+        """A real throwaway git repository as the runner's root."""
+        def git(*args):
+            subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", *args],
+                           cwd=tmp_path, check=True, capture_output=True)
+        git("init", "-q")
+        (tmp_path / ".gitignore").write_text("__pycache__/\n", encoding="utf-8")
+        (tmp_path / "agent").mkdir()
+        (tmp_path / "agent" / "tools.py").write_text("x = 1\n", encoding="utf-8")
+        git("add", ".")
+        git("commit", "-q", "-m", "start")
+        monkeypatch.setattr(run_eval_v2, "REPO_ROOT", tmp_path)
+        return tmp_path
+
+    def test_a_committed_tree_is_clean(self, repo):
+        head, dirty = run_eval_v2.git_state()
+        assert head and dirty is False
+
+    @pytest.mark.parametrize("path", ["evals/dataset/case_99/target.html", "evals/answer_keys/extra.json",
+                                      "agent/new_tool.py"])
+    def test_an_untracked_file_in_a_guarded_folder_is_dirty(self, repo, path):
+        (repo / path).parent.mkdir(parents=True, exist_ok=True)
+        (repo / path).write_text("x", encoding="utf-8")
+        assert run_eval_v2.git_state()[1] is True
+
+    def test_ignored_and_other_untracked_files_are_not_dirty(self, repo):
+        (repo / "agent" / "__pycache__").mkdir()
+        (repo / "agent" / "__pycache__" / "tools.pyc").write_text("x", encoding="utf-8")
+        (repo / "notes.txt").write_text("x", encoding="utf-8")
+        assert run_eval_v2.git_state()[1] is False
+
+    def test_a_tracked_change_is_dirty(self, repo):
+        (repo / "agent" / "tools.py").write_text("x = 2\n", encoding="utf-8")
+        assert run_eval_v2.git_state()[1] is True
+
+    def test_official_refuses_a_dirty_tree_and_names_the_folders(self, runner, isolated, monkeypatch, capsys):
+        key = {"set": "official", "cases": [{"case_id": f"h{i:03d}", "claims": []} for i in range(1, 62)]}
+        path = isolated / "official.json"
+        path.write_text(json.dumps(key), encoding="utf-8")
+        monkeypatch.setattr(run_eval_v2, "key_path_for", lambda *_: path)
+        monkeypatch.setattr(run_eval_v2, "git_state", lambda: ("a" * 40, True))
+        code = runner.run("--set", "official", "--key-sha256", score_v2.key_sha256(path))
+        assert code == run_eval_v2.EXIT_REFUSED and runner.calls == []
+        assert "no untracked files under evals/dataset/" in capsys.readouterr().err
+
+
 class TestRunnerV2StopPauseRerun:
     def test_auth_error_stops_the_series_at_once(self, runner):
         runner.script = ["auth"]
@@ -830,7 +920,8 @@ class TestRunnerV2StopPauseRerun:
         SDK's exception. This proves the handling, not the real CLI hand-off."""
         crash = Exception("Claude Code returned an error result: success")
         monkeypatch.setattr(harness, "query", _fake_query(
-            [_init_message(), _sdk_result(is_error=True, text=text, status=429)], raise_after=crash))
+            [_init_message(model=run_eval_v2.EVAL_MODEL), _sdk_result(is_error=True, text=text, status=429)],
+            raise_after=crash))
         record = asyncio.run(run_eval_v2.execute("ev2-x", "case_01", 1, 1, score_v2.load_config()))
         assert record["status"] == score_v2.INVALID_RUN and record["infra_category"] == category
         assert record["error_origin"] == harness.SDK_CALL_ORIGIN
@@ -1113,11 +1204,12 @@ from claude_agent_sdk._internal.transport import subprocess_cli  # noqa: E402
 
 MARKER_NAME = "AGENT_EVAL_PROFILE"
 MARKER_VALUE = "claim-verification-eval"
+EVAL_ENV_EXPECTED = {MARKER_NAME: MARKER_VALUE, "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"}
 
 
 class TestEvalMarker:
-    def test_the_marker_is_the_only_variable_the_runner_sets(self):
-        assert run_eval_v2.EVAL_ENV == {MARKER_NAME: MARKER_VALUE}
+    def test_the_runner_sets_only_the_marker_and_the_memory_switch(self):
+        assert run_eval_v2.EVAL_ENV == EVAL_ENV_EXPECTED
 
     def test_the_default_options_carry_no_extra_variable(self):
         assert harness.build_options().env == {}
@@ -1136,7 +1228,7 @@ class TestEvalMarker:
         outcome = asyncio.run(harness.run_case_execution(
             "case_01", "test-run", env=run_eval_v2.EVAL_ENV))
         assert outcome.error is None
-        assert called[0].env == {MARKER_NAME: MARKER_VALUE}
+        assert called[0].env == EVAL_ENV_EXPECTED
         assert MARKER_NAME not in os.environ
 
     def test_the_marker_changes_none_of_the_other_bounds(self):
@@ -1179,7 +1271,7 @@ class TestEvalMarker:
         path, _ = runner.series()
         assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_OK
         assert len(runner.envs) == 5
-        assert all(env == {MARKER_NAME: MARKER_VALUE} for env in runner.envs)
+        assert all(env == EVAL_ENV_EXPECTED for env in runner.envs)
 
     def test_the_results_record_keeps_its_shape(self, runner):
         assert runner.run(*SMOKE) == run_eval_v2.EXIT_OK
