@@ -106,6 +106,7 @@ development set cannot meet it, whatever its score.
 | `ev2-08510ead` | 2026-11-05 | `142485a` | Smoke test | 1 | Stopped: the start-up message showed tools beyond the 4 approved. No result, no findings | DEV ONLY, INVALID RUN |
 | `ev2-5486b40d` | 2026-11-05 | `2bd694e` | Smoke test | 1 | Completed: 1/1 page, 0/3 unnecessary UNVERIFIABLE, 3/3 useful verification, $0.0405 | DEV ONLY — NOT ENOUGH CASES |
 | `ev2-2046a87c` | 2026-11-05 | `2bd694e` | Development series | 36 | Completed: 12/12 pages, 0/96 unnecessary UNVERIFIABLE, 96/96 useful verification, $1.3120 | DEV ONLY — NOT ENOUGH CASES |
+| `ev2-8f2712a4` | 2026-11-06 | `e9b4b96` | Smoke test | 2 | Completed: 2/2 pages, 0/6 unnecessary UNVERIFIABLE, 6/6 useful verification, $0.0847 | DEV ONLY — NOT ENOUGH CASES |
 
 Dollar figures are SDK API-equivalent, not a charge.
 
