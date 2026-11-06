@@ -1488,7 +1488,8 @@ class TestMakeDataset:
         other set's folders through the default comparison with every other
         key in the key directory (the existing --against mechanism)."""
         root, keys = tmp_path / "dataset", tmp_path / "keys"
-        shutil.copytree(DATASET_ROOT, root)
+        for case in json.loads(DEV_KEY_PATH.read_text(encoding="utf-8"))["cases"]:
+            shutil.copytree(DATASET_ROOT / case["case_id"], root / case["case_id"])
         keys.mkdir()
         shutil.copyfile(DEV_KEY_PATH, keys / "dev.json")
         spec_path = tmp_path / "spec.json"
