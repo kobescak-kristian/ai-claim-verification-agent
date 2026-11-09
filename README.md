@@ -4,9 +4,9 @@
 
 Bounded claim-verification agent — verifies factual claims on content pages against source pages; read-only by harness enforcement.
 
-**In plain words:** This agent checks the facts on a page, such as prices, specs and release dates, against other pages that should agree with it. For each fact it says whether the sources support it, contradict it, or cannot confirm it, and it shows which source it used. It can only read: it cannot publish, edit or send anything, and every step it takes is logged so a person can check it later. In a test on 12 hand-made product pages with 35 facts, it got all 35 right, including all 8 facts that were wrong.
+**In plain words:** This agent checks the facts on a page, such as prices, specs and release dates, against other pages that should agree with it. For each fact it says whether the sources support it, contradict it, or cannot confirm it, and it shows which source it used. It can only read: it cannot publish, edit or send anything, and every step it takes is logged so a person can check it later. It passed two official evaluations on synthetic product pages: in July 2026 it got all 35 facts right, and in November 2026 it gave the right answer on all 197 facts of 61 pages it had never seen, in each of 3 runs.
 
-**Status:** v1.0.4 — eval gate green (Sonnet 4.6, 12 cases / 35 synthetic claims, precision 1.00, recall 1.00 — see Outcome). Until 2026-10-13, 8 of the 12 eval case directory names contained a verdict word (`supported`, `contradicted` or `unverifiable`) that reached the model; the re-run with neutral names (`case_01` to `case_12`), same scorer, thresholds and model, scored precision 1.00, recall 1.00, 35/35 ([record](evals/rerun_2026-10-13.md)). The cases remain synthetic.
+**Status:** v1.1.0 — official evaluation PASS in July 2026 and November 2026 (see [Evaluation history](#evaluation-history)).
 
 ## Problem
 
@@ -33,7 +33,7 @@ Built on the Claude Agent SDK (Python). The harness — not a README promise —
 - `max_turns` caps each run at 20 turns.
 - A per-run cost ceiling (`max_budget_usd`) plus a tool-call-count circuit breaker in the tool wrapper itself — two independent backstops, one SDK-level, one in-process.
 - An SDK `PreToolUse`/`PostToolUse` hook pair writes every tool call to a SQLite audit trail (`audit.db`) *before* its result is used by the model — see [`agent/audit.py`](agent/audit.py). [`tests/test_bounds.py`](tests/test_bounds.py) checks this mechanically against a real run's audit log: every tool-call path resolves inside `evals/dataset/` (with explicit escape-attempt cases asserted rejected), and the fixed eval answer key never appears in any tool input or output.
-- Models: Haiku 4.5 for dev iterations, Sonnet 4.6 for eval and demo runs. Billed to Claude subscription (Max plan) auth, not a per-token API key.
+- Models: Haiku 4.5 for dev iterations, Sonnet 4.6 for eval and demo runs. Runs use the Claude subscription (Max plan) login, not a per-token API key: the harness refuses to start when `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`, `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CODE_USE_VERTEX` is set, and stops a run unless the CLI's start-up message reports `apiKeySource` none, exactly the 4 tools and the requested model ([`agent/harness.py`](agent/harness.py)).
 
 ### Output
 
@@ -66,7 +66,11 @@ See [`docs/architecture_detailed.png`](docs/architecture_detailed.png) for the f
 
 ## Outcome
 
-**Official gate run — Sonnet 4.6, 2026-07-06** ([full report](evals/EVAL_RESULTS.md)):
+### Evaluation history
+
+The agent passed both of its official evaluations. In November 2026 it was tested on 61 previously unseen pages, prepared and sealed apart from its development; every page ran 3 times and was scored against rules fixed in advance. Both evaluations used synthetic pages, not live-web content, and they use different gates and metrics, so their numbers are not directly comparable.
+
+**July 2026: first official evaluation, PASS.** Sonnet 4.6, 2026-07-06 ([full report](evals/EVAL_RESULTS.md)):
 
 | Metric | Value | Threshold | Result |
 |---|---|---|---|
@@ -74,11 +78,24 @@ See [`docs/architecture_detailed.png`](docs/architecture_detailed.png) for the f
 | Recall (positive class: CONTRADICTED) | 1.0000 (8/8) | ≥ 0.90 | PASS |
 | Overall verdict accuracy (secondary, not gated) | 1.0000 (35/35) | — | — |
 
-12 cases / 35 claims, $0.9047 total run cost, no case hit `max_turns` or the budget ceiling.
+12 cases / 35 claims, $0.9047 total run cost, no case hit `max_turns` or the budget ceiling. A re-run on 2026-10-13, after verdict words were removed from 8 case folder names that reached the model, gave the same result with the same scorer, thresholds and model ([record](evals/rerun_2026-10-13.md)).
 
-Re-run with neutral case directory names, 2026-10-13 ([record](evals/rerun_2026-10-13.md)): precision 1.0000 (8/8), recall 1.0000 (8/8), 35/35, no case capped.
+**November 2026: Standard evaluation v2, PASS.** Run `ev2-b67b4f30`, Sonnet 4.6, 2026-11-09, on 61 pages with 197 claims ([full report](evals/EVAL_RESULTS.md#standard-eval-v2-official-series)). The evaluation framework is more rigorous than in July:
 
-All 12 eval cases are synthetic, hand-seeded HTML rather than live web pages, so this gate proves the harness and the model's reasoning against controlled, known-truth claims, not robustness to real-world markup noise — see [Known Limitations](evals/EVAL_RESULTS.md#known-limitations) for what that does and doesn't cover.
+- **Unseen hold-out.** A separate session that did not build the agent wrote and sealed the pages; they were added only after the agent was frozen, and the answer key's hash was checked against its frozen value before the run.
+- **Page reliability.** A page passes only if none of its 3 runs makes a serious error, such as calling a false claim true or not finishing.
+- **Rules fixed first.** Thresholds and grading rules ([`evals/eval_config_v2.yaml`](evals/eval_config_v2.yaml)) were committed before any official result.
+- **Evidence and isolation checks.** A SUPPORTED or CONTRADICTED verdict earns credit only with a valid source from the page's own folder, and every run had to report `apiKeySource` none and exactly the 4 tools at start-up.
+
+| Gate | Result | Threshold |
+|---|---|---|
+| Pages passed | 61/61 | at least 59 |
+| Unnecessary UNVERIFIABLE | 0/504 (0.00%) | at most 5% |
+| Useful verification (right verdict, valid source) | 504/504 (100.00%) | at least 80% |
+
+Gates 2 and 3 assess the 168 SUPPORTED or CONTRADICTED claims across three runs (504 assessments).
+
+All 183 runs (61 pages x 3) completed, with 100% verdict and evidence accuracy. The hold-out follows the same case rules as the development pages, so the gain over July is in how rigorously the agent is tested, not in harder individual claims ([scope and limits](evals/EVAL_RESULTS.md#standard-eval-v2-scope-and-limits)).
 
 **Out of scope (production upgrades)** — deliberately not built and with no trigger yet: live-web crawling at scale, multi-agent teams, subagents, dashboards, scheduled runs, auto-fixing content.
 
@@ -90,15 +107,21 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-No API key is needed for a Claude subscription (Max plan) login via the Claude CLI — the harness bills to that auth by default (see The Cage, above). To use a per-token API key instead, copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`; only needed for live (non-bounds-test) runs.
+Live runs need a Claude subscription login through the Claude CLI. API-key authentication is not supported (see [The Cage](#the-cage)).
 
-**Bounds tests** — 25 total. 23 need no prior run and no API key; the other 2 (`test_every_audit_path_resolves_inside_dataset`, `test_ground_truth_never_appears_in_audit_payloads`) read a local `audit.db` and are skipped until one exists. The audit-path test also requires the rows of the pinned eval run (`PINNED_EVAL_RUN_ID` in `tests/test_bounds.py`), so it passes only against an `audit.db` that holds that run. The suite runs in CI on every push — Ubuntu, macOS and Windows, Python 3.12 and 3.14:
+**Tests** (no model call; CI runs them on pushes and pull requests to `main`). Two audit checks need a local `audit.db` and are skipped without one:
 
 ```bash
-pytest tests/test_bounds.py -v
+pytest tests/ -v
 ```
 
-**Single-case demo** (calls the API — this case cost $0.0769 in the committed eval run, see [`evals/EVAL_RESULTS.md`](evals/EVAL_RESULTS.md)):
+**Re-score the Standard v2 official result** (offline, no model call):
+
+```bash
+python evals/score_v2.py evals/results/v2/official/ev2-b67b4f30.json
+```
+
+**Single-case demo** (live model run):
 
 ```bash
 python run_case.py case_09
@@ -106,13 +129,21 @@ python run_case.py case_09
 
 Expected output shape: a claim-by-claim verdict table (SUPPORTED / CONTRADICTED / UNVERIFIABLE + evidence source), a one-line summary, and a final line with run cost and turns used.
 
-**Full eval** (all 12 cases / 35 claims — calls the API, ~$0.90 at current pricing per the committed reference run):
+**Legacy v1 evaluation** (all 12 cases / 35 claims, live model runs):
 
 ```bash
 python evals/run_eval.py
 ```
 
 The committed reference result is [`evals/results/eval-05fbe4ee.json`](evals/results/eval-05fbe4ee.json), summarized in [`evals/EVAL_RESULTS.md`](evals/EVAL_RESULTS.md) — compare a fresh run against it rather than trusting either run in isolation.
+
+**Standard eval v2 runner** (live model runs; start it from a plain terminal, because it refuses to run inside a Claude Code session):
+
+```bash
+python evals/run_eval_v2.py --set dev
+```
+
+This runs the 12 development pages 3 times each; the result is labelled DEV ONLY. The official series used `--set official --key-sha256 <frozen key hash>`. Any new run on the official pages is a regression test, not a fresh unseen evaluation.
 
 ## Related
 
@@ -127,3 +158,4 @@ This agent was also ported to LangGraph, facing the identical frozen eval: [ai-c
 | v1.0.2 | 2026-07-20 | Related section added, cross-linking the LangGraph port (`ai-claim-verification-langgraph`) and its framework-comparison writeup. |
 | v1.0.3 | 2026-10-13 | Eval case directories renamed to neutral `case_01` to `case_12` (8 of 12 old names contained a verdict word that reached the model); bounds test added for verdict words in dataset names; frozen eval re-run: precision 1.00 / recall 1.00, 35/35. |
 | v1.0.4 | 2026-10-29 | Plain-language summary added under the title. EVAL_RESULTS corrected: the audit-trail note now names the existing `tests/test_bounds.py`, and two references to the retired SPEC.md are updated. |
+| v1.1.0 | 2026-11-09 | Standard evaluation v2: official PASS on 61 sealed synthetic pages, 3 runs each (`ev2-b67b4f30`), with its own gate, scorer and runner. The harness refuses API-key and other guarded auth variables and checks `apiKeySource`, tools and model at start-up; failed tool calls are recorded in the audit trail. The v1 gate and results are unchanged. |

@@ -9,6 +9,17 @@ Publication gate PASS at this HEAD; post-publication verification:
 HTTP 200 unauthenticated, fresh public clone matched, pin commit
 reachable in public history.
 
+## Current state (2026-11-09)
+
+- **Public:** `main` is at v1.0.4, with the v1 evaluation only.
+- **Done locally, not public:** Standard eval v2 official series
+  `ev2-b67b4f30` PASS, and README v1.1.0 describing it. Evidence:
+  `evals/EVAL_RESULTS.md`.
+- **Still to do before it is public:** push, pull request, CI,
+  independent verification, merge.
+- **Accepted limit:** a live PostToolUseFailure row has never been
+  seen; Kristian accepted that at preflight.
+
 ## Cross-repo pin
 A downstream private system pins this repo at d444b13c as a reused
 verification node. Pin validity = that hash reachable in this repo's
@@ -88,7 +99,7 @@ A second evaluation was prepared on a local branch: 61 sealed synthetic pages, 3
 ## Open loops
 - Demo assets (recording/GIF): in-scope, not shipped until they
   exist (adr/0002); not a publication precondition.
-- Standard eval v2: official PASS recorded on the local branch; README,
-  Version Log, review and publication not done. A live
-  PostToolUseFailure row has never been seen; Kristian accepted that as
-  a limit at preflight.
+- Standard eval v2 publication: see Current state at the top.
+- The CI demo job still passes an `ANTHROPIC_API_KEY` secret, and
+  `.env.example` still names that variable; the harness now refuses it.
+  The job stays dormant because no secret is set.

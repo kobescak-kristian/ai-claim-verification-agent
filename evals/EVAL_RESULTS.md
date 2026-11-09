@@ -1,5 +1,10 @@
 # Eval Results — Official Gate Run
 
+This file records two official evaluations with different gates and
+metrics: the v1 gate run of July 2026 (below) and the
+[Standard eval v2 official series](#standard-eval-v2-official-series)
+of November 2026.
+
 - **Model:** `claude-sonnet-4-6` (locked models decision, see README "The Cage": Haiku 4.5 is dev-only)
 - **Date:** 2026-07-06
 - **Run ID:** `eval-05fbe4ee`
@@ -120,7 +125,7 @@ Source of every number in this section: `evals/results/v2/dev/`.
 ## Standard eval v2: official series
 
 The first complete, valid official run on the sealed hold-out. This is
-the version's result under the gate `evals/eval_config_v2.yaml`.
+the Standard eval v2 result under the gate `evals/eval_config_v2.yaml`.
 
 | Field | Value |
 |---|---|
@@ -151,10 +156,32 @@ on live web pages, on page shapes outside the case rules, or on other
 models. The hold-out was written from the same case rules as the
 development set, by a session that did not build the agent.
 
-The hold-out is now exposed. Any later run on it is labelled
-"regression PASS on exposed hold-out" (or FAIL), never a new first
-result. Known limits accepted before the run are in `evals/PREFLIGHT.md`.
+This series was the agent's first and only run on the hold-out. Its
+pages and answer key are now part of this repository, so a later run on
+them is a regression test of known pages, not a fresh unseen
+evaluation; it is labelled "regression PASS on exposed hold-out" (or
+FAIL). Known limits accepted before the run are in `evals/PREFLIGHT.md`.
 
 Source of every number in this section:
 `evals/results/v2/official/ev2-b67b4f30.json`, except the CLI and SDK
 versions and the claim count, which come from `evals/PREFLIGHT.md`.
+
+## Standard eval v2: scope and limits
+
+The result covers the page shapes and scenarios that `case_rules` in
+`evals/eval_config_v2.yaml` define; the rules were fixed before any
+hold-out page was written.
+
+- **Page shape.** Every hold-out page is generated local HTML
+  (`evals/make_dataset.py render`): a title and plain paragraphs, with
+  no ads, navigation, nested markup or scripts; 2 to 4 claims and 2 to 4
+  sources per page; each claim is exactly one paragraph.
+- **Scenarios.** Seven types: exact specifications, small numeric
+  discrepancies, reworded statements or worded-out numbers, date
+  mismatches, missing coverage, an authoritative source against forum
+  content, and availability status. Excluded: conflicts between equally
+  authoritative sources, chronology, partial or compound claims, tables,
+  lists, and several claims in one paragraph.
+- **Exact text matching.** A finding counts only when its claim text
+  matches the expected paragraph after light normalization; the scorer
+  never judges meaning.
