@@ -80,12 +80,12 @@ README gains an "In plain words" paragraph under the title (v1.0.4). `evals/EVAL
 
 A second evaluation is being prepared on a local branch: 61 sealed synthetic pages, 3 runs each, gate `evals/eval_config_v2.yaml`. The official series has not run, so official reliability is unproven. Development evidence, DEV ONLY (`evals/EVAL_RESULTS.md`): run `ev2-2046a87c`, 36/36 executions completed, 12/12 pages, 96/96 useful verification, 0/96 unnecessary UNVERIFIABLE. The gate was amended on 2026-11-05 so a subscription limit stops the series instead of failing pages; the dev records keep the gate they ran under, `615302b`.
 
-2026-11-09: the agent is frozen at `e9b4b96`; a 2-case dev dry run there (`ev2-8f2712a4`, DEV ONLY) completed with `apiKeySource` none and exactly the 4 tools. An independent session sealed the 61-page hold-out outside this repository; its seal and answer-key hashes and the checks still required are in `evals/PREFLIGHT.md`, status PENDING. Later that day a second session that never builds verified the seal and extracted the hold-out (`evals/dataset/h001` to `h061`, `evals/answer_keys/official.json`); extraction checks E1 to E4 passed. The preflight and the official series have not run.
+2026-11-09: the agent is frozen at `e9b4b96`; a 2-case dev dry run there (`ev2-8f2712a4`, DEV ONLY) completed with `apiKeySource` none and exactly the 4 tools. An independent session sealed the 61-page hold-out outside this repository; its seal and answer-key hashes and the checks still required are in `evals/PREFLIGHT.md`. Later that day a second session that never builds verified the seal and extracted the hold-out (`evals/dataset/h001` to `h061`, `evals/answer_keys/official.json`); extraction checks E1 to E4 passed. The preflight ran the same day at `681da69`; the official series has not run.
 
 ## Open loops
 - Demo assets (recording/GIF): in-scope, not shipped until they
   exist (adr/0002); not a publication precondition.
-- Standard eval v2: preflight and official series outstanding
-  (`evals/PREFLIGHT.md`).
-  A live PostToolUseFailure row has never been seen; Kristian rules on
-  that check at preflight.
+- Standard eval v2: preflight run 2026-11-09 at `681da69`, valid for a
+  series started that day (`evals/PREFLIGHT.md`); official series
+  outstanding. A live PostToolUseFailure row has never been seen;
+  Kristian accepted that as a limit at preflight.

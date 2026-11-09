@@ -1,10 +1,11 @@
 # Preflight: Standard eval v2 official series
 
-**Status: PENDING.** The extraction checks E1 to E4 passed on
-2026-11-09 and are recorded in the hold-out commit. No preflight check
-(1 to 10) has run, and the official series has not started. This file
-passes nothing by existing. The preflight checks get their results at
-the preflight, in the commit that completes this file.
+**Status: preflight run 2026-11-09 at `681da69`.** Checks 5 to 9
+PASS. Checks 1 to 4 PASS on the machine state a session can read;
+their launch conditions are Kristian's to confirm in the plain terminal
+before the series. Check 10 is an accepted limit by Kristian's ruling.
+The official series has not started. The preflight is valid for a
+series started on 2026-11-09 only.
 
 ## 1. Frozen references
 
@@ -51,16 +52,16 @@ None of this replaces the checks below.
 
 | # | Check | Result |
 |---|---|---|
-| 1 | Test setup is ours: no Claude Code session, including the one that ran this preflight, makes tool calls on this machine during the series; nothing else uses this checkout or `audit.db`; nothing opens the results file or `audit.db` while the series runs; one runner process only | PENDING |
-| 2 | Credentials: subscription login works; the guarded variables are absent; `CLAUDECODE` is unset; `CLAUDE_CODE_USE_FOUNDRY`, `CLAUDE_CODE_USE_MANTLE`, `CLAUDE_CODE_USE_ANTHROPIC_AWS` and `CLAUDE_CODE_USE_GATEWAY` are unset in the plain terminal | PENDING |
-| 3 | Subscription limits allow 183 executions plus one page rerun (186). Estimate, inferred from `ev2-2046a87c` (36 executions, 19m 12s, $1.3120): about 1h 40m and $6.80 SDK API-equivalent, not a charge. Hold-out pages may differ | PENDING |
-| 4 | No change during the series: no deploy of machine-wide managed settings or hooks, no Claude CLI or SDK upgrade; AC power on, Windows Update paused, no sleep or hibernate, no other work in that terminal | PENDING |
-| 5 | Dry run: see section 4. No Claude CLI, SDK or managed-settings change since that run; if there was one, a new 2-case dev dry run first | PENDING |
-| 6 | No blueprint exists, so blueprint defaults are not applicable; the env-guard refusal is shown by hand; the dependency pins are exact but not hashed (a limit) | PENDING |
-| 7 | Hashes: E1 and E3 passed and are recorded; the official command passes the section 1 key hash as `--key-sha256` | PENDING |
-| 8 | Frozen state: both commands print nothing: `git diff --stat 0f0c320 HEAD -- evals/eval_config_v2.yaml evals/score_v2.py evals/run_eval.py evals/answer_keys/dev.json` and `git diff --stat e9b4b96 HEAD -- agent evals/run_eval_v2.py evals/score_v2.py evals/make_dataset.py evals/eval_config_v2.yaml evals/eval_config.yaml evals/ground_truth.json tests requirements.txt` (`evals/eval_config.yaml` holds the comparison policy the agent's prompt loads); `git status` shows only `.claude/` | PENDING |
-| 9 | No earlier official series: `evals/results/v2/official/` holds no file; on a redone preflight before `--resume`, it holds only the series being resumed. Any other file means the hold-out is exposed, and any PASS must be labelled "regression PASS on exposed hold-out" by hand (limit RT2-04) | PENDING |
-| 10 | Live PostToolUseFailure row: never seen live; deterministic tests cover the row shape. Kristian rules here whether a live check is required before the official series | PENDING (ruling) |
+| 1 | Test setup is ours: no Claude Code session, including the one that ran this preflight, makes tool calls on this machine during the series; nothing else uses this checkout or `audit.db`; nothing opens the results file or `audit.db` while the series runs; one runner process only | PASS (machine state): no Python process running; `audit.db` last written 2026-11-06 11:55, the dry run; `evals/results/v2/official/` absent. Open at the preflight: 7 Claude Code CLI processes (6 under the desktop app, this preflight session included; 1 standalone `.local\bin\claude.exe` since 2026-11-06 14:08). LAUNCH: Kristian closes all of them, then starts one runner |
+| 2 | Credentials: subscription login works; the guarded variables are absent; `CLAUDECODE` is unset; `CLAUDE_CODE_USE_FOUNDRY`, `CLAUDE_CODE_USE_MANTLE`, `CLAUDE_CODE_USE_ANTHROPIC_AWS` and `CLAUDE_CODE_USE_GATEWAY` are unset in the plain terminal | PASS: the SDK's bundled CLI, with `CLAUDECODE` and `ANTHROPIC_BASE_URL` removed, reports `loggedIn` true, `authMethod` claude.ai, `apiProvider` firstParty, subscription max. None of the 9 guarded and provider names, nor `CLAUDECODE`, is set at User or Machine scope. A terminal opened inside the Claude desktop app inherits `CLAUDECODE` and `ANTHROPIC_BASE_URL`; the runner refuses there (check 6). LAUNCH: Kristian runs the section 7 name check in the plain terminal |
+| 3 | Subscription limits allow 183 executions plus one page rerun (186). Estimate, inferred from `ev2-2046a87c` (36 executions, 19m 12s, $1.3120): about 1h 40m and $6.80 SDK API-equivalent, not a charge. Hold-out pages may differ | PASS (login): subscription max, logged in. A session cannot read the remaining limit. LAUNCH: Kristian checks the usage page shows room for about 1h 40m of runs; a limit mid-series stops it as INVALID RUN |
+| 4 | No change during the series: no deploy of machine-wide managed settings or hooks, no Claude CLI or SDK upgrade; AC power on, Windows Update paused, no sleep or hibernate, no other work in that terminal | PASS (machine state): on AC, battery 100%; sleep and hibernate on AC: never; Windows Update paused until 2026-11-11 07:59 UTC; no `core/kos_core.py` commit in the governance repository since 2026-11-06, and the planned hook repair has no work folder yet. LAUNCH: no deploy or upgrade starts; the terminal is used only for the series |
+| 5 | Dry run: see section 4. No Claude CLI, SDK or managed-settings change since that run; if there was one, a new 2-case dev dry run first | PASS, no new dry run needed. The runner starts the SDK's bundled `claude.exe` 2.1.191 (the SDK picks the bundled binary first; the harness sets no `cli_path`), SHA-256 `83397a6a029c7da663fb1ce27211e05174a3546d8b151e42451bf4590b8343d7`, file date 2026-07-06. `claude-agent-sdk` 0.2.110 installed 2026-07-06; no site-packages folder changed after 2026-11-06 10:00; Python 3.12.0. `managed-settings.json` SHA-256 `6e39ca73164ff66810d8bb7642915a53ef17258029ee1b76ac2f084adabe07ae` (2026-11-02); its hook script `kos_core.py` SHA-256 `b087edbc227bd20d2d68b579b74b099dbe121964bb327e06031829dfc750fb0b` (2026-11-04). All predate the dry run (2026-11-06 10:54 UTC). Changed since: the standalone CLI on PATH, 2.1.317 to 2.1.319 at 2026-11-06 14:09; the runner does not start it |
+| 6 | No blueprint exists, so blueprint defaults are not applicable; the env-guard refusal is shown by hand; the dependency pins are exact but not hashed (a limit) | PASS: no blueprint, not applicable. Refusal shown 2026-11-09 with `--set dev --cases case_01 --runs 1`: inside Claude Code `Refused: CLAUDECODE is set`, exit 2; with `CLAUDECODE` removed `Refused: AuthGuardError ... ANTHROPIC_BASE_URL`, exit 2; no results file written. Pins exact, not hashed: limit |
+| 7 | Hashes: E1 and E3 passed and are recorded; the official command passes the section 1 key hash as `--key-sha256` | PASS: E1 and E3 recorded above; `score_v2.key_sha256` of the official key recomputed 2026-11-09 equals section 1; section 7 passes that value. Rerun of E4 on 2026-11-09: official check 61 cases, 197 claims, exit 0; dev check 12 cases, 35 claims, exit 0; `pytest tests/` 388 passed, exit 0; `Tier 0: PASS` |
+| 8 | Frozen state: both commands print nothing: `git diff --stat 0f0c320 HEAD -- evals/eval_config_v2.yaml evals/score_v2.py evals/run_eval.py evals/answer_keys/dev.json` and `git diff --stat e9b4b96 HEAD -- agent evals/run_eval_v2.py evals/score_v2.py evals/make_dataset.py evals/eval_config_v2.yaml evals/eval_config.yaml evals/ground_truth.json tests requirements.txt` (`evals/eval_config.yaml` holds the comparison policy the agent's prompt loads); `git status` shows only `.claude/` | PASS: both diffs empty at `681da69` (tree `889a180`); `git status` shows only `.claude/`; LF-normalized SHA-256 of the gate equals section 1 |
+| 9 | No earlier official series: `evals/results/v2/official/` holds no file; on a redone preflight before `--resume`, it holds only the series being resumed. Any other file means the hold-out is exposed, and any PASS must be labelled "regression PASS on exposed hold-out" by hand (limit RT2-04) | PASS: `evals/results/v2/official/` does not exist; no tracked file under it |
+| 10 | Live PostToolUseFailure row: never seen live; deterministic tests cover the row shape. Kristian rules here whether a live check is required before the official series | ACCEPTED LIMIT, Kristian 2026-11-09: "I approve proceeding without a live PostToolUseFailure demonstration." No frozen code change, no manufactured tool error. Support: the deterministic tests, and `audit.db` across 39 v2 runs: 333 PreToolUse rows, each closed by PostToolUse, 0 PostToolUseFailure rows, 0 error-like responses. A missing closing row makes the run incomplete and fails the page under rule E: toward FAIL, never a false PASS |
 
 ## 4. Development dry run (evidence)
 
@@ -98,7 +99,14 @@ ends: changing a tracked file blocks the resume (RT2-08).
 
 ## 7. Official command (only after Kristian's go)
 
-From a plain PowerShell terminal at the repository root:
+From a plain PowerShell terminal at the repository root. First the
+name check for check 2; it must print nothing:
+
+```powershell
+'CLAUDECODE','ANTHROPIC_API_KEY','ANTHROPIC_AUTH_TOKEN','ANTHROPIC_BASE_URL','CLAUDE_CODE_USE_BEDROCK','CLAUDE_CODE_USE_VERTEX','CLAUDE_CODE_USE_FOUNDRY','CLAUDE_CODE_USE_MANTLE','CLAUDE_CODE_USE_ANTHROPIC_AWS','CLAUDE_CODE_USE_GATEWAY' | Where-Object { Test-Path "env:$_" }
+```
+
+Then the series:
 
 ```powershell
 python evals/run_eval_v2.py --set official --key-sha256 d98f92bfb366c36d4bdee933698395772ed851c106b8b60d13a4574f2d67114b; "runner exit: $LASTEXITCODE"
