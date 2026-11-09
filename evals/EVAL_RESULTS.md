@@ -97,7 +97,8 @@ Cases that hit `max_turns` or the budget ceiling: **none**.
 
 These runs are development and smoke evidence. **None is an official
 evaluation result**, and nothing above this section comes from them. The
-official v2 gate has not run. Gate 1 needs 59 passing pages, so the 12-page
+official v2 gate had not run when they were recorded; its first run is in
+the next section (updated 2026-11-09). Gate 1 needs 59 passing pages, so the 12-page
 development set cannot meet it, whatever its score.
 
 | Run | Date (UTC) | Commit | Type | Executions | Outcome | Label |
@@ -115,3 +116,45 @@ system was built. A perfect score here says the runner and setup work. It
 does not predict the result on the hold-out cases.
 
 Source of every number in this section: `evals/results/v2/dev/`.
+
+## Standard eval v2: official series
+
+The first complete, valid official run on the sealed hold-out. This is
+the version's result under the gate `evals/eval_config_v2.yaml`.
+
+| Field | Value |
+|---|---|
+| Run | `ev2-b67b4f30`, 2026-11-09, 11:25:36 to 12:55:08 UTC |
+| Result | **PASS** (first official series; runner exit 0, from the operator's terminal: the record has no exit-code field) |
+| Commit | `60a9135`; the agent, runner, scorer, gate, tests and pins are unchanged since the freeze at `e9b4b96`; `git_dirty` false |
+| Gate | config SHA-256 `4f1050772b9fabb96bf48e9f70067011f06ac74b907fa6be57e2507c1445676f` (LF-normalized), unchanged since `0f0c320` |
+| Model | `claude-sonnet-4-6`; bundled CLI 2.1.191, `claude-agent-sdk` 0.2.110; subscription login, `apiKeySource` none and exactly the 4 tools on all 183 executions |
+| Dataset | 61 sealed synthetic hold-out pages `h001` to `h061`, 197 claims, added at `681da69`; answer key `evals/answer_keys/official.json`, SHA-256 `d98f92bfb366c36d4bdee933698395772ed851c106b8b60d13a4574f2d67114b` (LF-normalized), equal to the value frozen before the run |
+| Gate 1, page reliability | 61/61 pages passed (needs at least 59) |
+| Gate 2, unnecessary UNVERIFIABLE | 0/504 = 0.00% (at most 5%) |
+| Gate 3, useful verification | 504/504 = 100.00% (at least 80%) |
+| Executions | 183/183 completed (61 pages x 3 runs), all on attempt 1; no INVALID RUN event, no error, no rerun |
+| Miss analysis | No failed page and no page-fail event; no unmatched finding |
+| Secondary, not gated | verdict accuracy 100.00%; verdict and evidence accuracy 100.00%; CONTRADICTED precision and recall 100.00%; genuine UNVERIFIABLE identified 87/87; verdict flips between runs 0; turns per run 6 to 14, mean 10.25 |
+| Cost | $7.5558 in total, at most $0.0618 per run (SDK API-equivalent, not a charge) |
+| Newly broken cases | Not applicable: first official result of this version |
+| Changed since the previous entry (`ev2-8f2712a4`) | Set dev to official; commit `e9b4b96` to `60a9135`, which adds only the hold-out, its answer key, the dry-run record and the preflight and state records. Same model, CLI and SDK |
+
+Re-scoring the saved record with `python evals/score_v2.py
+evals/results/v2/official/ev2-b67b4f30.json` gives the same result and
+gate numbers, with no record or attempt problems.
+
+What this result supports: the agent gave the expected verdict, with
+valid evidence, on every claim of 61 unseen synthetic pages, 3 times
+each, inside its tool, turn and cost bounds. It does not show behaviour
+on live web pages, on page shapes outside the case rules, or on other
+models. The hold-out was written from the same case rules as the
+development set, by a session that did not build the agent.
+
+The hold-out is now exposed. Any later run on it is labelled
+"regression PASS on exposed hold-out" (or FAIL), never a new first
+result. Known limits accepted before the run are in `evals/PREFLIGHT.md`.
+
+Source of every number in this section:
+`evals/results/v2/official/ev2-b67b4f30.json`, except the CLI and SDK
+versions and the claim count, which come from `evals/PREFLIGHT.md`.
