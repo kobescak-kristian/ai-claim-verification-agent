@@ -1,11 +1,10 @@
 # Preflight: Standard eval v2 official series
 
-**Status: PENDING.** No preflight check below has run. The hold-out is
-not in this repository, and the official series has not started. This
-file passes nothing by existing. The extraction checks (E1 to E4) get
-their results at extraction, in the hold-out commit; the preflight
-checks (1 to 10) get theirs at the preflight, in the commit that
-completes this file.
+**Status: PENDING.** The extraction checks E1 to E4 passed on
+2026-11-09 and are recorded in the hold-out commit. No preflight check
+(1 to 10) has run, and the official series has not started. This file
+passes nothing by existing. The preflight checks get their results at
+the preflight, in the commit that completes this file.
 
 ## 1. Frozen references
 
@@ -43,10 +42,10 @@ None of this replaces the checks below.
 
 | # | Check | Result |
 |---|---|---|
-| E1 | Seal SHA-256 of the ZIP equals the value in section 1, computed before the ZIP is opened. A mismatch stops the step | PENDING |
-| E2 | Only `evals/dataset/h001` to `h061` and `evals/answer_keys/official.json` are extracted | PENDING |
-| E3 | `score_v2.key_sha256` of the extracted key equals the value in section 1 | PENDING |
-| E4 | `make_dataset.py check` on both keys, `pytest tests/` and Tier 0 pass at the repository root | PENDING |
+| E1 | Seal SHA-256 of the ZIP equals the value in section 1, computed before the ZIP is opened. A mismatch stops the step | PASS 2026-11-09: primary and backup ZIP both equal the section 1 value |
+| E2 | Only `evals/dataset/h001` to `h061` and `evals/answer_keys/official.json` are extracted | PASS 2026-11-09: 222 entries, all inside the allowed set (221 page files in exactly 61 folders `h001` to `h061`, 1 key); no unsafe path, duplicate or symlink; CRC test OK; 222 files written, no other file changed |
+| E3 | `score_v2.key_sha256` of the extracted key equals the value in section 1 | PASS 2026-11-09: equal |
+| E4 | `make_dataset.py check` on both keys, `pytest tests/` and Tier 0 pass at the repository root | PASS 2026-11-09: official check exit 0, 61 cases, 197 claims; dev check exit 0, 12 cases, 35 claims; `pytest tests/` 388 passed, exit 0; `Tier 0: PASS` |
 
 ### Preflight (run session, same day as the official series)
 
