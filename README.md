@@ -8,6 +8,37 @@ Bounded claim-verification agent — verifies factual claims on content pages ag
 
 **Status:** v1.1.0 — official evaluation PASS in July 2026 and November 2026 (see [Evaluation history](#evaluation-history)).
 
+## Evaluation history
+
+The agent passed both of its official evaluations. In November 2026 it was tested on 61 previously unseen pages, prepared and sealed apart from its development; every page ran 3 times and was scored against rules fixed in advance. Both evaluations used synthetic pages, not live-web content, and they use different gates and metrics, so their numbers are not directly comparable.
+
+**November 2026: Standard evaluation v2, PASS.** Run `ev2-b67b4f30`, Sonnet 4.6, 2026-11-09, on 61 pages with 197 claims ([full report](evals/EVAL_RESULTS.md#standard-eval-v2-official-series)). The evaluation framework is more rigorous than in July:
+
+- **Unseen hold-out.** A separate session that did not build the agent wrote and sealed the pages; they were added only after the agent was frozen, and the answer key's hash was checked against its frozen value before the run.
+- **Page reliability.** A page passes only if none of its 3 runs makes a serious error, such as calling a false claim true or not finishing.
+- **Rules fixed first.** Thresholds and grading rules ([`evals/eval_config_v2.yaml`](evals/eval_config_v2.yaml)) were committed before any official result.
+- **Evidence and isolation checks.** A SUPPORTED or CONTRADICTED verdict earns credit only with a valid source from the page's own folder, and every run had to report `apiKeySource` none and exactly the 4 tools at start-up.
+
+| Gate | Result | Threshold |
+|---|---|---|
+| Pages passed | 61/61 | at least 59 |
+| Unnecessary UNVERIFIABLE | 0/504 (0.00%) | at most 5% |
+| Useful verification (right verdict, valid source) | 504/504 (100.00%) | at least 80% |
+
+Gates 2 and 3 assess the 168 SUPPORTED or CONTRADICTED claims across three runs (504 assessments).
+
+All 183 runs (61 pages x 3) completed, with 100% verdict and evidence accuracy. The hold-out follows the same case rules as the development pages, so the gain over July is in how rigorously the agent is tested, not in harder individual claims ([scope and limits](evals/EVAL_RESULTS.md#standard-eval-v2-scope-and-limits)).
+
+**July 2026: first official evaluation, PASS.** Sonnet 4.6, 2026-07-06 ([full report](evals/EVAL_RESULTS.md)):
+
+| Metric | Value | Threshold | Result |
+|---|---|---|---|
+| Precision (positive class: CONTRADICTED) | 1.0000 (8/8) | ≥ 0.95 | PASS |
+| Recall (positive class: CONTRADICTED) | 1.0000 (8/8) | ≥ 0.90 | PASS |
+| Overall verdict accuracy (secondary, not gated) | 1.0000 (35/35) | — | — |
+
+12 cases / 35 claims, $0.9047 total run cost, no case hit `max_turns` or the budget ceiling. A re-run on 2026-10-13, after verdict words were removed from 8 case folder names that reached the model, gave the same result with the same scorer, thresholds and model ([record](evals/rerun_2026-10-13.md)).
+
 ## Problem
 
 Affiliate reviews, comparisons, and product pages make factual claims — prices, specs, availability, release dates — that should match their sources but often go unchecked. Doing that check by hand is slow, and it's the first thing skipped when a deadline is close. An AI agent could do the checking instead, but an agent that can act freely near live content is a liability, not a fix: one bad decision and it can publish, edit, or send something it shouldn't.
@@ -65,37 +96,6 @@ See [`docs/architecture_detailed.png`](docs/architecture_detailed.png) for the f
 5. This is a bounded-execution design (ADR-001): the model chooses its next *read-only investigative* action from the fixed whitelist, within step/turn/cost limits — it never publishes, edits, sends, or makes an irreversible change. A bad decision costs at most one wasted tool call.
 
 ## Outcome
-
-### Evaluation history
-
-The agent passed both of its official evaluations. In November 2026 it was tested on 61 previously unseen pages, prepared and sealed apart from its development; every page ran 3 times and was scored against rules fixed in advance. Both evaluations used synthetic pages, not live-web content, and they use different gates and metrics, so their numbers are not directly comparable.
-
-**July 2026: first official evaluation, PASS.** Sonnet 4.6, 2026-07-06 ([full report](evals/EVAL_RESULTS.md)):
-
-| Metric | Value | Threshold | Result |
-|---|---|---|---|
-| Precision (positive class: CONTRADICTED) | 1.0000 (8/8) | ≥ 0.95 | PASS |
-| Recall (positive class: CONTRADICTED) | 1.0000 (8/8) | ≥ 0.90 | PASS |
-| Overall verdict accuracy (secondary, not gated) | 1.0000 (35/35) | — | — |
-
-12 cases / 35 claims, $0.9047 total run cost, no case hit `max_turns` or the budget ceiling. A re-run on 2026-10-13, after verdict words were removed from 8 case folder names that reached the model, gave the same result with the same scorer, thresholds and model ([record](evals/rerun_2026-10-13.md)).
-
-**November 2026: Standard evaluation v2, PASS.** Run `ev2-b67b4f30`, Sonnet 4.6, 2026-11-09, on 61 pages with 197 claims ([full report](evals/EVAL_RESULTS.md#standard-eval-v2-official-series)). The evaluation framework is more rigorous than in July:
-
-- **Unseen hold-out.** A separate session that did not build the agent wrote and sealed the pages; they were added only after the agent was frozen, and the answer key's hash was checked against its frozen value before the run.
-- **Page reliability.** A page passes only if none of its 3 runs makes a serious error, such as calling a false claim true or not finishing.
-- **Rules fixed first.** Thresholds and grading rules ([`evals/eval_config_v2.yaml`](evals/eval_config_v2.yaml)) were committed before any official result.
-- **Evidence and isolation checks.** A SUPPORTED or CONTRADICTED verdict earns credit only with a valid source from the page's own folder, and every run had to report `apiKeySource` none and exactly the 4 tools at start-up.
-
-| Gate | Result | Threshold |
-|---|---|---|
-| Pages passed | 61/61 | at least 59 |
-| Unnecessary UNVERIFIABLE | 0/504 (0.00%) | at most 5% |
-| Useful verification (right verdict, valid source) | 504/504 (100.00%) | at least 80% |
-
-Gates 2 and 3 assess the 168 SUPPORTED or CONTRADICTED claims across three runs (504 assessments).
-
-All 183 runs (61 pages x 3) completed, with 100% verdict and evidence accuracy. The hold-out follows the same case rules as the development pages, so the gain over July is in how rigorously the agent is tested, not in harder individual claims ([scope and limits](evals/EVAL_RESULTS.md#standard-eval-v2-scope-and-limits)).
 
 **Out of scope (production upgrades)** — deliberately not built and with no trigger yet: live-web crawling at scale, multi-agent teams, subagents, dashboards, scheduled runs, auto-fixing content.
 
