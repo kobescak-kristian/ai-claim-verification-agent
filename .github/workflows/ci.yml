@@ -26,29 +26,5 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pytest tests/ -v
 
-  # Live demo against the Anthropic API. Dormant unless the repo has an
-  # ANTHROPIC_API_KEY secret (fork owners can set their own); this repo
-  # deliberately sets none.
-  demo:
-    name: demo (runs only with an API key)
-    runs-on: ubuntu-latest
-    env:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-    steps:
-      - name: Check for API key
-        id: key
-        shell: bash
-        run: |
-          if [ -n "$ANTHROPIC_API_KEY" ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: actions/checkout@v7
-        if: steps.key.outputs.present == 'true'
-      - uses: actions/setup-python@v7
-        if: steps.key.outputs.present == 'true'
-        with:
-          python-version: '3.12'
-      - if: steps.key.outputs.present == 'true'
-        run: pip install -r requirements.txt
-      - if: steps.key.outputs.present == 'true'
-        run: python run_case.py case_09
+  # No live demo job: live runs need a Claude subscription login, and the
+  # harness refuses to start when ANTHROPIC_API_KEY is set (agent/harness.py).
