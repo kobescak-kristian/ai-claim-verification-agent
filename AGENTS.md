@@ -65,7 +65,7 @@ When sources disagree:
 | Current state, open loops | `STATE.md` |
 | Product contract, scope, bounds | `README.md`, `adr/0001-bounded-agent-v2-read-only-whitelist.md` |
 | Public description, usage, limitations, version history | `README.md` |
-| Local setup and dependencies | `README.md` (Run It Yourself), `requirements.txt`, `.env.example` |
+| Local setup and dependencies | `README.md` (Run It Yourself), `requirements.txt` |
 | Bounded-agent architecture decision | `adr/0001-bounded-agent-v2-read-only-whitelist.md` |
 | Demo artifact exception | `adr/0002-demo-script-tier-exception.md`, `DEMO_SCRIPT.md` |
 | Harness, Agent SDK options | `agent/harness.py` |
@@ -187,5 +187,6 @@ python -m pytest tests/test_bounds.py -v
   live model and cost money. They are not routine verification; run them
   only when the task explicitly calls for a live run.
 - CI (`.github/workflows/ci.yml`) is the authoritative cross-platform run
-  of the bounds suite. Its demo job stays dormant unless an API key secret
-  is configured; do not add one as part of routine work.
+  of the bounds suite. It runs no live model: live runs need a Claude
+  subscription login, and the harness refuses API keys. Do not add an API
+  key secret, or a live-run job as part of routine work.
