@@ -1,0 +1,140 @@
+{
+  "version": 2,
+  "eval_id": "ev2-5486b40d",
+  "set": "dev",
+  "answer_key": "evals/answer_keys/dev.json",
+  "answer_key_sha256": "b950c66eeeb7235b62fe8d58fbe018a9225e39aa1d5aaefbf5685847f8da6aa1",
+  "config_sha256": "c45c590bfff944a7d70fe12a1413fd73d6fa395d03beac1b216cc6324c06c901",
+  "git_head": "2bd694ecc3fca7a10ffc205324fb1423ad3bf969",
+  "git_dirty": false,
+  "model": "claude-sonnet-4-6",
+  "max_budget_usd": 1.5,
+  "max_turns": 20,
+  "max_tool_calls": 60,
+  "runs_per_page": 3,
+  "subset": {
+    "cases": [
+      "case_01"
+    ],
+    "runs": 1
+  },
+  "kind": "smoke_test",
+  "started_at": "2026-11-05T04:29:36.488149+00:00",
+  "state": "complete",
+  "pending": null,
+  "series_events": [
+    {
+      "time": "2026-11-05T04:30:06.974968+00:00",
+      "kind": "complete",
+      "detail": "result DEV ONLY — NOT ENOUGH CASES"
+    }
+  ],
+  "executions": [
+    {
+      "execution_id": "ev2-5486b40d-case_01-r1",
+      "case_id": "case_01",
+      "run_index": 1,
+      "attempt": 1,
+      "superseded": false,
+      "status": "completed",
+      "infra_category": null,
+      "failures": [],
+      "findings": [
+        {
+          "claim_text": "The SoundWave Pro X2 is priced at $129.99.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_2_retailer.html",
+          "evidence_note": "Retailer page lists the price as exactly $129.99."
+        },
+        {
+          "claim_text": "It features 30 hours of total battery life with the charging case.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_1_spec_sheet.html",
+          "evidence_note": "Official spec sheet states \"up to 30 hours of total combined listening time including the charging case.\" Press release corroborates this figure."
+        },
+        {
+          "claim_text": "Released on March 1, 2024.",
+          "verdict": "SUPPORTED",
+          "evidence_source": "case_01/source_1_spec_sheet.html",
+          "evidence_note": "Spec sheet lists release date as March 1, 2024; press release also confirms availability starting March 1, 2024."
+        }
+      ],
+      "error_type": null,
+      "error": null,
+      "error_origin": null,
+      "result": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 8,
+        "result_text": "All three claims on the target page have been verified. Here's a summary:\n\n| # | Claim | Verdict | Key Source |\n|---|-------|---------|------------|\n| 1 | Priced at **$129.99** | ✅ SUPPORTED | `source_2_retailer.html` — exact price match |\n| 2 | **30 hours** total battery life with charging case | ✅ SUPPORTED | `source_1_spec_sheet.html` + `source_3_press_release.html` — both confirm \"up to 30 hours combined\" |\n| 3 | Released **March 1, 2024** | ✅ SUPPORTED | `source_1_spec_sheet.html` + `source_3_press_release.html` — both confirm the date |\n\nEvery factual claim on the target page is **fully supported** by the available sources. No contradictions or unverifiable claims were found.",
+        "errors": null
+      },
+      "num_turns": 8,
+      "total_cost_usd": 0.0404826,
+      "init": {
+        "apiKeySource": "none",
+        "tools": [
+          "mcp__claimverify__compare_source",
+          "mcp__claimverify__extract_claims",
+          "mcp__claimverify__fetch_page",
+          "mcp__claimverify__log_finding"
+        ],
+        "mcp_servers": [
+          {
+            "name": "claimverify",
+            "status": "connected"
+          }
+        ],
+        "model": "claude-sonnet-4-6"
+      },
+      "lifecycle": [
+        {
+          "subtype": "hook_started",
+          "hook_event": "SessionStart",
+          "hook_id": "efdd54d5-5432-4589-b4a6-d3d77b2e35e9",
+          "exit_code": null,
+          "outcome": null
+        },
+        {
+          "subtype": "hook_response",
+          "hook_event": "SessionStart",
+          "hook_id": "efdd54d5-5432-4589-b4a6-d3d77b2e35e9",
+          "exit_code": 0,
+          "outcome": "success"
+        }
+      ],
+      "audit_rows": 14,
+      "started_at": "2026-11-05T04:29:36.518104+00:00",
+      "finished_at": "2026-11-05T04:30:06.969965+00:00"
+    }
+  ],
+  "updated_at": "2026-11-05T04:30:06.974968+00:00",
+  "summary": {
+    "kind": "smoke_test",
+    "result": "DEV ONLY — NOT ENOUGH CASES",
+    "gates": {
+      "gate_1_page_reliability": {
+        "passing_pages": 1,
+        "pages": 1,
+        "required": 59,
+        "met": false
+      },
+      "gate_2_unnecessary_unverifiable": {
+        "numerator": 0,
+        "denominator": 3,
+        "rate": 0.0,
+        "max": 0.05,
+        "met": true
+      },
+      "gate_3_useful_verification": {
+        "numerator": 3,
+        "denominator": 3,
+        "rate": 1.0,
+        "min": 0.8,
+        "met": true
+      }
+    },
+    "record_problems": [],
+    "attempt_problems": []
+  }
+}

@@ -1,0 +1,2142 @@
+{
+  "set": "official",
+  "key_version": "2.0",
+  "case_count": 61,
+  "claim_count": 197,
+  "cases": [
+    {
+      "case_id": "h001",
+      "product": "Thrennic Aero Buds 3",
+      "claims": [
+        {
+          "id": "h001_c1",
+          "text": "The charging case supports wireless charging.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "h001_c2",
+          "text": "Each earbud runs for 7 hours of playback on a single charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h001_c3",
+          "text": "The earbuds are currently in stock.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        }
+      ]
+    },
+    {
+      "case_id": "h002",
+      "product": "Ombrix Slate 14",
+      "claims": [
+        {
+          "id": "h002_c1",
+          "text": "The Ombrix Slate 14 ships with sixteen gigabytes of memory.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h002_c2",
+          "text": "Its chassis is made of magnesium alloy.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h002_c3",
+          "text": "The laptop was released on 9 September 2025.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_3_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        },
+        {
+          "id": "h002_c4",
+          "text": "The webcam has a physical privacy shutter.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h003",
+      "product": "Kestraven Boil 17",
+      "claims": [
+        {
+          "id": "h003_c1",
+          "text": "The Kestraven Boil 17 holds one point seven liters of water.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h003_c2",
+          "text": "It draws 2,200 watts at full power.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_spec_sheet.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "h004",
+      "product": "Zolvane Commuter E5",
+      "claims": [
+        {
+          "id": "h004_c1",
+          "text": "The Zolvane Commuter E5 has a range of 95 kilometers on one charge.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h004_c2",
+          "text": "Its battery has a capacity of 504 Wh.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h004_c3",
+          "text": "The bike weighs 23.4 kilograms.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h004_c4",
+          "text": "The frame carries a ten-year warranty.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h005",
+      "product": "Drumlet Ridge 3P",
+      "claims": [
+        {
+          "id": "h005_c1",
+          "text": "The Drumlet Ridge 3P has a packed weight of 3.1 kilograms.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h005_c2",
+          "text": "The tent went on sale on April 2, 2026.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_3_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        },
+        {
+          "id": "h005_c3",
+          "text": "Its floor is rated at a hydrostatic head of five thousand millimeters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        }
+      ]
+    },
+    {
+      "case_id": "h006",
+      "product": "Harvix Torque 18",
+      "claims": [
+        {
+          "id": "h006_c1",
+          "text": "The Harvix Torque 18 delivers a maximum torque of 65 newton meters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h006_c2",
+          "text": "The drill is available for pre-order.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_3_retailer.html"
+          ],
+          "scenario": "availability_status"
+        },
+        {
+          "id": "h006_c3",
+          "text": "The chuck is made in Germany.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h007",
+      "product": "Marvique Sweep R6",
+      "claims": [
+        {
+          "id": "h007_c1",
+          "text": "The Marvique Sweep R6 generates 5,500 pascals of suction.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h007_c2",
+          "text": "Its dustbin holds 400 milliliters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h007_c3",
+          "text": "The base station empties the dustbin automatically.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "h007_c4",
+          "text": "It launched on 14 February 2026.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h008",
+      "product": "Pellorin View 32U",
+      "claims": [
+        {
+          "id": "h008_c1",
+          "text": "The Pellorin View 32U has a refresh rate of 144 Hz.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h008_c2",
+          "text": "The monitor has four HDMI ports.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h008_c3",
+          "text": "It comes with a three-year warranty.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        }
+      ]
+    },
+    {
+      "case_id": "h009",
+      "product": "Sorvani Crema Duo",
+      "claims": [
+        {
+          "id": "h009_c1",
+          "text": "The Sorvani Crema Duo builds up to fifteen bars of pump pressure.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h009_c2",
+          "text": "Its water tank holds 1.8 liters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h009_c3",
+          "text": "The machine is in stock at Fennick Home Goods.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_3_retailer.html"
+          ],
+          "scenario": "availability_status"
+        }
+      ]
+    },
+    {
+      "case_id": "h010",
+      "product": "Feltrix Skylark 4K",
+      "claims": [
+        {
+          "id": "h010_c1",
+          "text": "The Feltrix Skylark 4K weighs 249 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h010_c2",
+          "text": "It can fly for 34 minutes on one battery.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h010_c3",
+          "text": "The drone records video at a maximum of 120 frames per second.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h010_c4",
+          "text": "The controller has a built-in display.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h011",
+      "product": "Yarrowen Bolt S",
+      "claims": [
+        {
+          "id": "h011_c1",
+          "text": "The keypad is backlit.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "h011_c2",
+          "text": "The lock became available on 30 June 2025.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_press_release.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "date_mismatch"
+        },
+        {
+          "id": "h011_c3",
+          "text": "It runs on four AA batteries.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        }
+      ]
+    },
+    {
+      "case_id": "h012",
+      "product": "Tessivo Beam Mini",
+      "claims": [
+        {
+          "id": "h012_c1",
+          "text": "The Tessivo Beam Mini has a native resolution of 1920 x 1080.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h012_c2",
+          "text": "It is rated at 500 ANSI lumens.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h012_c3",
+          "text": "The lamp is rated for 30,000 hours.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        }
+      ]
+    },
+    {
+      "case_id": "h013",
+      "product": "Quorane Whirl 1200",
+      "claims": [
+        {
+          "id": "h013_c1",
+          "text": "The Quorane Whirl 1200 has a 1,200-watt motor.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h013_c2",
+          "text": "Its jar holds two liters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h013_c3",
+          "text": "The blades are dishwasher safe.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h014",
+      "product": "Halvenor Summit 55",
+      "claims": [
+        {
+          "id": "h014_c1",
+          "text": "The Halvenor Summit 55 has a capacity of fifty-five liters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h014_c2",
+          "text": "It weighs 1.65 kilograms empty.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h014_c3",
+          "text": "The pack is priced at $219.00.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "h015",
+      "product": "Brisklet Stride T7",
+      "claims": [
+        {
+          "id": "h015_c1",
+          "text": "The Brisklet Stride T7 has a top speed of 18 km/h.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h015_c2",
+          "text": "Its running belt measures 140 x 52 cm.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h015_c3",
+          "text": "The treadmill supports users up to 150 kilograms.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h015_c4",
+          "text": "It was announced on October 6, 2025.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h016",
+      "product": "Vantrel Mesh AX6",
+      "claims": [
+        {
+          "id": "h016_c1",
+          "text": "The Vantrel Mesh AX6 has four gigabit Ethernet ports.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h016_c2",
+          "text": "The router is in stock at Copperline Direct.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_retailer.html"
+          ],
+          "scenario": "availability_status"
+        },
+        {
+          "id": "h016_c3",
+          "text": "It was released on May 21, 2025.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h017",
+      "product": "Ostrello Pure 40",
+      "claims": [
+        {
+          "id": "h017_c1",
+          "text": "The Ostrello Pure 40 has a clean air delivery rate of 410 cubic meters per hour.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h017_c2",
+          "text": "It covers rooms up to 48 square meters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h017_c3",
+          "text": "The purifier runs at 24 dB in sleep mode.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h017_c4",
+          "text": "Replacement filters are sold in packs of three.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h018",
+      "product": "Dunmere Page 7",
+      "claims": [
+        {
+          "id": "h018_c1",
+          "text": "The Dunmere Page 7 has a seven-inch screen.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h018_c2",
+          "text": "It has 32 GB of storage.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h018_c3",
+          "text": "The e-reader is available for immediate delivery.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        }
+      ]
+    },
+    {
+      "case_id": "h019",
+      "product": "Corvath Pulse 2",
+      "claims": [
+        {
+          "id": "h019_c1",
+          "text": "The Corvath Pulse 2 has a built-in speaker for calls.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "h019_c2",
+          "text": "Its battery lasts 11.5 days in typical use.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h019_c3",
+          "text": "The watch is water resistant to fifty meters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "worded_numbers"
+        }
+      ]
+    },
+    {
+      "case_id": "h020",
+      "product": "Lindrosse K87",
+      "claims": [
+        {
+          "id": "h020_c1",
+          "text": "The Lindrosse K87 connects over Bluetooth 5.1.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h020_c2",
+          "text": "The keycaps are made of ABS plastic.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "h021",
+      "product": "Skerrigan Glide M2",
+      "claims": [
+        {
+          "id": "h021_c1",
+          "text": "The Skerrigan Glide M2 weighs 58 grams.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h021_c2",
+          "text": "Its sensor tracks at up to 26,000 DPI.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h021_c3",
+          "text": "The mouse is sold with a two-year warranty.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h021_c4",
+          "text": "The side buttons can be swapped for a blank plate.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h022",
+      "product": "Ambrelle Road Eye 2",
+      "claims": [
+        {
+          "id": "h022_c1",
+          "text": "The Ambrelle Road Eye 2 warns drivers about lane departures.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "h022_c2",
+          "text": "It is back in stock.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        },
+        {
+          "id": "h022_c3",
+          "text": "The dashcam was launched on 3 March 2026.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_3_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h023",
+      "product": "Ironquay Cell 20",
+      "claims": [
+        {
+          "id": "h023_c1",
+          "text": "The Ironquay Cell 20 has a capacity of 20,800 mAh.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h023_c2",
+          "text": "Its maximum output is 65 watts.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h023_c3",
+          "text": "The casing is made from recycled aluminum.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h024",
+      "product": "Peverill Stage 5.1",
+      "claims": [
+        {
+          "id": "h024_c1",
+          "text": "The Peverill Stage 5.1 has a total output of 420 watts.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h024_c2",
+          "text": "The subwoofer has an eight-inch driver.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h024_c3",
+          "text": "It was released on November 18, 2025.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_3_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        },
+        {
+          "id": "h024_c4",
+          "text": "The soundbar is priced at $499.00.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "h025",
+      "product": "Mollivar Crisp 6",
+      "claims": [
+        {
+          "id": "h025_c1",
+          "text": "The Mollivar Crisp 6 has a six-liter basket.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h025_c2",
+          "text": "It draws 1,700 watts.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h025_c3",
+          "text": "The basket has a ceramic coating.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "h026",
+      "product": "Jaskelin Dash 10",
+      "claims": [
+        {
+          "id": "h026_c1",
+          "text": "The Jaskelin Dash 10 has a top speed of 25 km/h.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h026_c2",
+          "text": "It weighs 17.5 kilograms.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h026_c3",
+          "text": "The scooter is in stock.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        },
+        {
+          "id": "h026_c4",
+          "text": "The deck tape can be replaced by the owner.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h027",
+      "product": "Fenwarra Alpine 0",
+      "claims": [
+        {
+          "id": "h027_c1",
+          "text": "The Fenwarra Alpine 0 has a comfort rating of 0 degrees C.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h027_c2",
+          "text": "It is filled with eight hundred fill power down.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h027_c3",
+          "text": "The bag weighs nine hundred grams.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        }
+      ]
+    },
+    {
+      "case_id": "h028",
+      "product": "Rokkeline Trail X",
+      "claims": [
+        {
+          "id": "h028_c1",
+          "text": "The Rokkeline Trail X records 5.3K video.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h028_c2",
+          "text": "The camera is waterproof to 30 meters without a case.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h028_c3",
+          "text": "Its battery has a capacity of 1,720 mAh.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "h029",
+      "product": "Ellowind Task 12",
+      "claims": [
+        {
+          "id": "h029_c1",
+          "text": "The Ellowind Task 12 offers twelve brightness levels.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h029_c2",
+          "text": "It has a color temperature range of 2,700 to 6,500 K.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h029_c3",
+          "text": "The base includes a wireless charging pad.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h030",
+      "product": "Stavenhall Lift Pro",
+      "claims": [
+        {
+          "id": "h030_c1",
+          "text": "The Stavenhall Lift Pro desktop is made of solid bamboo.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "h030_c2",
+          "text": "Its lifting capacity is 120 kilograms.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h030_c3",
+          "text": "The desk ships within two days.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        },
+        {
+          "id": "h030_c4",
+          "text": "It was announced on 11 January 2026.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_3_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h031",
+      "product": "Amberoak Poise",
+      "claims": [
+        {
+          "id": "h031_c1",
+          "text": "The Amberoak Poise is rated for users up to 136 kilograms.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h031_c2",
+          "text": "The chair launched on 5 August 2025.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_3_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        },
+        {
+          "id": "h031_c3",
+          "text": "The mesh is available in a sage green finish.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h032",
+      "product": "Pressaline Six",
+      "claims": [
+        {
+          "id": "h032_c1",
+          "text": "The Pressaline Six holds six quarts.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h032_c2",
+          "text": "It has 14 cooking programs.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h032_c3",
+          "text": "The maximum pressure is 12.5 psi.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h032_c4",
+          "text": "The inner pot is made of stainless steel.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        }
+      ]
+    },
+    {
+      "case_id": "h033",
+      "product": "Damphollow 25L",
+      "claims": [
+        {
+          "id": "h033_c1",
+          "text": "The Damphollow 25L extracts 25 liters per day.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h033_c2",
+          "text": "Its water tank holds 4.5 liters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h033_c3",
+          "text": "The dehumidifier is sold out at Fennick Home Goods.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        },
+        {
+          "id": "h033_c4",
+          "text": "The unit can be drained through a window hose kit.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h034",
+      "product": "Whitlane Sonic 8",
+      "claims": [
+        {
+          "id": "h034_c1",
+          "text": "The Whitlane Sonic 8 has five cleaning modes.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h034_c2",
+          "text": "It runs for 30 days between charges.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h034_c3",
+          "text": "It was introduced on 7 July 2025.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h035",
+      "product": "Calistrell Mist",
+      "claims": [
+        {
+          "id": "h035_c1",
+          "text": "The Calistrell Mist has a 1,600-watt motor.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h035_c2",
+          "text": "It has three heat settings.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h035_c3",
+          "text": "The dryer weighs 480 grams.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "authority_vs_forum"
+        }
+      ]
+    },
+    {
+      "case_id": "h036",
+      "product": "Tarnwick Skyline WS",
+      "claims": [
+        {
+          "id": "h036_c1",
+          "text": "The Tarnwick Skyline WS has a wireless range of 150 meters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h036_c2",
+          "text": "The outdoor sensor is solar powered.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "h036_c3",
+          "text": "It updates readings every sixteen seconds.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "worded_numbers"
+        }
+      ]
+    },
+    {
+      "case_id": "h037",
+      "product": "Quillmere Vault 2T",
+      "claims": [
+        {
+          "id": "h037_c1",
+          "text": "The Quillmere Vault 2T has a capacity of 2 TB.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h037_c2",
+          "text": "Its read speed reaches 1,100 MB/s.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h037_c3",
+          "text": "The drive is available for order.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        },
+        {
+          "id": "h037_c4",
+          "text": "It carries an IP65 rating.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_3_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "h038",
+      "product": "Nestwick Stack 4",
+      "claims": [
+        {
+          "id": "h038_c1",
+          "text": "The Nestwick Stack 4 has four drive bays.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h038_c2",
+          "text": "It has one 2.5-gigabit Ethernet port.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h038_c3",
+          "text": "Its operating system is updated every quarter.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h039",
+      "product": "Orvane Clear 4K",
+      "claims": [
+        {
+          "id": "h039_c1",
+          "text": "The Orvane Clear 4K has a 90-degree field of view.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h039_c2",
+          "text": "The webcam was released on 28 April 2026.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_press_release.html",
+            "source_3_retailer.html"
+          ],
+          "scenario": "date_mismatch"
+        },
+        {
+          "id": "h039_c3",
+          "text": "It is available for pre-order.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_3_retailer.html"
+          ],
+          "scenario": "availability_status"
+        }
+      ]
+    },
+    {
+      "case_id": "h040",
+      "product": "Sundrift Vox",
+      "claims": [
+        {
+          "id": "h040_c1",
+          "text": "The Sundrift Vox samples at up to 96 kHz.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h040_c2",
+          "text": "Its polar pattern is omnidirectional only.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h040_c3",
+          "text": "It connects with a single USB-C cable.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        }
+      ]
+    },
+    {
+      "case_id": "h041",
+      "product": "Averley Duo 5",
+      "claims": [
+        {
+          "id": "h041_c1",
+          "text": "The Averley Duo 5 uses a 5.25-inch woofer.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h041_c2",
+          "text": "Each speaker delivers 55 watts.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h041_c3",
+          "text": "The pair is priced at $349.00.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "h042",
+      "product": "Rennoch Spin 2",
+      "claims": [
+        {
+          "id": "h042_c1",
+          "text": "The Rennoch Spin 2 plays records at two speeds.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h042_c2",
+          "text": "The turntable went on sale on 19 May 2026.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        },
+        {
+          "id": "h042_c3",
+          "text": "The dust cover is made of tempered glass.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h043",
+      "product": "Inkwarden Pad 13",
+      "claims": [
+        {
+          "id": "h043_c1",
+          "text": "The Inkwarden Pad 13 has 8,192 levels of pressure sensitivity.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h043_c2",
+          "text": "Its active area measures 294 x 165 millimeters.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h043_c3",
+          "text": "The pen does not need a battery.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_3_press_release.html"
+          ],
+          "scenario": "authority_vs_forum"
+        }
+      ]
+    },
+    {
+      "case_id": "h044",
+      "product": "Formaline P3",
+      "claims": [
+        {
+          "id": "h044_c1",
+          "text": "The Formaline P3 has a build volume of 220 x 220 x 250 mm.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h044_c2",
+          "text": "It uses a direct-drive extruder.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h044_c3",
+          "text": "The nozzle reaches 300 degrees C.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h044_c4",
+          "text": "The printer is in stock.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        }
+      ]
+    },
+    {
+      "case_id": "h045",
+      "product": "Vellumoor Stitch 90",
+      "claims": [
+        {
+          "id": "h045_c1",
+          "text": "The Vellumoor Stitch 90 has ninety built-in stitches.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h045_c2",
+          "text": "It has an automatic needle threader.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h045_c3",
+          "text": "The presser foot set includes a walking foot.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h046",
+      "product": "Timberlode C40",
+      "claims": [
+        {
+          "id": "h046_c1",
+          "text": "The Timberlode C40 has a sixteen-inch bar.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h046_c2",
+          "text": "Its chain speed is 20 meters per second.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h046_c3",
+          "text": "The saw was announced on 2 February 2026.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h047",
+      "product": "Graswick Trim 800",
+      "claims": [
+        {
+          "id": "h047_c1",
+          "text": "The Graswick Trim 800 handles lawns up to 800 square meters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h047_c2",
+          "text": "It climbs slopes of up to 45 percent.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h047_c3",
+          "text": "The cutting width is twenty-two centimeters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        }
+      ]
+    },
+    {
+      "case_id": "h048",
+      "product": "Bradenfell Jet 130",
+      "claims": [
+        {
+          "id": "h048_c1",
+          "text": "The Bradenfell Jet 130 has a maximum pressure of one hundred thirty bar.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h048_c2",
+          "text": "Its flow rate is 7.2 liters per minute.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h048_c3",
+          "text": "The hose reel can be mounted on a wall.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h049",
+      "product": "Coprelli Vento",
+      "claims": [
+        {
+          "id": "h049_c1",
+          "text": "The Coprelli Vento has 18 vents.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h049_c2",
+          "text": "It weighs 245 grams in size medium.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h049_c3",
+          "text": "The helmet is out of stock.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        }
+      ]
+    },
+    {
+      "case_id": "h050",
+      "product": "Hollenvik Trek 66",
+      "claims": [
+        {
+          "id": "h050_c1",
+          "text": "The Hollenvik Trek 66 can send text messages by satellite.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "h050_c2",
+          "text": "Its battery lasts sixteen hours in GPS mode.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h050_c3",
+          "text": "The device was released on 22 September 2025.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_3_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h051",
+      "product": "Saltmarrow Sonar 5",
+      "claims": [
+        {
+          "id": "h051_c1",
+          "text": "The Saltmarrow Sonar 5 has a 5-inch screen.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h051_c2",
+          "text": "It reads depths down to 300 meters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h051_c3",
+          "text": "The transducer mounts on a trolling motor.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h052",
+      "product": "Nurserie Watch 2",
+      "claims": [
+        {
+          "id": "h052_c1",
+          "text": "The Nurserie Watch 2 has a range of 300 meters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h052_c2",
+          "text": "It is currently out of stock.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        },
+        {
+          "id": "h052_c3",
+          "text": "The monitor launched on 16 March 2026.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_3_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h053",
+      "product": "Heatharbor T5",
+      "claims": [
+        {
+          "id": "h053_c1",
+          "text": "The Heatharbor T5 has a 3.5-inch touchscreen.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h053_c2",
+          "text": "Its temperature accuracy is 0.3 degrees C.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h053_c3",
+          "text": "Installation takes about thirty minutes.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_press_release.html"
+          ],
+          "scenario": "worded_numbers"
+        }
+      ]
+    },
+    {
+      "case_id": "h054",
+      "product": "Porchlyte D2",
+      "claims": [
+        {
+          "id": "h054_c1",
+          "text": "The Porchlyte D2 records at 2K resolution.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h054_c2",
+          "text": "Its field of view is 165 degrees.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h054_c3",
+          "text": "The doorbell is in stock.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        },
+        {
+          "id": "h054_c4",
+          "text": "Recordings can be stored on a local hub.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h055",
+      "product": "Emberlin Glow 2000",
+      "claims": [
+        {
+          "id": "h055_c1",
+          "text": "The Emberlin Glow 2000 comes with a remote control.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "h055_c2",
+          "text": "It offers three power settings.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h055_c3",
+          "text": "The heater has an oscillation angle of 90 degrees.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        }
+      ]
+    },
+    {
+      "case_id": "h056",
+      "product": "Paddockrice 10",
+      "claims": [
+        {
+          "id": "h056_c1",
+          "text": "The Paddockrice 10 cooks ten cups of uncooked rice.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h056_c2",
+          "text": "It has a 24-hour delay timer.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h056_c3",
+          "text": "The steam basket is made of bamboo.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        }
+      ]
+    },
+    {
+      "case_id": "h057",
+      "product": "Merrowfield Knead 5",
+      "claims": [
+        {
+          "id": "h057_c1",
+          "text": "The Merrowfield Knead 5 has a five-liter bowl.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h057_c2",
+          "text": "Its motor is rated at 800 watts.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h057_c3",
+          "text": "The mixer was introduced on 14 October 2025.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_3_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h058",
+      "product": "Claribrack Pitcher 3",
+      "claims": [
+        {
+          "id": "h058_c1",
+          "text": "The Claribrack Pitcher 3 holds 2.4 liters.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h058_c2",
+          "text": "Each filter lasts for 160 liters.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h058_c3",
+          "text": "Replacement filters are in stock.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        }
+      ]
+    },
+    {
+      "case_id": "h059",
+      "product": "Scullane R3",
+      "claims": [
+        {
+          "id": "h059_c1",
+          "text": "The Scullane R3 has 16 resistance levels.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_press_release.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h059_c2",
+          "text": "The rail length is 150 centimeters.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "authority_vs_forum"
+        },
+        {
+          "id": "h059_c3",
+          "text": "It was announced on 25 June 2026.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_press_release.html"
+          ],
+          "scenario": "date_mismatch"
+        }
+      ]
+    },
+    {
+      "case_id": "h060",
+      "product": "Tidewrack Drift 2",
+      "claims": [
+        {
+          "id": "h060_c1",
+          "text": "The Tidewrack Drift 2 seats two paddlers.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "worded_numbers"
+        },
+        {
+          "id": "h060_c2",
+          "text": "It weighs 14.8 kilograms.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "small_numeric_discrepancy"
+        },
+        {
+          "id": "h060_c3",
+          "text": "The floor is made of drop-stitch fabric.",
+          "verdict": "UNVERIFIABLE",
+          "evidence_sources": [],
+          "scenario": "missing_coverage"
+        },
+        {
+          "id": "h060_c4",
+          "text": "The kayak is priced at $599.00.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        }
+      ]
+    },
+    {
+      "case_id": "h061",
+      "product": "Orrisfield Star 90",
+      "claims": [
+        {
+          "id": "h061_c1",
+          "text": "The Orrisfield Star 90 has a 90 mm aperture.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h061_c2",
+          "text": "Its focal length is 900 mm.",
+          "verdict": "SUPPORTED",
+          "evidence_sources": [
+            "source_1_spec_sheet.html",
+            "source_2_retailer.html"
+          ],
+          "scenario": "exact_spec"
+        },
+        {
+          "id": "h061_c3",
+          "text": "The telescope can be ordered now for immediate shipping.",
+          "verdict": "CONTRADICTED",
+          "evidence_sources": [
+            "source_2_retailer.html"
+          ],
+          "scenario": "availability_status"
+        }
+      ]
+    }
+  ]
+}

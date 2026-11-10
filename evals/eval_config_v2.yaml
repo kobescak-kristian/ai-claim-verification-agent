@@ -1,0 +1,236 @@
+# Standard eval v2 gate. Frozen once committed: a change to any
+# graded item below applies only to a later version and leaves recorded
+# results standing. The v1 gate in eval_config.yaml stays frozen and
+# untouched; the comparison policy still lives only there and is loaded
+# at runtime by agent/prompts.py. This file points to it, never copies it.
+#
+# Amended 2026-11-04 before any result, by Kristian's decisions on the
+# first red-team review of the gate: audit failure rows, infrastructure
+# classification, rerun attempts, strict records, unmatched SUPPORTED
+# findings (rule F) and dataset hygiene. No v2 result existed before this
+# amendment.
+#
+# Second amendment 2026-11-04, still before any result, by Kristian's
+# decisions on the red-team re-check: record status checked against its
+# own evidence, run indexes of earlier attempts, provenance of a CLI
+# process crash, empty exception messages, a line-ending-independent
+# answer-key hash, and NOT SCORED observations from INVALID RUN
+# executions. No threshold, dataset or other policy changed.
+#
+# Third amendment 2026-11-05, before any official result, by Kristian's
+# decision on the second red team: the CLI's subscription limit texts,
+# transient rate limits told apart from subscription limits, and
+# api_error_status kept as evidence. It applies only to runs started after
+# it. The dev records stay as recorded and keep the gate they ran under:
+# this file at commit 615302b, config_sha256
+# c45c590bfff944a7d70fe12a1413fd73d6fa395d03beac1b216cc6324c06c901.
+# No threshold, dataset, page rule or other policy changed.
+
+version: 2
+created: "2026-11-04"
+amended: "2026-11-05"
+
+eval_level:
+  proposed: "Eval level: Proposed Standard (a wrong verdict costs an editor rework; a human editor signs off before anything is published)"
+  decided: "Eval level: Decided Standard, Kristian, 2026-11-04"
+
+comparison_policy_source: "evals/eval_config.yaml#comparison_policy"
+
+# --- Sets ---
+sets:
+  dev:
+    answer_key: evals/answer_keys/dev.json
+    dataset_root: evals/dataset
+    status: "visible development; result label is always DEV ONLY, never PASS or FAIL"
+  official:
+    answer_key: evals/answer_keys/official.json
+    dataset_root: evals/dataset
+    case_count: 61
+    case_id_pattern: "^h0(0[1-9]|[1-5][0-9]|6[01])$"
+    status: "sealed hold-out, added before the first official run by a session that never builds (Kristian's decision 1A)"
+
+runs_per_page: 3
+official_case_count: 61
+allowed_failed_pages: 2
+
+# --- Gates (all three required; no fallback formula) ---
+gates:
+  gate_1_page_reliability:
+    rule: "passing_pages >= 59 of 61"
+    passing_pages_min: 59
+    definition: "a page passes when none of its runs has a page-fail event (rules A-F); this includes valid runs of a superseded attempt (see invalid_run_restart)"
+    claim: "at least 90% page success at 95% one-sided confidence (exact binomial table for a Standard gate: 90% claim, 2 misses, 61 cases), bounded to this offline synthetic page population"
+  gate_2_unnecessary_unverifiable:
+    rule: "unnecessary_unverifiable_rate <= 0.05"
+    max_rate: 0.05
+    numerator: "assessments of ground-truth SUPPORTED or CONTRADICTED claims where any matched finding has verdict UNVERIFIABLE"
+    denominator: "all assessments of ground-truth SUPPORTED or CONTRADICTED claims across all 3 runs of every page (ground-truth UNVERIFIABLE claims excluded)"
+    note: "pooled operational point estimate, not a separate confidence claim; per-run rates are also reported"
+  gate_3_useful_verification:
+    rule: "useful_verification_rate >= 0.80"
+    min_rate: 0.80
+    numerator: "assessments of ground-truth SUPPORTED or CONTRADICTED claims that are matched, have every matched finding's verdict equal to the ground truth, and have valid evidence on every matched finding"
+    denominator: "same as gate_2 denominator"
+    note: "pooled operational point estimate; a missing claim, a wrong or conflicting verdict, or invalid evidence earns no credit"
+  overall: "PASS iff gate_1 AND gate_2 AND gate_3, on a valid and complete official series (exactly 61 pages x 3 valid runs in each page's scored attempt, no INVALID RUN outstanding, no record or attempt problem)"
+
+# --- Results ---
+results:
+  official_only: "PASS or FAIL is printed only for the official set: the key declares set official and lists 61 distinct case_ids that all match sets.official.case_id_pattern, with 3 valid runs per page. A key that declares official but fails this shape is not an official set: DEV ONLY, with the key problems listed. The frozen official key is evals/answer_keys/official.json"
+  integrity: "two separate hashes, never compared with each other: (1) the sealed hold-out ZIP is verified against its recorded seal SHA-256 before extraction; (2) the extracted evals/answer_keys/official.json has its own SHA-256, recorded at the freeze commit; the runner records the key's SHA-256 in every results file and the preflight verifies it against that recorded key hash before the series"
+  hash_forms: "the seal SHA-256 is over the ZIP's raw bytes. The answer-key SHA-256 (answer_key_sha256) is the LF-normalized SHA-256: SHA-256 of the key file's bytes after every CR LF pair is replaced by LF, so a checkout's line endings never change it. The scorer, the runner and the preflight all use this one form (evals/score_v2.py key_sha256)."
+  rescore: "score_v2.py re-scoring a results file refuses (exit 2) when the file records no answer_key_sha256 or when the key file's LF-normalized SHA-256 differs from it"
+  non_official_label: "DEV ONLY — NOT ENOUGH CASES"
+  non_official_rule: "any other set, including the 12-page dev set at 36/36 perfect, gets the label above; the three gate numbers are shown for information only"
+  invalid_label: "INVALID RUN"
+
+# --- Page-fail rules (any rule in any valid run of the page fails the page; several events on one page are one failed page; every event is recorded) ---
+page_fail_rules:
+  A: "a ground-truth CONTRADICTED claim has a matched finding with verdict SUPPORTED"
+  B: "a ground-truth CONTRADICTED claim has no matched finding in a completed run"
+  C: "a ground-truth UNVERIFIABLE claim has a matched finding with verdict SUPPORTED"
+  D: "a ground-truth SUPPORTED claim has a matched finding with verdict SUPPORTED whose evidence is invalid (evidence rule)"
+  E: "the run is not complete under the completion criteria and is not classified as INVALID RUN"
+  F: "a completed run has a finding with verdict SUPPORTED that matches no expected claim (added by the amendment; A-E unchanged)"
+  tolerated_errors: "SUPPORTED->CONTRADICTED, SUPPORTED->UNVERIFIABLE, CONTRADICTED->UNVERIFIABLE and UNVERIFIABLE->CONTRADICTED do not fail a page; they stay errors and count in gates 2 and 3 and the reported accuracy"
+  note_on_D: "a SUPPORTED verdict on a CONTRADICTED or UNVERIFIABLE claim is already caught by A or C and is not counted again under D"
+  note_on_E: "every claim of a rule-E run of the scored attempt is assessed RUN_FAILED: it stays in the gate 2 and gate 3 denominators with no credit and counts as wrong for accuracy; its findings are kept for diagnosis but not assessed under A-D"
+
+# --- Completion (rule E). A run is complete only when all hold ---
+completion:
+  criteria:
+    - "no exception was raised by the agent run (an exception is present when error_type or error is recorded, even with an empty message)"
+    - "a ResultMessage was received with subtype 'success' and is_error false (not error_max_turns, error_max_budget_usd or error_during_execution)"
+    - "num_turns is an integer and <= max_turns in agent/config.py"
+    - "at least one finding was logged (non-empty report)"
+    - "every finding is an object with string fields claim_text, verdict, evidence_source, evidence_note, and verdict is exactly SUPPORTED, CONTRADICTED or UNVERIFIABLE (case-sensitive); a malformed finding is agent output and makes the run rule E, never INVALID RUN, also when the record says completed"
+    - "audit.db has PreToolUse rows for the run_id, and every PreToolUse row (any tool) has a closing row with the same tool_use_id: PostToolUse, or PostToolUseFailure (the hook event the CLI sends when a tool returns an error)"
+    - "the number of log_finding PostToolUse rows whose response starts with 'Logged:' equals the number of findings"
+    - "audit.db shows a successful read of '<case_id>/target.html': a fetch_page or extract_claims PostToolUse row whose path, after posix normpath and casefold, equals '<case_id>/target.html' and whose response is not an error"
+    - "the circuit breaker did not trip: no tool response or failure error contains 'Circuit breaker tripped' and the PreToolUse count is <= max_tool_calls in agent/config.py"
+  failure_rows: "a PostToolUseFailure row is an error response: it closes its pair, but it is never a successful target read and never a 'Logged:' row"
+  not_required: "completion never requires every expected claim to be found or classified correctly; omissions and verdict errors are scored separately"
+
+# --- Execution records (written by the runner, read by the scorer) ---
+execution_record:
+  required_fields:
+    execution_id: "string, unique in the results file; '<eval_id>-<case_id>-r<run_index>' for attempt 1, with '-a<attempt>' appended for attempt 2 and later; used as the audit run_id, one per execution"
+    case_id: "string, a case of the answer key"
+    run_index: "integer 1 to runs_per_page"
+    attempt: "integer >= 1; the attempts of one page are numbered 1, 2, ... without gaps"
+    superseded: "boolean"
+    status: "exactly completed, agent_failure or invalid_run"
+    findings: "list"
+  evidence_fields:
+    error_type: "string 'module.qualname' of the exception, or null when none was raised"
+    error: "string, the exception text (may be empty), or null when none was raised"
+    result: "object with subtype, is_error, num_turns, result_text, errors and api_error_status (the HTTP status of a CLI API error, else null), kept even when the SDK raised, or null when no ResultMessage arrived"
+    error_origin: "optional; 'sdk_call' only when the harness caught the exception at the SDK call boundary (raised while iterating the SDK's query()); anything else or absent means the origin is not established"
+  also_recorded: "total_cost_usd and num_turns at the top level, and the init check"
+  malformed: "a record with a missing or wrongly typed required field or evidence field, an unknown status, a duplicate execution_id, an execution_id that does not end with its own '-r<run_index>' (and '-a<attempt>' from attempt 2), or a case_id that is not in the key is a test-infrastructure fault: it is left out of scoring and the official result is INVALID RUN; it is listed in the report"
+  status_integrity: "the scorer re-derives what the evidence fields allow. invalid_run needs an infra category from infra_errors on the record's own error_type, error, result and error_origin (and equal to its recorded infra_category, when given). completed needs no exception, a result with subtype 'success' and is_error false, an integer num_turns <= max_turns in agent/config.py, and at least one finding. agent_failure must not have evidence that classifies as infrastructure. A record that fails this check is a record-integrity problem: the official result is INVALID RUN, the record stays in scoring as an agent failure (rule E, so a failure it carries never disappears), and it never justifies a page rerun."
+
+# --- Claim matching (deterministic, anchored to the expected paragraph) ---
+claim_matching:
+  rule: "a finding matches an expected claim only if normalize(finding.claim_text) == normalize(claim.text); no substring and no similarity matching"
+  normalize_steps:
+    - "Unicode NFKC"
+    - "curly single quotes to ', curly double quotes to \", en dash, em dash, figure dash and minus sign to -"
+    - "collapse all whitespace runs to one space and strip the ends"
+    - "remove one leading list bullet '- ' (the prefix fetch_page prints before each paragraph)"
+    - "remove one leading list number of the form '3. ' or '3) '"
+    - "repeat until stable: strip whitespace, strip edge quotes (' \" `), remove one final full stop"
+    - "casefold"
+  uniqueness: "make_dataset.py check forbids two paragraphs with the same normalized text on one target page, so a finding matches at most one claim"
+  unmatched_findings: "earn no credit; the claim they were meant for counts as missing; an unmatched finding with verdict SUPPORTED in a completed run is rule F; the report lists the nearest expected claim (difflib ratio) marked 'candidate, not scored', which never changes any score"
+
+duplicates:
+  rule: "all matched findings for one claim in one run are kept. Same verdict on all: the assessment has that verdict, and evidence must be valid on every one of them. Different verdicts: the assessment is CONFLICT, earns no gate 3 credit and counts as wrong for accuracy. Rules A-D and the gate 2 numerator are checked against every matched finding, so a SUPPORTED or UNVERIFIABLE anywhere among the duplicates counts."
+
+evidence:
+  rule: "extract every '.html' basename from evidence_source; evidence is valid when at least one is cited, every cited basename is in the claim's evidence_sources, and any cited directory part ends in the case_id (case_01/x.html and evals/dataset/case_01/x.html are both accepted)"
+  not_graded: "evidence_note text is not graded (stated limitation)"
+  applies_to: "SUPPORTED and CONTRADICTED verdicts; UNVERIFIABLE verdicts are not evidence-graded"
+
+# --- Infrastructure vs agent failure ---
+infra_errors:
+  rule: "a failed run is INVALID RUN (test machinery, no quality result) only when (1) its result subtype is not an agent_failure_subtype, (2) its classified text matches no cap pattern, unless the result is a CLI API error with api_error_status 429, and (3) its classified text matches a pattern group below, or a type rule applies. Anything else that fails inside a run is an agent failure (rule E); an unclassified error is never INVALID RUN. The raw error text is always kept."
+  agent_failure_subtypes: [error_max_turns, error_max_budget_usd]
+  classified_text: "the exception text (prefixed with its class name) when the exception has SDK or CLI origin, together with the result text and the result errors when the result is not a success (subtype other than 'success', or is_error true). A success result's text is the agent's own answer and is never matched; an exception from runner or agent code is never matched."
+  sdk_origin:
+    - "error_type in the claude_agent_sdk package (ClaudeSDKError and its subclasses)"
+    - "error_type builtins.Exception whose text starts with 'Claude Code returned an error result:' (the SDK's error-result exception)"
+    - "error_type agent.harness.AuthGuardError (the harness's own auth refusal, infrastructure by design)"
+  cap_patterns_agent_failure:
+    - "(?i)budget"
+    - "(?i)max[_ ]turns|maximum number of turns|maximum turn|turn limit"
+  patterns:
+    auth: "(?i)not logged in|please run /login|invalid api key|authentication_error|authentication error|oauth token (?:has )?(?:expired|revoked)|disabled claude subscription access|api error: 40[13]\\b|AuthGuardError"
+    transient_rate_limit: "(?i)rate_limit_error|api error: 429\\b|request rejected \\(429\\)|temporarily limiting requests"
+    subscription_limit: "(?m)^You've hit your |(?i:usage limit|out of usage credits|usage credits required|spend limit|credit balance (?:is )?too low|billing_error)"
+    overloaded_or_5xx: "(?i)overloaded|api error: 5\\d\\d\\b|api error \\(status 5\\d\\d|experiencing high load|internal server error|service unavailable|bad gateway|gateway timeout|\"type\": ?\"api_error\""
+    network: "(?i)request timed out|streaming timeout|connection error|unable to connect to api|ssl (?:error|certificate)|certificate (?:verification failed|has expired|has been revoked)|ECONNRESET|ECONNREFUSED|ETIMEDOUT"
+    cli_spawn: "(?i)CLINotFoundError|CLIConnectionError|claude code not found"
+  type_rules:
+    cli_process: "the CLI process ended before any result (no ResultMessage): either error_type claude_agent_sdk ProcessError, or error_type builtins.Exception with error_origin 'sdk_call' whose whole text matches cli_crash_signature (the SDK re-raises a mid-run ProcessError as a plain Exception). The text alone, without the established origin, is not enough: that stays an agent failure (rule E)."
+    api_status_429: "is_error true and api_error_status 429, with no pattern group matched: category unrecognized_429. The CLI sets both fields only on its own API error message, so this is never agent output. The cause is not claimed; a person reads the raw text."
+  cli_crash_signature: "\\ACommand failed with exit code (-?\\d+) \\(exit code: \\1\\)\\nError output: Check stderr output for details\\Z"
+  limitation: "other SDK errors that the SDK re-raises mid-run as a plain Exception without the error-result prefix are not classified as infrastructure; they stay agent failures (rule E), bounded by unclassified_pause"
+  pattern_source: "phrases taken from the texts of the bundled CLI 2.1.191 and the SDK 0.2.110 error classes; the fixture tests quote them"
+  pattern_order: "groups are tried in the order listed and the first match wins; transient_rate_limit comes before subscription_limit because the CLI's transient text contains 'not your usage limit'"
+  stop_rule: "the runner stops the series on the first auth, subscription_limit or unrecognized_429 error and never falls back to another auth route; a transient_rate_limit is an INVALID RUN, which also stops the series under invalid_run_restart"
+  unclassified_pause: "the runner pauses the series after 2 unclassified exceptions in a row (exceptions that match no pattern group and no type rule). Those runs stay scored agent failures (rule E) and are never reclassified as INVALID RUN. A resume continues the same attempt with the next run; no execution is superseded or replaced."
+
+invalid_run_restart:
+  decision: "Kristian's decision 2A, 2026-11-04; attempt form by his rerun-attempt ruling, 2026-11-04"
+  rule: "pages whose 3 runs all completed without INVALID RUN are kept; the interrupted page reruns all 3 runs on the same frozen commit as a new attempt; the INVALID RUN event and a redone preflight are recorded"
+  attempts: "a page's scored attempt is its highest attempt number. It must hold exactly runs 1 to runs_per_page, none superseded and none INVALID RUN. Every execution of an earlier attempt must be marked superseded, and every earlier attempt must hold runs 1 to k (k <= runs_per_page) with no gap and no duplicate, where run k is an INVALID RUN that passes status_integrity and runs 1 to k-1 are valid (the page stopped at its INVALID RUN). Attempts are numbered 1, 2, ... without gaps. Any breach is an attempt problem and the official result is INVALID RUN. A single run is never replaced on its own."
+  superseded_runs: "valid executions (completed or agent_failure) of an earlier attempt are still checked under rules A-F: their events are recorded, marked superseded, and fail the page. They do not enter the gate 2 and gate 3 denominators or the secondary rates, which use the scored attempt only. The full execution history is reported."
+  invalid_run_observations: "the findings of an INVALID RUN execution are checked under rules A, C, D and F (B needs a completed run) and listed in the report as NOT SCORED: they never fail a page and never change a gate"
+
+# --- Reported, not gated ---
+secondary_metrics:
+  - total pages, distinct expected claims, executions
+  - ground-truth distribution across the three verdicts
+  - page-level false-assurance success (pages passed)
+  - false-assurance error events by rule, distinct claims affected, pages affected
+  - claim extraction coverage (matched assessments / all assessments)
+  - overall three-class verdict accuracy (CONFLICT and missing count as wrong)
+  - verdict-plus-evidence accuracy
+  - CONTRADICTED precision and recall over assessments
+  - unnecessary UNVERIFIABLE rate, pooled and per run
+  - correctly identified genuine UNVERIFIABLE claims
+  - useful-verification rate
+  - run completion rate
+  - verdict changes between repeated runs
+  - turns and SDK API-equivalent cost (labelled "SDK API-equivalent, not a charge")
+  - performance by scenario
+  - page-cluster bootstrap 95% intervals for the gate 2 and gate 3 rates (2000 resamples over pages, fixed seed 0; reported, not gated)
+  - unmatched findings with unscored nearest-claim candidates
+
+# --- Case rules for the official hold-out (fixed before any hold-out is written) ---
+case_rules:
+  pages: 61
+  case_ids: "h001 to h061 (neutral; no verdict word in any directory or file name)"
+  claims_per_page: "2 to 4"
+  paragraphs: "each claim is exactly one target paragraph and every target paragraph is a claim"
+  sources_per_page: "2 to 4, named source_<n>_<kind>.html"
+  products: "one distinct product per page; none reused from the dev set"
+  scenarios:
+    - exact_spec           # exact number or specification
+    - small_numeric_discrepancy
+    - worded_numbers       # reworded statements or worded-out numbers
+    - date_mismatch
+    - missing_coverage     # no source addresses the claim
+    - authority_vs_forum   # authoritative source outranks forum content
+    - availability_status
+  target_verdict_mix: "about 60% SUPPORTED, 25% CONTRADICTED, 15% UNVERIFIABLE (a target, not a quota of hard cases)"
+  out_of_scope: "conflicts between equally authoritative sources, chronology, partial or compound claims, tables, lists, several claims in one paragraph"
+  evidence_sources: "every legitimate source for each claim is listed; empty for UNVERIFIABLE"
+  text_characters: "no claim text and no target paragraph contains a Unicode format character (category Cf, for example U+200B or U+00AD); NFKC differences are not rejected"
+  dataset_root: "every entry directly under the dataset root is a case folder named in the checked key or in a key it is compared against; any other file or folder fails check"
+
+provenance:
+  dev: "the 12 v1 synthetic cases (evals/dataset/case_01..case_12); v1 claim text and verdicts unchanged; evidence_sources and scenario added for v2"
+  official: "synthetic, written from a case spec by evals/make_dataset.py render (deterministic), checked by make_dataset.py check, blind-relabelled, then sealed as a ZIP whose SHA-256 (the seal hash) is recorded in the contract and evals/PREFLIGHT.md; the extracted answer key's own SHA-256 is recorded separately (see results.integrity)"
+  limitation: "a seeded synthetic dataset; results are not evidence of real-world or live-web performance"

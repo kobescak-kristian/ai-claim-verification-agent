@@ -17,6 +17,7 @@ Run against a real audit.db produced by run_case.py or run_eval.py:
 import asyncio
 import json
 import sqlite3
+import subprocess
 import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
@@ -30,6 +31,7 @@ from agent.config import AUDIT_DB_PATH, DATASET_ROOT  # noqa: E402
 from agent.pages import PathOutsideDatasetError, resolve_dataset_path  # noqa: E402
 
 GROUND_TRUTH_PATH = REPO_ROOT / "evals" / "ground_truth.json"
+ANSWER_KEYS_DIR = REPO_ROOT / "evals" / "answer_keys"
 
 
 def _audit_rows() -> list[sqlite3.Row]:
@@ -248,10 +250,19 @@ class TestGroundTruthNotLeaked:
         leaked, with no false-positive path via convergent reasoning."""
         with open(GROUND_TRUTH_PATH, encoding="utf-8") as f:
             gt = json.load(f)
-        secrets = {"ground_truth.json", "ground_truth"}
+        secrets = {"ground_truth.json", "ground_truth", "answer_keys"}
         for case in gt["cases"]:
             for claim in case["claims"]:
                 secrets.add(claim["id"])  # e.g. "case_09_c3" — never shown to the model
+        # Every v2 answer key is covered the same way: its file name
+        # and its claim IDs.
+        for key_path in sorted(ANSWER_KEYS_DIR.glob("*.json")):
+            secrets.add(key_path.name)
+            with open(key_path, encoding="utf-8") as f:
+                key = json.load(f)
+            for case in key["cases"]:
+                for claim in case["claims"]:
+                    secrets.add(claim["id"])
         return secrets
 
     def test_ground_truth_never_appears_in_audit_payloads(self):
@@ -286,3 +297,1062 @@ class TestDatasetNamesCarryNoVerdict:
             if any(t in p.name.lower() for t in verdict_tokens)
         )
         assert not offenders, f"dataset names carry a verdict word: {offenders}"
+
+
+# --- Harness isolation (no model calls: query() is replaced by a fake) ---
+
+from claude_agent_sdk import ResultMessage, SystemMessage  # noqa: E402
+
+from agent import audit as agent_audit  # noqa: E402
+from agent import harness  # noqa: E402
+from agent.config import QUALIFIED_TOOL_NAMES  # noqa: E402
+from evals import score_v2  # noqa: E402
+
+FAKE_SECRET_VALUE = "sk-fake-value-never-printed"
+
+
+def _init_message(api_key_source="none", tools=None, model="claude-haiku-4-5-20251001"):
+    data = {
+        "type": "system",
+        "subtype": "init",
+        "apiKeySource": api_key_source,
+        "tools": list(QUALIFIED_TOOL_NAMES) if tools is None else tools,
+        "mcp_servers": [{"name": "claimverify", "status": "connected"}],
+        "model": model,
+        "cwd": "/machine/local/path",
+        "session_id": "s-1",
+    }
+    return SystemMessage(subtype="init", data=data)
+
+
+def _result_message(subtype="success", is_error=False):
+    return ResultMessage(
+        subtype=subtype, duration_ms=1, duration_api_ms=1, is_error=is_error,
+        num_turns=3, session_id="s-1", total_cost_usd=0.01, result="done",
+    )
+
+
+def _fake_query(messages, raise_after=None, closed=None, called=None):
+    async def fake(prompt, options):
+        if called is not None:
+            called.append(options)
+        try:
+            for message in messages:
+                yield message
+            if raise_after is not None:
+                raise raise_after
+        finally:
+            if closed is not None:
+                closed.append(True)
+    return fake
+
+
+@pytest.fixture
+def isolated(monkeypatch, tmp_path):
+    """Clean guarded env and a throwaway audit database; the real audit.db
+    is never touched."""
+    for name in harness.GUARDED_ENV_NAMES:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(agent_audit, "AUDIT_DB_PATH", tmp_path / "audit.db")
+    return tmp_path
+
+
+class TestHarnessIsolation:
+    def test_options_load_no_settings_and_only_the_four_tools(self):
+        options = harness.build_options()
+        assert options.setting_sources == []
+        assert options.tools == []
+        assert sorted(options.allowed_tools) == sorted(QUALIFIED_TOOL_NAMES)
+        assert len(options.allowed_tools) == 4
+
+    def test_audit_hook_registered_on_all_three_tool_events(self):
+        hooks = harness.build_options().hooks
+        for event in ("PreToolUse", "PostToolUse", "PostToolUseFailure"):
+            assert event in hooks
+            assert any(agent_audit.audit_hook in m.hooks for m in hooks[event])
+
+    def test_names_match_the_frozen_gate(self):
+        guard = harness.AuthGuardError
+        assert f"{guard.__module__}.{guard.__qualname__}" == score_v2.AUTH_GUARD_TYPE
+        assert harness.SDK_CALL_ORIGIN == score_v2.SDK_CALL_ORIGIN
+
+    @pytest.mark.parametrize("name", harness.GUARDED_ENV_NAMES)
+    def test_env_guard_rejects_each_name_without_reading_the_value(self, name):
+        with pytest.raises(harness.AuthGuardError) as info:
+            harness.check_env({name: FAKE_SECRET_VALUE, "PATH": "x"})
+        assert name in str(info.value)
+        assert FAKE_SECRET_VALUE not in str(info.value)
+
+    def test_env_guard_rejects_an_empty_value_too(self):
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_env({"ANTHROPIC_API_KEY": ""})
+
+    def test_env_guard_accepts_a_clean_env(self):
+        harness.check_env({"PATH": "x", "HOME": "y"})
+
+    def test_init_check_accepts_and_records_only_named_fields(self):
+        recorded = harness.check_init(_init_message())
+        assert set(recorded) == set(harness.INIT_FIELDS)
+        assert recorded["apiKeySource"] == "none"
+        assert "/machine/local/path" not in json.dumps(recorded)
+
+    @pytest.mark.parametrize("source", ["ANTHROPIC_API_KEY", "apiKeyHelper", None, ""])
+    def test_init_check_rejects_api_key_source(self, source):
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_init(_init_message(api_key_source=source))
+
+    def test_init_check_rejects_missing_api_key_source(self):
+        message = _init_message()
+        del message.data["apiKeySource"]
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_init(message)
+
+    @pytest.mark.parametrize("tools", [
+        list(QUALIFIED_TOOL_NAMES) + ["Bash"],
+        list(QUALIFIED_TOOL_NAMES)[:3],
+        list(QUALIFIED_TOOL_NAMES)[:3] + ["Read"],
+        [],
+        None,
+    ])
+    def test_init_check_rejects_any_other_tool_set(self, tools):
+        message = _init_message()
+        message.data["tools"] = tools
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_init(message)
+
+    def test_init_check_rejects_a_first_message_that_is_not_init(self):
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_init(_result_message())
+        with pytest.raises(harness.AuthGuardError):
+            harness.check_init(SystemMessage(subtype="status", data={}))
+
+
+class TestHarnessExecution:
+    def _run(self, case_id="case_01", run_id="test-run"):
+        return asyncio.run(harness.run_case_execution(case_id, run_id))
+
+    def test_clean_run_keeps_result_and_init(self, isolated, monkeypatch):
+        result = _result_message()
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), result]))
+        outcome = self._run()
+        assert outcome.error is None and outcome.error_origin is None
+        assert outcome.result is result
+        assert outcome.init["apiKeySource"] == "none"
+        assert harness.last_init == outcome.init
+
+    def test_sdk_error_after_result_keeps_result_and_sets_origin(self, isolated, monkeypatch):
+        result = _result_message()
+        crash = Exception("Command failed with exit code 1 (exit code: 1)\n"
+                          "Error output: Check stderr output for details")
+        monkeypatch.setattr(harness, "query",
+                            _fake_query([_init_message(), result], raise_after=crash))
+        outcome = self._run()
+        assert outcome.result is result
+        assert outcome.error is crash
+        assert outcome.error_origin == harness.SDK_CALL_ORIGIN
+
+    def test_a_stream_with_no_message_is_refused(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query([]))
+        outcome = self._run()
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "no init message" in str(outcome.error)
+        assert outcome.init is None and outcome.result is None
+        category = score_v2.infra_category(score_v2.AUTH_GUARD_TYPE, str(outcome.error), None,
+                                           score_v2.load_config())
+        assert category == "auth"
+
+    def test_a_stream_of_only_lifecycle_messages_is_refused(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_hook_message("hook_started"), _hook_message("hook_response")]))
+        outcome = self._run()
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "no init message" in str(outcome.error)
+
+    def test_an_sdk_error_before_init_is_not_replaced_by_the_no_init_refusal(self, isolated, monkeypatch):
+        crash = RuntimeError("boom")
+        monkeypatch.setattr(harness, "query", _fake_query([], raise_after=crash))
+        assert self._run().error is crash
+
+    def test_a_wrong_init_model_is_refused(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(model="claude-other"), _result_message()]))
+        outcome = asyncio.run(harness.run_case_execution("case_01", "test-run",
+                                                         model="claude-sonnet-4-6"))
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "init model is 'claude-other'" in str(outcome.error)
+        assert outcome.init is None and outcome.result is None
+
+    def test_the_init_model_must_equal_the_requested_model(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(model="claude-sonnet-4-6"), _result_message()]))
+        outcome = asyncio.run(harness.run_case_execution("case_01", "test-run",
+                                                         model="claude-sonnet-4-6"))
+        assert outcome.error is None and outcome.init["model"] == "claude-sonnet-4-6"
+
+    def test_check_init_without_an_expected_model_does_not_compare_it(self):
+        assert harness.check_init(_init_message(model="anything"))["model"] == "anything"
+
+    def test_sdk_error_before_any_message_sets_origin(self, isolated, monkeypatch):
+        crash = RuntimeError("")
+        monkeypatch.setattr(harness, "query", _fake_query([], raise_after=crash))
+        outcome = self._run()
+        assert outcome.result is None and outcome.init is None
+        assert outcome.error is crash
+        assert outcome.error_origin == harness.SDK_CALL_ORIGIN
+        assert harness.last_init is None
+
+    def test_bad_init_aborts_closes_stream_and_has_no_sdk_origin(self, isolated, monkeypatch):
+        closed = []
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(api_key_source="ANTHROPIC_API_KEY"), _result_message()],
+            closed=closed,
+        ))
+        outcome = self._run()
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.error_origin is None
+        assert outcome.result is None  # nothing after the first message is used
+        assert closed == [True]
+
+    def test_wrong_tool_set_aborts(self, isolated, monkeypatch):
+        tools = list(QUALIFIED_TOOL_NAMES) + ["Bash"]
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(tools=tools), _result_message()]))
+        outcome = self._run()
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.result is None
+
+    def test_env_guard_runs_before_anything_is_spawned(self, isolated, monkeypatch):
+        called = []
+        monkeypatch.setenv("ANTHROPIC_API_KEY", FAKE_SECRET_VALUE)
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message()], called=called))
+        outcome = self._run()
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert FAKE_SECRET_VALUE not in str(outcome.error)
+        assert outcome.error_origin is None
+        assert called == []
+        assert not (isolated / "audit.db").exists()
+
+    def test_last_init_is_reset_for_each_execution(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), _result_message()]))
+        self._run()
+        assert harness.last_init is not None
+        monkeypatch.setattr(harness, "query", _fake_query([], raise_after=RuntimeError("x")))
+        self._run()
+        assert harness.last_init is None
+
+    def test_run_case_result_still_raises_on_error(self, isolated, monkeypatch):
+        crash = RuntimeError("boom")
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message()], raise_after=crash))
+        with pytest.raises(RuntimeError, match="boom"):
+            asyncio.run(harness.run_case_result("case_01", "test-run"))
+
+    def test_run_case_result_returns_result_on_success(self, isolated, monkeypatch):
+        result = _result_message()
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), result]))
+        got, findings = asyncio.run(harness.run_case_result("case_01", "test-run"))
+        assert got is result and findings == []
+
+
+class TestAuditFailureRows:
+    def _rows(self, db):
+        conn = sqlite3.connect(db)
+        conn.row_factory = sqlite3.Row
+        try:
+            return conn.execute("SELECT * FROM tool_calls ORDER BY id").fetchall()
+        finally:
+            conn.close()
+
+    def test_failure_row_closes_the_pre_row_with_error_payload(self, isolated):
+        agent_audit.init_audit_db()
+        agent_audit.set_run_context("test-run", "case_01")
+        tool = QUALIFIED_TOOL_NAMES[0]
+        base = {"session_id": "s-1", "tool_name": tool, "tool_input": {"path": "x"},
+                "tool_use_id": "tu-1"}
+        asyncio.run(agent_audit.audit_hook(
+            {**base, "hook_event_name": "PreToolUse"}, "tu-1", None))
+        asyncio.run(agent_audit.audit_hook(
+            {**base, "hook_event_name": "PostToolUseFailure",
+             "error": "Circuit breaker tripped"}, "tu-1", None))
+        rows = self._rows(isolated / "audit.db")
+        assert [r["event_type"] for r in rows] == ["PreToolUse", score_v2.POST_FAILURE]
+        assert {r["tool_use_id"] for r in rows} == {"tu-1"}
+        assert {r["run_id"] for r in rows} == {"test-run"}
+        assert json.loads(rows[1]["payload"])["error"] == "Circuit breaker tripped"
+
+    def test_failure_row_takes_tool_use_id_from_input_when_argument_missing(self, isolated):
+        agent_audit.init_audit_db()
+        agent_audit.set_run_context("test-run", "case_01")
+        asyncio.run(agent_audit.audit_hook(
+            {"hook_event_name": "PostToolUseFailure", "session_id": "s-1",
+             "tool_name": QUALIFIED_TOOL_NAMES[0], "tool_input": {},
+             "tool_use_id": "tu-9", "error": "e"}, None, None))
+        rows = self._rows(isolated / "audit.db")
+        assert rows[0]["tool_use_id"] == "tu-9"
+
+
+# --- Standard eval v2 runner (evals/run_eval_v2.py): no model calls; a fake
+# executor stands in for harness.run_case_execution and writes audit rows to
+# a throwaway database. ---------------------------------------------------------
+
+from evals import run_eval_v2  # noqa: E402
+
+DEV_KEY = json.loads((ANSWER_KEYS_DIR / "dev.json").read_text(encoding="utf-8"))
+DEV_CLAIMS = {c["case_id"]: c["claims"] for c in DEV_KEY["cases"]}
+OVERLOADED = "Claude Code returned an error result: API Error: 529 Overloaded"
+USAGE_TEXT = "You've hit your session limit · resets 3pm (UTC)"
+TRANSIENT_TEXT = "API Error: Server is temporarily limiting requests (not your usage limit) · Rate limited"
+
+
+def _hook(event, tool, tool_use_id, tool_input, response=None):
+    data = {"hook_event_name": event, "session_id": "s-1", "tool_name": tool,
+            "tool_input": tool_input, "tool_use_id": tool_use_id}
+    if event == "PostToolUse":
+        data["tool_response"] = [{"type": "text", "text": response}]
+    # audit_hook never awaits; drive it directly so it also works inside the
+    # runner's event loop.
+    coro = agent_audit.audit_hook(data, tool_use_id, None)
+    try:
+        coro.send(None)
+    except StopIteration:
+        return
+    raise AssertionError("audit_hook awaited unexpectedly")
+
+
+def _perfect_findings(case_id):
+    return [{"claim_text": c["text"], "verdict": c["verdict"],
+             "evidence_source": c["evidence_sources"][0] if c["evidence_sources"] else "none",
+             "evidence_note": "n"} for c in DEV_CLAIMS[case_id]]
+
+
+def _write_perfect_audit(case_id, run_id, findings):
+    agent_audit.init_audit_db()
+    agent_audit.set_run_context(run_id, case_id)
+    fetch, log = QUALIFIED_TOOL_NAMES[0], QUALIFIED_TOOL_NAMES[3]
+    path = {"path": f"{case_id}/target.html"}
+    _hook("PreToolUse", fetch, f"{run_id}-t0", path)
+    _hook("PostToolUse", fetch, f"{run_id}-t0", path, "- page text")
+    for i, f in enumerate(findings, start=1):
+        _hook("PreToolUse", log, f"{run_id}-t{i}", f)
+        _hook("PostToolUse", log, f"{run_id}-t{i}", f, f"Logged: {f['verdict']}")
+
+
+def _sdk_result(is_error=False, text="done", status=None):
+    return ResultMessage(subtype="success", duration_ms=1, duration_api_ms=1, is_error=is_error,
+                         num_turns=3, session_id="s-1", total_cost_usd=0.01, result=text,
+                         api_error_status=status)
+
+
+def _outcome(spec, case_id, run_id):
+    init = {"apiKeySource": "none", "tools": list(QUALIFIED_TOOL_NAMES),
+            "mcp_servers": [], "model": "claude-sonnet-4-6"}
+    if spec == "auth":
+        return harness.ExecutionOutcome(
+            error=harness.AuthGuardError("AuthGuardError: init apiKeySource is 'x', expected 'none'"))
+    if spec == "overloaded":
+        return harness.ExecutionOutcome(error=Exception(OVERLOADED),
+                                        error_origin=harness.SDK_CALL_ORIGIN, init=init)
+    if spec == "usage":
+        return harness.ExecutionOutcome(result=_sdk_result(is_error=True, text=USAGE_TEXT, status=429), init=init)
+    if spec == "transient":
+        return harness.ExecutionOutcome(result=_sdk_result(is_error=True, text=TRANSIENT_TEXT, status=429), init=init)
+    if spec == "unknown_429":
+        return harness.ExecutionOutcome(result=_sdk_result(is_error=True, text="raw text", status=429), init=init)
+    findings = _perfect_findings(case_id)
+    _write_perfect_audit(case_id, run_id, findings)
+    if spec == "ok":
+        return harness.ExecutionOutcome(result=_sdk_result(), findings=findings, init=init)
+    if spec == "is_error_none":
+        return harness.ExecutionOutcome(result=_sdk_result(is_error=None), findings=findings, init=init)
+    if spec == "boom":  # runner/agent-side exception: unclassified, an agent failure
+        return harness.ExecutionOutcome(result=_sdk_result(), findings=findings, init=init,
+                                        error=RuntimeError("boom"))
+    raise AssertionError(spec)
+
+
+@pytest.fixture
+def runner(isolated, monkeypatch):
+    """A fake executor that plays a script of outcome specs ("ok" once the
+    script runs out), a temporary results folder and a fixed git state."""
+    monkeypatch.delenv(run_eval_v2.CLAUDE_CODE_ENV, raising=False)
+    monkeypatch.setattr(run_eval_v2, "RESULTS_ROOT", isolated / "results")
+    monkeypatch.setattr(run_eval_v2, "git_state", lambda: ("a" * 40, False))
+
+    class Runner:
+        def __init__(self):
+            self.calls, self.script, self.envs = [], [], []
+
+        def run(self, *argv):
+            return run_eval_v2.main(list(argv))
+
+        def files(self, set_name="dev"):
+            return sorted((isolated / "results" / set_name).glob("*.json"))
+
+        def series(self, set_name="dev"):
+            (path,) = self.files(set_name)
+            return path, json.loads(path.read_text(encoding="utf-8"))
+
+        def rewrite(self, path, **fields):
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data.update(fields)
+            path.write_text(json.dumps(data), encoding="utf-8")
+
+    r = Runner()
+
+    async def fake(case_id, run_id, model=None, max_budget_usd=None, env=None):
+        r.calls.append(run_id)
+        r.envs.append(env)
+        return _outcome(r.script.pop(0) if r.script else "ok", case_id, run_id)
+
+    monkeypatch.setattr(run_eval_v2.harness, "run_case_execution", fake)
+    return r
+
+
+SMOKE = ("--set", "dev", "--cases", "case_01", "--runs", "1")
+
+
+class TestRunnerV2Refusals:
+    def test_refuses_inside_claude_code(self, runner, monkeypatch):
+        monkeypatch.setenv(run_eval_v2.CLAUDE_CODE_ENV, "1")
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_REFUSED
+        assert runner.calls == [] and runner.files() == []
+
+    def test_refuses_a_guarded_env_name_without_printing_its_value(self, runner, monkeypatch, capsys):
+        monkeypatch.setenv("ANTHROPIC_API_KEY", FAKE_SECRET_VALUE)
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_REFUSED
+        out = capsys.readouterr()
+        assert "ANTHROPIC_API_KEY" in out.err
+        assert FAKE_SECRET_VALUE not in out.out + out.err
+        assert runner.calls == []
+
+    def test_official_needs_the_frozen_key_hash_and_the_full_series(self, runner, monkeypatch, tmp_path):
+        assert runner.run("--set", "official") == run_eval_v2.EXIT_REFUSED
+        assert runner.run("--set", "official", "--key-sha256", "0" * 64,
+                          "--cases", "h001") == run_eval_v2.EXIT_REFUSED
+        key = tmp_path / "official.json"
+        key.write_text(json.dumps({"set": "official", "cases": []}), encoding="utf-8")
+        monkeypatch.setattr(run_eval_v2, "key_path_for", lambda s, c: key)
+        assert runner.run("--set", "official", "--key-sha256", "0" * 64) == run_eval_v2.EXIT_REFUSED
+        # right hash, but not an official set (0 cases)
+        assert runner.run("--set", "official", "--key-sha256",
+                          score_v2.key_sha256(key)) == run_eval_v2.EXIT_REFUSED
+        assert runner.calls == [] and runner.files("official") == []
+
+    def test_dev_subset_must_name_cases_of_the_key(self, runner):
+        assert runner.run("--set", "dev", "--cases", "h001") == run_eval_v2.EXIT_REFUSED
+        assert runner.run("--set", "dev", "--runs", "4") == run_eval_v2.EXIT_REFUSED
+        assert runner.run("--set", "dev", "--recover") == run_eval_v2.EXIT_REFUSED
+        assert runner.calls == []
+
+    def test_runner_never_loads_a_dotenv_file_or_the_v1_runner(self):
+        source = Path(run_eval_v2.__file__).read_text(encoding="utf-8")
+        assert "dotenv" not in source
+        assert "run_eval import" not in source and "import run_eval\n" not in source
+
+
+class TestRunnerV2Records:
+    def test_full_dev_series_with_a_perfect_agent(self, runner, monkeypatch, capsys):
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_OK
+        assert len(runner.calls) == 36
+        path, series = runner.series()
+        assert series["state"] == "complete" and series["pending"] is None
+        assert series["kind"] == run_eval_v2.FULL_KIND
+        assert series["summary"]["result"] == score_v2.DEV_ONLY
+        assert series["answer_key"] == "evals/answer_keys/dev.json"
+        good, problems = score_v2.record_problems(DEV_KEY, series["executions"])
+        assert problems == [] and len(good) == 36
+        config = score_v2.load_config()
+        assert all(score_v2.status_problem(e, config) is None for e in series["executions"])
+        assert {e["status"] for e in series["executions"]} == {score_v2.COMPLETED}
+        assert all(e["result"]["is_error"] is False for e in series["executions"])
+        assert run_eval_v2.SMOKE_LABEL not in capsys.readouterr().out
+        monkeypatch.setattr(sys, "argv", ["score_v2.py", str(path)])
+        score_v2.main()  # the rescore accepts the file (no SystemExit)
+        assert score_v2.DEV_ONLY in capsys.readouterr().out
+
+    def test_smoke_test_record_shape_label_and_init_output(self, runner, capsys):
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_OK
+        out = capsys.readouterr().out
+        assert run_eval_v2.SMOKE_LABEL in out
+        assert "apiKeySource 'none'" in out
+        assert f"observed MCP tools: {list(QUALIFIED_TOOL_NAMES)!r}" in out
+        _, series = runner.series()
+        assert series["kind"] == run_eval_v2.SMOKE_KIND
+        assert series["summary"]["kind"] == run_eval_v2.SMOKE_KIND
+        assert series["subset"] == {"cases": ["case_01"], "runs": 1}
+        (e,) = series["executions"]
+        assert e["execution_id"] == f"{series['eval_id']}-case_01-r1"
+        assert runner.calls == [e["execution_id"]]
+        assert set(e["result"]) == {"subtype", "is_error", "num_turns", "result_text", "errors",
+                                    "api_error_status"}
+        assert e["result"]["is_error"] is False
+        assert e["error_type"] is None and e["error"] is None
+        assert e["num_turns"] == 3 and e["total_cost_usd"] == 0.01
+        assert e["init"]["apiKeySource"] == "none"
+        assert e["status"] == score_v2.COMPLETED
+
+    def test_a_non_boolean_is_error_is_never_read_as_false(self, runner):
+        runner.script = ["is_error_none"]
+        assert runner.run("--set", "dev", "--cases", "case_01,case_02",
+                          "--runs", "1") == run_eval_v2.EXIT_STOPPED
+        assert len(runner.calls) == 1
+        _, series = runner.series()
+        (e,) = series["executions"]
+        assert e["result"]["is_error"] is None  # kept as sent, not converted
+        assert e["status"] == score_v2.AGENT_FAILURE
+        assert any("not a boolean" in f for f in e["failures"])
+        assert series["state"] == "stopped"
+        assert score_v2.status_problem(e, score_v2.load_config()) is None
+
+    def test_exception_keeps_result_and_records_module_qualname(self, runner):
+        runner.script = ["boom"]
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_OK
+        (e,) = runner.series()[1]["executions"]
+        assert e["error_type"] == "builtins.RuntimeError" and e["error"] == "boom"
+        assert e["result"] is not None
+        assert e["status"] == score_v2.AGENT_FAILURE and e["infra_category"] is None
+
+    def test_only_the_executions_own_audit_rows_are_used(self, runner):
+        agent_audit.init_audit_db()
+        agent_audit.set_run_context("someone-else", "case_01")
+        _hook("PreToolUse", QUALIFIED_TOOL_NAMES[0], "x-1", {"path": "case_01/target.html"})
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_OK
+        (e,) = runner.series()[1]["executions"]
+        assert e["status"] == score_v2.COMPLETED and e["audit_rows"] == 8
+
+
+class TestRunnerV2CleanTree:
+    @pytest.fixture
+    def repo(self, tmp_path, monkeypatch):
+        """A real throwaway git repository as the runner's root."""
+        def git(*args):
+            subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", *args],
+                           cwd=tmp_path, check=True, capture_output=True)
+        git("init", "-q")
+        (tmp_path / ".gitignore").write_text("__pycache__/\n", encoding="utf-8")
+        (tmp_path / "agent").mkdir()
+        (tmp_path / "agent" / "tools.py").write_text("x = 1\n", encoding="utf-8")
+        git("add", ".")
+        git("commit", "-q", "-m", "start")
+        monkeypatch.setattr(run_eval_v2, "REPO_ROOT", tmp_path)
+        return tmp_path
+
+    def test_a_committed_tree_is_clean(self, repo):
+        head, dirty = run_eval_v2.git_state()
+        assert head and dirty is False
+
+    @pytest.mark.parametrize("path", ["evals/dataset/case_99/target.html", "evals/answer_keys/extra.json",
+                                      "agent/new_tool.py"])
+    def test_an_untracked_file_in_a_guarded_folder_is_dirty(self, repo, path):
+        (repo / path).parent.mkdir(parents=True, exist_ok=True)
+        (repo / path).write_text("x", encoding="utf-8")
+        assert run_eval_v2.git_state()[1] is True
+
+    def test_ignored_and_other_untracked_files_are_not_dirty(self, repo):
+        (repo / "agent" / "__pycache__").mkdir()
+        (repo / "agent" / "__pycache__" / "tools.pyc").write_text("x", encoding="utf-8")
+        (repo / "notes.txt").write_text("x", encoding="utf-8")
+        assert run_eval_v2.git_state()[1] is False
+
+    def test_a_tracked_change_is_dirty(self, repo):
+        (repo / "agent" / "tools.py").write_text("x = 2\n", encoding="utf-8")
+        assert run_eval_v2.git_state()[1] is True
+
+    def test_official_refuses_a_dirty_tree_and_names_the_folders(self, runner, isolated, monkeypatch, capsys):
+        key = {"set": "official", "cases": [{"case_id": f"h{i:03d}", "claims": []} for i in range(1, 62)]}
+        path = isolated / "official.json"
+        path.write_text(json.dumps(key), encoding="utf-8")
+        monkeypatch.setattr(run_eval_v2, "key_path_for", lambda *_: path)
+        monkeypatch.setattr(run_eval_v2, "git_state", lambda: ("a" * 40, True))
+        code = runner.run("--set", "official", "--key-sha256", score_v2.key_sha256(path))
+        assert code == run_eval_v2.EXIT_REFUSED and runner.calls == []
+        assert "no untracked files under evals/dataset/" in capsys.readouterr().err
+
+
+class TestRunnerV2StopPauseRerun:
+    def test_auth_error_stops_the_series_at_once(self, runner):
+        runner.script = ["auth"]
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_STOPPED
+        assert len(runner.calls) == 1
+        _, series = runner.series()
+        assert series["state"] == "stopped"
+        (e,) = series["executions"]
+        assert e["status"] == score_v2.INVALID_RUN and e["infra_category"] == "auth"
+        assert e["error_type"] == score_v2.AUTH_GUARD_TYPE
+
+    def test_usage_limit_stops_the_series(self, runner):
+        runner.script = ["ok", "usage"]
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_STOPPED
+        assert len(runner.calls) == 2
+        _, series = runner.series()
+        e = series["executions"][-1]
+        assert e["status"] == score_v2.INVALID_RUN and e["infra_category"] == "subscription_limit"
+        assert e["result"]["api_error_status"] == 429
+        detail = series["series_events"][-1]["detail"]
+        assert detail.startswith("stop rule: subscription_limit") and "reset" in detail
+
+    def test_unrecognized_429_stops_the_series_under_the_stop_rule(self, runner):
+        runner.script = ["unknown_429"]
+        assert runner.run("--set", "dev") == run_eval_v2.EXIT_STOPPED
+        _, series = runner.series()
+        assert series["executions"][-1]["infra_category"] == "unrecognized_429"
+        assert series["series_events"][-1]["detail"].startswith("stop rule: unrecognized_429")
+
+    def test_transient_rate_limit_stops_as_an_invalid_run_and_resume_reruns_the_page(self, runner):
+        runner.script = ["transient"]
+        assert runner.run("--set", "dev", "--cases", "case_01", "--runs", "1") == run_eval_v2.EXIT_STOPPED
+        path, series = runner.series()
+        assert series["executions"][-1]["infra_category"] == "transient_rate_limit"
+        assert series["series_events"][-1]["detail"].startswith("INVALID RUN (transient_rate_limit)")
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_OK
+        assert runner.calls[-1].endswith("-a2")
+
+    def test_a_good_run_records_a_null_api_error_status(self, runner):
+        assert runner.run("--set", "dev", "--cases", "case_01", "--runs", "1") == run_eval_v2.EXIT_OK
+        assert runner.series()[1]["executions"][0]["result"]["api_error_status"] is None
+
+    @pytest.mark.parametrize("text,category", [
+        (USAGE_TEXT, "subscription_limit"),
+        (TRANSIENT_TEXT, "transient_rate_limit"),
+        ("raw text", "unrecognized_429"),
+    ])
+    def test_cli_error_result_then_sdk_raise_through_the_real_harness(self, isolated, monkeypatch, text, category):
+        """The stream the CLI and SDK produce: an error result, then the
+        SDK's exception. This proves the handling, not the real CLI hand-off."""
+        crash = Exception("Claude Code returned an error result: success")
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(model=run_eval_v2.EVAL_MODEL), _sdk_result(is_error=True, text=text, status=429)],
+            raise_after=crash))
+        record = asyncio.run(run_eval_v2.execute("ev2-x", "case_01", 1, 1, score_v2.load_config()))
+        assert record["status"] == score_v2.INVALID_RUN and record["infra_category"] == category
+        assert record["error_origin"] == harness.SDK_CALL_ORIGIN
+        assert record["result"]["result_text"] == text and record["result"]["api_error_status"] == 429
+
+    def test_invalid_run_stops_the_page_and_resume_reruns_it_as_a_new_attempt(self, runner):
+        runner.script = ["ok", "overloaded"]
+        assert runner.run("--set", "dev", "--cases", "case_01,case_02",
+                          "--runs", "3") == run_eval_v2.EXIT_STOPPED
+        path, series = runner.series()
+        eid = series["eval_id"]
+        assert runner.calls == [f"{eid}-case_01-r1", f"{eid}-case_01-r2"]
+        assert series["executions"][-1]["infra_category"] == "overloaded_or_5xx"
+
+        runner.calls.clear()
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_OK
+        assert runner.calls == [f"{eid}-case_01-r1-a2", f"{eid}-case_01-r2-a2", f"{eid}-case_01-r3-a2",
+                                f"{eid}-case_02-r1", f"{eid}-case_02-r2", f"{eid}-case_02-r3"]
+        _, series = runner.series()
+        assert series["eval_id"] == eid
+        first = [e for e in series["executions"] if e["attempt"] == 1 and e["case_id"] == "case_01"]
+        assert len(first) == 2 and all(e["superseded"] for e in first)
+        assert not any(e["superseded"] for e in series["executions"] if e["attempt"] == 2)
+        assert [ev["kind"] for ev in series["series_events"]] == ["stop", "resume", "rerun", "complete"]
+        scored = score_v2.score(run_eval_v2.subset_key(DEV_KEY, series), series["executions"])
+        assert scored["attempt_problems"] == [] and scored["record_problems"] == []
+
+    def test_two_unclassified_exceptions_in_a_row_pause_and_resume_continues_the_attempt(self, runner):
+        runner.script = ["boom", "boom"]
+        assert runner.run("--set", "dev", "--cases", "case_01",
+                          "--runs", "3") == run_eval_v2.EXIT_PAUSED
+        path, series = runner.series()
+        assert series["state"] == "paused" and len(runner.calls) == 2
+        runner.calls.clear()
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_OK
+        assert runner.calls == [f"{series['eval_id']}-case_01-r3"]
+        _, series = runner.series()
+        assert [e["status"] for e in series["executions"]] == [
+            score_v2.AGENT_FAILURE, score_v2.AGENT_FAILURE, score_v2.COMPLETED]
+        assert not any(e["superseded"] for e in series["executions"])
+
+    def test_unclassified_exceptions_not_in_a_row_do_not_pause(self, runner):
+        runner.script = ["boom", "ok", "boom"]
+        assert runner.run("--set", "dev", "--cases", "case_01", "--runs", "3") == run_eval_v2.EXIT_OK
+
+    def test_an_execution_id_with_audit_rows_is_never_reused(self, runner):
+        runner.script = ["boom", "boom"]
+        assert runner.run("--set", "dev", "--cases", "case_01", "--runs", "3") == run_eval_v2.EXIT_PAUSED
+        path, series = runner.series()
+        agent_audit.set_run_context(f"{series['eval_id']}-case_01-r3", "case_01")
+        _hook("PreToolUse", QUALIFIED_TOOL_NAMES[0], "y-1", {"path": "case_01/target.html"})
+        runner.calls.clear()
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_STOPPED
+        assert runner.calls == []
+        assert runner.series()[1]["state"] == "abandoned"
+
+    @pytest.mark.parametrize("field,value", [
+        ("eval_id", "ev2-00000000"), ("git_head", "b" * 40), ("answer_key_sha256", "0" * 64),
+        ("config_sha256", "0" * 64), ("model", "other"), ("max_budget_usd", 9.0),
+        ("max_turns", 99), ("max_tool_calls", 999), ("runs_per_page", 5),
+        ("subset", {"cases": ["case_02"], "runs": 1}), ("subset", {"cases": ["case_01"], "runs": 9}),
+        ("kind", run_eval_v2.FULL_KIND),
+        ("state", "complete"), ("state", "abandoned"),
+    ])
+    def test_resume_refuses_a_changed_series(self, runner, field, value):
+        runner.script = ["auth"]
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_STOPPED
+        path, _ = runner.series()
+        runner.rewrite(path, **{field: value})
+        runner.calls.clear()
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_REFUSED
+        assert runner.calls == []
+
+    def test_resume_refuses_cases_or_runs_that_differ_from_the_stored_subset(self, runner):
+        runner.script = ["auth"]
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_STOPPED
+        path, series = runner.series()
+        assert runner.run("--set", "dev", "--resume", str(path), "--runs", "2") == run_eval_v2.EXIT_REFUSED
+        assert len(runner.calls) == 1
+        assert runner.run("--set", "dev", "--resume", str(path), "--cases", "case_01",
+                          "--runs", "1") == run_eval_v2.EXIT_OK
+        assert runner.calls[1:] == [f"{series['eval_id']}-case_01-r1-a2"]
+
+
+class TestRunnerV2InterruptedSeries:
+    def _interrupted(self, runner, pending):
+        runner.script = ["boom", "boom"]
+        assert runner.run("--set", "dev", "--cases", "case_01", "--runs", "3") == run_eval_v2.EXIT_PAUSED
+        path, series = runner.series()
+        runner.rewrite(path, state="running", pending=pending)
+        runner.calls.clear()
+        return path, series
+
+    def test_a_running_series_is_not_resumed_without_recover(self, runner):
+        path, before = self._interrupted(runner, pending=None)
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_REFUSED
+        assert runner.calls == []
+        _, after = runner.series()
+        assert after["executions"] == before["executions"] and after["state"] == "running"
+
+    def test_recover_with_an_execution_in_flight_abandons_and_keeps_the_evidence(self, runner):
+        path, before = self._interrupted(runner, pending=None)
+        lost = f"{before['eval_id']}-case_01-r3"
+        runner.rewrite(path, pending={"execution_id": lost, "started_at": "t"})
+        agent_audit.set_run_context(lost, "case_01")
+        _hook("PreToolUse", QUALIFIED_TOOL_NAMES[0], "z-1", {"path": "case_01/target.html"})
+        assert runner.run("--set", "dev", "--resume", str(path), "--recover") == run_eval_v2.EXIT_STOPPED
+        assert runner.calls == []
+        _, after = runner.series()
+        assert after["state"] == "abandoned"
+        assert after["executions"] == before["executions"]
+        assert after["series_events"][-1]["kind"] == "interrupted"
+        assert lost in after["series_events"][-1]["detail"]
+        assert len(score_v2.load_audit_rows(agent_audit.AUDIT_DB_PATH, lost)) == 1
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_REFUSED
+
+    def test_recover_with_nothing_in_flight_continues(self, runner):
+        path, series = self._interrupted(runner, pending=None)
+        assert runner.run("--set", "dev", "--resume", str(path), "--recover") == run_eval_v2.EXIT_OK
+        assert runner.calls == [f"{series['eval_id']}-case_01-r3"]
+        kinds = [ev["kind"] for ev in runner.series()[1]["series_events"]]
+        assert kinds[-3:] == ["recover", "resume", "complete"]
+
+    def test_recover_is_refused_for_a_series_that_is_not_running(self, runner):
+        runner.script = ["auth"]
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_STOPPED
+        path, _ = runner.series()
+        assert runner.run("--set", "dev", "--resume", str(path), "--recover") == run_eval_v2.EXIT_REFUSED
+
+
+# --- Messages before init: the live smoke test (2026-11-04) saw a
+# HookEventMessage before the init message. The CLI always streams
+# SessionStart/Setup hook lifecycle messages, also from hooks in machine-wide
+# policy settings. Only those may come before init, and only with no hook
+# output (SessionStart output reaches the model). ------------------------------
+
+from claude_agent_sdk import (  # noqa: E402
+    AssistantMessage, HookEventMessage, TextBlock, ToolUseBlock, UserMessage,
+)
+
+KOS_LIKE_OUTPUT = json.dumps({"hookSpecificOutput": {
+    "hookEventName": "SessionStart", "additionalContext": "context text from a hook"}})
+
+
+def _hook_message(subtype, event="SessionStart", hook_id="h-1", output="", stdout=""):
+    data = {"type": "system", "subtype": subtype, "hook_id": hook_id,
+            "hook_name": "SessionStart:startup", "hook_event": event}
+    if subtype == "hook_response":
+        data.update({"output": output, "stdout": stdout, "stderr": "",
+                     "exit_code": 0, "outcome": "success"})
+    if subtype == "hook_progress":  # the SDK parses this one as a plain SystemMessage
+        data.update({"stdout": stdout, "stderr": "", "output": output})
+        return SystemMessage(subtype=subtype, data=data)
+    return HookEventMessage(subtype=subtype, data=data, hook_event_name=event)
+
+
+OBSERVED_ORDER = [_hook_message("hook_started"), _hook_message("hook_response")]
+
+
+class TestPreInitMessages:
+    def _run(self, monkeypatch, messages, closed=None):
+        monkeypatch.setattr(harness, "query", _fake_query(messages, closed=closed))
+        return asyncio.run(harness.run_case_execution("case_01", "test-run"))
+
+    def test_observed_order_with_a_silent_session_start_hook_passes(self, isolated, monkeypatch):
+        result = _result_message()
+        outcome = self._run(monkeypatch, OBSERVED_ORDER + [_init_message(), result])
+        assert outcome.error is None and outcome.result is result
+        assert outcome.init["apiKeySource"] == "none"
+        assert [e["subtype"] for e in outcome.lifecycle] == ["hook_started", "hook_response"]
+        assert all(e["hook_event"] == "SessionStart" for e in outcome.lifecycle)
+        assert "SessionStart:startup" not in json.dumps(outcome.lifecycle)  # no hook name kept
+
+    def test_progress_message_without_output_is_allowed(self, isolated, monkeypatch):
+        outcome = self._run(monkeypatch, [_hook_message("hook_started"), _hook_message("hook_progress"),
+                                          _hook_message("hook_response"), _init_message(),
+                                          _result_message()])
+        assert outcome.error is None and len(outcome.lifecycle) == 3
+
+    @pytest.mark.parametrize("field", ["output", "stdout"])
+    def test_hook_output_before_init_is_refused_without_recording_it(self, isolated, monkeypatch, field):
+        closed = []
+        outcome = self._run(monkeypatch, [_hook_message("hook_started"),
+                                          _hook_message("hook_response", **{field: KOS_LIKE_OUTPUT}),
+                                          _init_message(), _result_message()], closed=closed)
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "printed" in str(outcome.error) and "context text" not in str(outcome.error)
+        assert outcome.result is None and outcome.init is None and harness.last_init is None
+        assert closed == [True]
+
+    def test_progress_output_before_init_is_refused(self, isolated, monkeypatch):
+        outcome = self._run(monkeypatch, [_hook_message("hook_started"),
+                                          _hook_message("hook_progress", stdout="partial"),
+                                          _hook_message("hook_response"), _init_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+
+    def test_hook_output_after_init_is_refused_too(self, isolated, monkeypatch):
+        outcome = self._run(monkeypatch, [_init_message(),
+                                          _hook_message("hook_response", output=KOS_LIKE_OUTPUT),
+                                          _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.result is None
+
+    @pytest.mark.parametrize("event", ["PreToolUse", "PostToolUse", "UserPromptSubmit", "Stop", "", None])
+    def test_hook_messages_of_other_events_are_refused(self, isolated, monkeypatch, event):
+        outcome = self._run(monkeypatch, [_hook_message("hook_started", event=event),
+                                          _init_message(), _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.init is None and outcome.result is None
+
+    @pytest.mark.parametrize("message", [
+        AssistantMessage(content=[TextBlock(text="hi")], model="m"),
+        UserMessage(content="hi"),
+        SystemMessage(subtype="status", data={}),
+        SystemMessage(subtype="hook_started_x", data={"hook_event": "SessionStart"}),
+    ], ids=["assistant", "user", "other-system", "look-alike-subtype"])
+    def test_any_other_message_before_init_is_refused(self, isolated, monkeypatch, message):
+        outcome = self._run(monkeypatch, OBSERVED_ORDER + [message, _init_message(), _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.init is None and outcome.result is None
+
+    def test_a_result_before_init_is_refused(self, isolated, monkeypatch):
+        outcome = self._run(monkeypatch, OBSERVED_ORDER + [_result_message(), _init_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.result is None
+
+    def test_a_hook_started_without_response_before_init_is_refused(self, isolated, monkeypatch):
+        outcome = self._run(monkeypatch, [_hook_message("hook_started"), _init_message(),
+                                          _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "without a response" in str(outcome.error)
+
+    def test_too_many_lifecycle_messages_before_init_are_refused(self, isolated, monkeypatch):
+        many = [_hook_message("hook_started", hook_id=f"h-{i}")
+                for i in range(harness.MAX_PRE_INIT_MESSAGES + 1)]
+        outcome = self._run(monkeypatch, many + [_init_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+
+    @pytest.mark.parametrize("init", [
+        _init_message(api_key_source="ANTHROPIC_API_KEY"),
+        _init_message(tools=list(QUALIFIED_TOOL_NAMES) + ["Bash"]),
+        _init_message(tools=list(QUALIFIED_TOOL_NAMES)[:3]),
+    ], ids=["api-key-source", "extra-tool", "missing-tool"])
+    def test_init_checks_stay_strict_after_lifecycle_messages(self, isolated, monkeypatch, init):
+        outcome = self._run(monkeypatch, OBSERVED_ORDER + [init, _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.result is None
+
+    def test_a_tool_use_before_init_is_refused_and_leaves_no_audit_rows(self, isolated, monkeypatch):
+        tool_use = AssistantMessage(content=[ToolUseBlock(
+            id="tu-early", name=QUALIFIED_TOOL_NAMES[0], input={"path": "case_01/target.html"})],
+            model="m")
+        outcome = self._run(monkeypatch, OBSERVED_ORDER + [tool_use, _init_message(),
+                                                           _result_message()])
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "AssistantMessage" in str(outcome.error)
+        assert outcome.init is None and outcome.result is None and outcome.findings == []
+        db = isolated / "audit.db"
+        conn = sqlite3.connect(db)
+        try:
+            assert conn.execute("SELECT COUNT(*) FROM tool_calls").fetchone()[0] == 0
+        finally:
+            conn.close()
+
+    def test_a_refused_hook_classifies_as_auth_and_stops_the_runner(self):
+        error = harness.AuthGuardError("AuthGuardError: a SessionStart hook printed 9 characters "
+                                       "(hook_response); hook output can reach the model, refusing")
+        category = score_v2.infra_category(score_v2.AUTH_GUARD_TYPE, str(error), None,
+                                           score_v2.load_config())
+        assert category == "auth" and category in run_eval_v2.STOP_CATEGORIES
+
+
+# --- Evaluation marker: set on the CLI process of v2 executions only ---
+
+import inspect  # noqa: E402
+import os  # noqa: E402
+from dataclasses import replace  # noqa: E402
+
+from claude_agent_sdk._internal.transport import subprocess_cli  # noqa: E402
+
+MARKER_NAME = "AGENT_EVAL_PROFILE"
+MARKER_VALUE = "claim-verification-eval"
+EVAL_ENV_EXPECTED = {MARKER_NAME: MARKER_VALUE, "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"}
+
+
+class TestEvalMarker:
+    def test_the_runner_sets_only_the_marker_and_the_memory_switch(self):
+        assert run_eval_v2.EVAL_ENV == EVAL_ENV_EXPECTED
+
+    def test_the_default_options_carry_no_extra_variable(self):
+        assert harness.build_options().env == {}
+
+    def test_options_keep_their_own_copy_of_env(self):
+        env = {MARKER_NAME: MARKER_VALUE}
+        options = harness.build_options(env=env)
+        env["OTHER"] = "x"
+        assert options.env == {MARKER_NAME: MARKER_VALUE}
+
+    def test_an_execution_passes_env_to_the_sdk_and_not_to_the_process(self, isolated, monkeypatch):
+        called = []
+        monkeypatch.delenv(MARKER_NAME, raising=False)
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), _result_message()],
+                                                          called=called))
+        outcome = asyncio.run(harness.run_case_execution(
+            "case_01", "test-run", env=run_eval_v2.EVAL_ENV))
+        assert outcome.error is None
+        assert called[0].env == EVAL_ENV_EXPECTED
+        assert MARKER_NAME not in os.environ
+
+    def test_the_marker_changes_none_of_the_other_bounds(self):
+        plain, marked = harness.build_options(), harness.build_options(env=run_eval_v2.EVAL_ENV)
+        assert marked.setting_sources == [] and marked.tools == []
+        assert sorted(marked.allowed_tools) == sorted(QUALIFIED_TOOL_NAMES)
+        assert (marked.max_turns, marked.max_budget_usd) == (plain.max_turns, plain.max_budget_usd)
+        assert sorted(marked.hooks) == sorted(plain.hooks)
+
+    def test_the_single_case_path_used_by_v1_sends_no_marker(self, isolated, monkeypatch):
+        called = []
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), _result_message()],
+                                                          called=called))
+        asyncio.run(harness.run_case_result("case_01", "test-run"))
+        assert called[0].env == {}
+        assert "env" not in inspect.signature(harness.run_case_result).parameters
+
+    def test_the_strict_init_check_still_applies_with_the_marker(self, isolated, monkeypatch):
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(api_key_source="ANTHROPIC_API_KEY"), _result_message()]))
+        outcome = asyncio.run(harness.run_case_execution(
+            "case_01", "test-run", env=run_eval_v2.EVAL_ENV))
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert outcome.result is None and outcome.init is None
+
+    @pytest.mark.parametrize("name", harness.GUARDED_ENV_NAMES)
+    def test_a_guarded_name_in_env_is_refused_before_anything_starts(self, isolated, monkeypatch, name):
+        called = []
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message()], called=called))
+        outcome = asyncio.run(harness.run_case_execution(
+            "case_01", "test-run", env={name: FAKE_SECRET_VALUE}))
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert name in str(outcome.error) and FAKE_SECRET_VALUE not in str(outcome.error)
+        assert called == [] and not (isolated / "audit.db").exists()
+
+    def test_every_runner_execution_gets_the_marker_also_on_a_rerun(self, runner):
+        runner.script = ["ok", "overloaded"]
+        assert runner.run("--set", "dev", "--cases", "case_01",
+                          "--runs", "3") == run_eval_v2.EXIT_STOPPED
+        path, _ = runner.series()
+        assert runner.run("--set", "dev", "--resume", str(path)) == run_eval_v2.EXIT_OK
+        assert len(runner.envs) == 5
+        assert all(env == EVAL_ENV_EXPECTED for env in runner.envs)
+
+    def test_the_results_record_keeps_its_shape(self, runner):
+        assert runner.run(*SMOKE) == run_eval_v2.EXIT_OK
+        assert MARKER_NAME not in runner.files()[0].read_text(encoding="utf-8")
+
+    def test_the_sdk_gives_the_cli_process_the_marker_and_the_sdk_entry_point(self, monkeypatch):
+        """The real SDK transport; only the process start is replaced, so no
+        CLI starts and no model is called."""
+        seen = {}
+
+        class Stop(Exception):
+            pass
+
+        async def fake_open_process(cmd, **kwargs):
+            seen.update(kwargs["env"])
+            raise Stop
+
+        monkeypatch.setattr(subprocess_cli.anyio, "open_process", fake_open_process)
+        monkeypatch.setenv("CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK", "1")
+        monkeypatch.setenv("CLAUDE_CODE_ENTRYPOINT", "cli")  # inherited value must not survive
+        monkeypatch.delenv(MARKER_NAME, raising=False)
+        options = replace(harness.build_options(env=run_eval_v2.EVAL_ENV), cli_path="stub-cli")
+        transport = subprocess_cli.SubprocessCLITransport(prompt="x", options=options)
+        with pytest.raises(Exception, match="Failed to start"):
+            asyncio.run(transport.connect())
+        assert seen[MARKER_NAME] == MARKER_VALUE
+        assert seen["CLAUDE_CODE_ENTRYPOINT"] == "sdk-py"
+
+
+# --- Strict MCP configuration: only the harness's own server is loaded ---
+
+# Tool names of the kind a logged-in CLI adds without strict_mcp_config.
+CONNECTOR_TOOLS = ["mcp__claude_ai_Gmail__send_message", "mcp__claude_ai_Google_Drive__search_files"]
+
+
+def _cli_command(options):
+    """The real SDK command line for these options; nothing is started."""
+    transport = subprocess_cli.SubprocessCLITransport(
+        prompt="x", options=replace(options, cli_path="stub-cli"))
+    return transport._build_command()
+
+
+class TestStrictMcpConfig:
+    def test_options_are_strict_with_and_without_the_marker(self):
+        assert harness.build_options().strict_mcp_config is True
+        assert harness.build_options(env=run_eval_v2.EVAL_ENV).strict_mcp_config is True
+
+    def test_the_sdk_passes_the_strict_flag_to_the_cli(self):
+        assert "--strict-mcp-config" in _cli_command(harness.build_options())
+
+    def test_the_cli_is_still_given_exactly_the_harness_server(self):
+        cmd = _cli_command(harness.build_options())
+        config = json.loads(cmd[cmd.index("--mcp-config") + 1])
+        assert list(config["mcpServers"]) == [harness.MCP_SERVER_NAME]
+        assert config["mcpServers"][harness.MCP_SERVER_NAME]["type"] == "sdk"
+
+    def test_the_server_keeps_its_four_tools(self):
+        options = harness.build_options()
+        server = options.mcp_servers[harness.MCP_SERVER_NAME]
+        assert server["type"] == "sdk" and server["name"] == harness.MCP_SERVER_NAME
+        assert len(agent_tools.ALL_TOOLS) == 4
+        assert sorted(f"mcp__{harness.MCP_SERVER_NAME}__{t.name}" for t in agent_tools.ALL_TOOLS) \
+            == sorted(QUALIFIED_TOOL_NAMES)
+        assert sorted(options.allowed_tools) == sorted(QUALIFIED_TOOL_NAMES)
+
+    def test_every_execution_reaches_query_with_strict_options(self, isolated, monkeypatch):
+        called = []
+        monkeypatch.setattr(harness, "query", _fake_query([_init_message(), _result_message()],
+                                                          called=called))
+        asyncio.run(harness.run_case_execution("case_01", "test-run", env=run_eval_v2.EVAL_ENV))
+        asyncio.run(harness.run_case_result("case_01", "test-run-2"))
+        assert [o.strict_mcp_config for o in called] == [True, True]
+
+    def test_the_init_check_still_refuses_connector_tools(self, isolated, monkeypatch):
+        closed = []
+        monkeypatch.setattr(harness, "query", _fake_query(
+            [_init_message(tools=list(QUALIFIED_TOOL_NAMES) + CONNECTOR_TOOLS), _result_message()],
+            closed=closed))
+        outcome = asyncio.run(harness.run_case_execution(
+            "case_01", "test-run", env=run_eval_v2.EVAL_ENV))
+        assert isinstance(outcome.error, harness.AuthGuardError)
+        assert "mcp__claude_ai_Gmail__send_message" in str(outcome.error)
+        assert outcome.result is None and outcome.init is None and harness.last_init is None
+        assert closed == [True]
