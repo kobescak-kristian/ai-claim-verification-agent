@@ -25,13 +25,15 @@ findings list, the harness audit hooks write the local audit database, and
 `evals/run_eval.py` writes a result file under `evals/results/` when a full
 evaluation is run.
 
+Classification: PROJECT. One recorded exception: `adr/0002-demo-script-tier-exception.md`.
+
 ## Authority and conflict handling
 
 Each topic has one owning source:
 
 | Source | Owns |
 |---|---|
-| `STATE.md` | Current repository state, classification, current evidence and status, open loops |
+| `STATE.md` | Current status, latest result (verdict and pointer), open items |
 | `README.md` | Public system description, usage, claims, limitations, Version Log |
 | `adr/0001-bounded-agent-v2-read-only-whitelist.md` | Accepted bounded-agent architecture and the decision to keep prompts public |
 | `adr/0002-demo-script-tier-exception.md` | Legitimacy of, and trigger for, `DEMO_SCRIPT.md` in this repository |
@@ -158,6 +160,7 @@ When sources disagree:
 14. **No pushed-history rewrite.** Published evidence and downstream
     references pin commit hashes. Do not amend or rebase pushed commits,
     and do not force-push.
+    Commit `d444b13c3ba07b9f4798d3298ec3bfc92da5a960` must stay reachable from main.
 15. **Artifact rules.** ADRs have no hard maximum; write one only for a
     genuine material decision. Version history stays in the README Version
     Log. Existing recorded exceptions such as `DEMO_SCRIPT.md` stay. If
