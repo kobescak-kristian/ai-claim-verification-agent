@@ -1,5 +1,7 @@
 # Eval Results — Official Gate Run
 
+Latest result: PASS, 2026-11-09, Standard eval v2 official series: 61 pages, 197 claims, 183/183 executions (61 pages x 3 runs), run `ev2-b67b4f30`.
+
 This file records two official evaluations with different gates and
 metrics: the v1 gate run of July 2026 (below) and the
 [Standard eval v2 official series](#standard-eval-v2-official-series)
@@ -178,6 +180,11 @@ Cases that hit `max_turns` or the budget ceiling: **none**.
 - **A perfect 35/35 on the first official run is a good sign, not proof of robustness.** The adversarial cases were designed by the same person who wrote the comparison policy the agent is prompted with — there's a shared-author risk that the eval and the prompt are tuned to each other rather than to the general problem. Real-world claim types not represented here (ranges, conditional claims, claims spanning multiple paragraphs, claims about the same fact stated differently across 3+ sources with partial disagreement) haven't been tested.
 - **Path-scoping and audit-trail verification is now a regression test.** The "all fetch/compare paths stayed inside `evals/dataset/`" and "no ground-truth leakage into tool calls" checks were first done by hand, before this run, as ad hoc SQL queries against `audit.db` on the earlier Haiku shakedown. Later the same day (2026-07-06), before the repo went public, `tests/test_bounds.py` turned both into repeatable tests that read a real run's `audit.db`. These two tests are skipped when no `audit.db` exists, as in CI. (Corrected 2026-10-29: this bullet originally said the checks were manual and should become a real regression test before this repo goes public. That test already existed.)
 - **Cost ceiling was miscalibrated on the first attempt at this gate run.** `MAX_BUDGET_USD` (0.25) was tuned for the cheap Haiku dev runs; the first Sonnet attempt hit that ceiling mid-turn on case_01 and the SDK raised a hard exception rather than a graceful capped result — a real gap in the harness (now handled by catching the exception and scoring the case's claims as unresolved, and by giving eval runs their own higher ceiling, `EVAL_MAX_BUDGET_USD = 1.50`). Worth noting since it's exactly the kind of gap this eval is supposed to catch, and it wasn't caught by the (also newly-written) eval runner itself — it was caught by the run crashing.
+
+## v1 gate: commit order and the October re-run
+
+- The v1 gate thresholds (`evals/eval_config.yaml`) were first committed at `b041702` (2026-07-05). The July result was committed at `bc9f41a` (2026-07-06).
+- Re-run on the renamed dataset, 2026-10-13, run `eval-199f77c6`: precision 1.00 (8/8), recall 1.00 (8/8), 35/35, gate PASS. Record: `evals/rerun_2026-10-13.md`.
 
 ## Raw run artifacts
 
