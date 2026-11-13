@@ -85,7 +85,7 @@ When sources disagree:
 | Bounds regression tests | `tests/test_bounds.py` |
 | CI | `.github/workflows/ci.yml` |
 | Documentation and artifact validation | the affected artifact, `.githooks/validate_artifacts.py` |
-| Publishing | `.githooks/`, `.publicgate-allow` |
+| Publishing | `.githooks/` |
 
 ## Always-on constraints
 
