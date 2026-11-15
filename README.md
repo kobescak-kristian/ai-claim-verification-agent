@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/kobescak-kristian/ai-claim-verification-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/kobescak-kristian/ai-claim-verification-agent/actions/workflows/ci.yml)
 
-Bounded claim-verification agent — verifies factual claims on content pages against source pages; read-only by harness enforcement.
+Bounded claim-verification agent: checks factual claims on content pages against source pages. Read-only.
 
 **In plain words:** This agent checks the facts on a page, such as prices, specs and release dates, against other pages that should agree with it. For each fact it says whether the sources support it, contradict it, or cannot confirm it, and it shows which source it used. It can only read: it cannot publish, edit or send anything, and every step it takes is logged so a person can check it later. It passed two official evaluations on synthetic product pages: in July 2026 it got all 35 facts right, and in November 2026 it gave the right answer on all 197 facts of 61 pages it had never seen, in each of 3 runs.
 
-**Status:** v1.1.0 — official evaluation PASS in July 2026 and November 2026 (see [Evaluation history](#evaluation-history)).
+**Status:** Built, 2026-11-09. v1.1.0: official evaluation PASS in July 2026 and November 2026 (see [Evaluation history](#evaluation-history)).
 
 ## Evaluation history
 
@@ -47,9 +47,13 @@ Affiliate reviews, comparisons, and product pages make factual claims — prices
 
 This agent takes one target page and a set of source pages, extracts the target's factual claims, investigates each one against the sources, and logs a verdict — SUPPORTED, CONTRADICTED, or UNVERIFIABLE — with the evidence that produced it. It can provably do nothing else: no writing, no editing, no shell, no network — only four read-only tools over local HTML.
 
-![architecture](ai-claim-verification-agent_architecture.png)
+## Outcome
+
+Both official evaluations passed. November 2026: 61/61 unseen synthetic pages passed, with the right verdict and a valid source on 504/504 assessments over 3 runs. July 2026: precision 1.00 and recall 1.00 on 35 synthetic claims. Details: [Evaluation history](#evaluation-history) and [`evals/EVAL_RESULTS.md`](evals/EVAL_RESULTS.md).
 
 ## System
+
+![architecture](ai-claim-verification-agent_architecture.png)
 
 ### Input
 
@@ -94,10 +98,6 @@ See [`docs/architecture_detailed.png`](docs/architecture_detailed.png) for the f
 3. **The model decides the verdict — no tool computes it.** `extract_claims` does no semantic judgment and `compare_source` does no matching or scoring; both are deterministic fetch-and-frame operations. The model reads the returned page content, applies the comparison policy from its system prompt (numeric claims need exact matches, rephrasing of the same fact is equivalent, authoritative sources outrank forum chatter, no source coverage means UNVERIFIABLE not CONTRADICTED), and reasons to a verdict itself.
 4. The model calls `log_finding` once per claim with that verdict, its evidence source, and a note.
 5. This is a bounded-execution design (ADR-001): the model chooses its next *read-only investigative* action from the fixed whitelist, within step/turn/cost limits — it never publishes, edits, sends, or makes an irreversible change. A bad decision costs at most one wasted tool call.
-
-## Outcome
-
-**Out of scope (production upgrades)** — deliberately not built and with no trigger yet: live-web crawling at scale, multi-agent teams, subagents, dashboards, scheduled runs, auto-fixing content.
 
 ## Run It Yourself
 
@@ -145,6 +145,15 @@ python evals/run_eval_v2.py --set dev
 
 This runs the 12 development pages 3 times each; the result is labelled DEV ONLY. The official series used `--set official --key-sha256 <frozen key hash>`. Any new run on the official pages is a regression test, not a fresh unseen evaluation.
 
+## Limitations
+
+- Tested on synthetic, local HTML pages only, not live web content. Real-world HTML noise (ads, nested markup, JavaScript-rendered content) is not tested.
+- The test pages and the comparison policy come from the same author, so the eval and the prompt may suit each other more than the general problem.
+- Live runs need a Claude subscription login through the Claude CLI; API-key authentication is not supported.
+- **Out of scope (production upgrades)** — deliberately not built and with no trigger yet: live-web crawling at scale, multi-agent teams, subagents, dashboards, scheduled runs, auto-fixing content.
+
+More detail: [Known Limitations](evals/EVAL_RESULTS.md#known-limitations) and [scope and limits](evals/EVAL_RESULTS.md#standard-eval-v2-scope-and-limits).
+
 ## Related
 
 This agent was also ported to LangGraph, facing the identical frozen eval: [ai-claim-verification-langgraph](https://github.com/kobescak-kristian/ai-claim-verification-langgraph), parity result precision 1.00 / recall 1.00 (2026-07-20); its re-run with neutral case names (2026-10-13) also scored 1.00 / 1.00. See that repo's [`COMPARISON.md`](https://github.com/kobescak-kristian/ai-claim-verification-langgraph/blob/main/COMPARISON.md) for what the framework gives, hides, and cannot enforce versus this hand-rolled version.
@@ -153,9 +162,13 @@ This agent was also ported to LangGraph, facing the identical frozen eval: [ai-c
 
 | Version | Date | Change |
 |---|---|---|
-| v1.0 | 2026-07-06 | Initial release: bounded harness + 4 MCP tools, eval-gated (Sonnet 4.6 — precision 1.00, recall 1.00 on 12 cases / 35 synthetic claims), audit-trail regression tests, architecture diagram. |
-| v1.0.1 | 2026-07-09 | Repro instructions added pre-flip: Run It Yourself section (proven from a fresh clone), SPEC.md and detailed-diagram links. |
-| v1.0.2 | 2026-07-20 | Related section added, cross-linking the LangGraph port (`ai-claim-verification-langgraph`) and its framework-comparison writeup. |
-| v1.0.3 | 2026-10-13 | Eval case directories renamed to neutral `case_01` to `case_12` (8 of 12 old names contained a verdict word that reached the model); bounds test added for verdict words in dataset names; frozen eval re-run: precision 1.00 / recall 1.00, 35/35. |
-| v1.0.4 | 2026-10-29 | Plain-language summary added under the title. EVAL_RESULTS corrected: the audit-trail note now names the existing `tests/test_bounds.py`, and two references to the retired SPEC.md are updated. |
 | v1.1.0 | 2026-11-09 | Standard evaluation v2: official PASS on 61 sealed synthetic pages, 3 runs each (`ev2-b67b4f30`), with its own gate, scorer and runner. The harness refuses API-key and other guarded auth variables and checks `apiKeySource`, tools and model at start-up; failed tool calls are recorded in the audit trail. The v1 gate and results are unchanged. |
+| v1.0.4 | 2026-10-29 | Plain-language summary added under the title. EVAL_RESULTS corrected: the audit-trail note now names the existing `tests/test_bounds.py`, and two references to the retired SPEC.md are updated. |
+| v1.0.3 | 2026-10-13 | Eval case directories renamed to neutral `case_01` to `case_12` (8 of 12 old names contained a verdict word that reached the model); bounds test added for verdict words in dataset names; frozen eval re-run: precision 1.00 / recall 1.00, 35/35. |
+| v1.0.2 | 2026-07-20 | Related section added, cross-linking the LangGraph port (`ai-claim-verification-langgraph`) and its framework-comparison writeup. |
+| v1.0.1 | 2026-07-09 | Repro instructions added pre-flip: Run It Yourself section (proven from a fresh clone), SPEC.md and detailed-diagram links. |
+| v1.0 | 2026-07-06 | Initial release: bounded harness + 4 MCP tools, eval-gated (Sonnet 4.6 — precision 1.00, recall 1.00 on 12 cases / 35 synthetic claims), audit-trail regression tests, architecture diagram. |
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
